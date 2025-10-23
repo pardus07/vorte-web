@@ -17,30 +17,28 @@ This implementation plan breaks down the Core Platform design into discrete, act
   - [ ] 2.1 Create FastAPI application skeleton
     - Set up main.py with FastAPI app, CORS middleware, and OpenAPI configuration
     - Implement structured logging middleware with traceId generation
-    - Create problem+json error handler middleware (RFC 9457 format)
+    - Create problem+json error handler middleware (RFC 9457 format with type, title, status, detail, instance, traceId)
+    - Implement ETag middleware for conditional requests (generate strong ETags from version field)
+    - Implement If-Match validation middleware (return 428 if missing, 409 if mismatch)
     - Configure OpenTelemetry SDK for distributed tracing
-    - _Requirements: Req 14 (Observability)_
+    - _Requirements: Req 14 (Observability), Req 15 (Optimistic Locking)_
 
 
   - [ ] 2.2 Implement database connections and utilities
     - Create MongoDB connection manager with connection pooling
-    - Implement MongoDB transaction helper functions
-    - Create Redis connection manager for caching and rate limiting
+    - Implement MongoDB transaction helper functions with session management
+    - Create Redis connection manager for caching, rate limiting, and idempotency keys
+    - Implement idempotency key storage in Redis (24-hour TTL, store request hash + response)
     - Implement database health check endpoints
-
-
-
-
-    - _Requirements: Req 15 (Transaction Integrity)_
+    - _Requirements: Req 15 (Transaction Integrity, Idempotency)_
 
   - [ ] 2.3 Implement authentication and authorization
     - Create JWT token generation and validation utilities (15-min access, 7-day refresh)
-    - Implement password hashing with bcrypt (cost factor 12)
+    - Implement password hashing with Argon2id (memory=128MB, time_cost=2, parallelism=4 per OWASP)
     - Create authentication middleware with Bearer token validation
     - Implement role-based access control (RBAC) decorator
     - Create rate limiting decorator using Redis (60 req/min per IP)
-
-
+    - Implement secure cookie handling (HttpOnly, SameSite=Lax, Secure in production)
     - _Requirements: Req 4 (Authentication), Req 11 (Security)_
 
   - [x] 2.4 Create core schemas and models
@@ -64,37 +62,31 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
   - [ ] 3.1 Create product repository layer
     - Implement ProductRepository with CRUD operations
-
-
-
     - Create MongoDB indexes (sku unique, slug unique, category_ids, tags, text search, price, status+created_at)
     - Implement product search with filters (category, price range, tags)
-
-    - Implement pagination helper
+    - Implement cursor-based pagination helper using ObjectId (keyset pagination for stability)
+    - Implement ETag generation utility: `"v{version}"` format for consistency
     - _Requirements: Req 1 (Product Management), Req 2 (Filtering), Req 13 (Performance)_
 
   - [ ] 3.2 Create product service layer
     - Implement product creation with variant support
-    - Implement product update with optimistic locking (version field)
-
-
-
-
+    - Implement product update with optimistic locking (version field, atomic findOneAndUpdate)
+    - Implement If-Match header validation for PATCH/DELETE operations
     - Implement product search and filtering logic
     - Implement product status management (DRAFT, ACTIVE, ARCHIVED)
     - Add Redis caching for product details (5-minute TTL, cache-aside pattern)
-    - _Requirements: Req 1, Req 2_
+    - Invalidate cache on product updates
+    - _Requirements: Req 1, Req 2, Req 15 (Optimistic Locking)_
 
 
   - [ ] 3.3 Create product API endpoints
-    - Implement GET /api/v1/products with pagination, filtering, sorting
-    - Implement GET /api/v1/products/:id
+    - Implement GET /api/v1/products with cursor-based pagination, filtering, sorting
+    - Implement GET /api/v1/products/:id (return ETag header)
     - Implement GET /api/v1/categories
-
-
     - Implement GET /api/v1/search with full-text search
-    - Add HTTP Link headers for pagination (rel=next/prev/first/last per RFC 5988)
-    - _Requirements: Req 1, Req 2_
+    - Add RFC 8288 Link headers for pagination (rel=next/prev with cursor URLs)
+    - Return strong ETags in response headers for cacheable resources
+    - _Requirements: Req 1, Req 2, Req 13 (Performance)_
 
   - [ ] 3.4 Write product module tests
     - Unit tests for ProductRepository CRUD operations
@@ -110,27 +102,34 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
 
   - [ ] 4.1 Create inventory repository and service
-    - Implement stock quantity tracking at variant level
-    - Implement atomic stock decrement with MongoDB transactions
+    - Implement stock quantity tracking at variant level (on_hand, reserved, available)
+    - Implement atomic stock operations using conditional updates: `{$expr: {$gte: [{$subtract: ["$on_hand", "$reserved"]}, qty]}}`
+    - Implement reservation system with TTL index on expiresAt field (auto-cleanup after expiry)
+    - Implement Change Streams worker to recover expired reservations (listen for TTL deletions, restore stock)
     - Implement optimistic locking for concurrent stock updates (version field)
     - Implement low stock threshold alerts
     - Create stock adjustment logging with reason and admin user ID
-    - _Requirements: Req 12 (Inventory), Req 15 (Transaction Integrity)_
+    - _Requirements: Req 12 (Inventory), Req 15 (Transaction Integrity, Atomicity)_
 
 
 
   - [ ] 4.2 Create inventory API endpoints
-    - Implement POST /api/v1/admin/inventory/adjust (requires ADMIN role)
+    - Implement POST /api/v1/admin/inventory/adjust (requires ADMIN role, Idempotency-Key header)
     - Implement GET /api/v1/admin/inventory/low-stock
-    - Implement stock availability check endpoint
-    - _Requirements: Req 12_
+    - Implement GET /api/v1/inventory/availability/:sku (public endpoint)
+    - Implement POST /api/v1/inventory/reserve (internal, used by checkout)
+    - Implement POST /api/v1/inventory/commit (internal, finalize reservation)
+    - Implement POST /api/v1/inventory/release (internal, cancel reservation)
+    - _Requirements: Req 12, Req 15 (Idempotency)_
 
 
 
   - [ ] 4.3 Write inventory tests
-    - Unit tests for atomic stock decrement
-    - Integration test for concurrent stock updates (verify only one succeeds)
+    - Unit tests for atomic stock operations with conditional updates
+    - Integration test for concurrent reservations (verify only one succeeds when stock is limited)
+    - Test reservation expiry and Change Streams recovery worker
     - Test low stock alert triggering
+    - Test idempotency: duplicate reserve requests return same reservation
     - _Requirements: Req 12, Req 15_
 
 - [ ] 5. Implement cart management
@@ -192,20 +191,22 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - _Requirements: Req 5 (Payment Processing)_
 
   - [ ] 7.2 Implement payment service with idempotency
-    - Create PaymentService with idempotency key handling (store in Redis with 1-hour TTL)
+    - Create PaymentService with idempotency key handling (store in Redis with 24-hour TTL per Stripe pattern)
     - Implement payment initiation with 3D Secure redirect URL generation
     - Implement payment confirmation after 3DS authentication
     - Implement payment status state machine (INITIATED → REQUIRES_AUTH → AUTHORIZED → CAPTURED / FAILED)
     - Implement retry logic with exponential backoff (max 3 attempts in 5 minutes)
     - Log all payment attempts with PAYMENT_3DS_FAILED code on failure
+    - Cache idempotent responses with original HTTP status and headers
     - _Requirements: Req 5, Req 11 (Security), Req 15 (Idempotency)_
 
   - [ ] 7.3 Create payment API endpoints
-    - Implement POST /api/v1/payments/initiate (requires idempotency_key header)
-    - Implement POST /api/v1/payments/confirm
+    - Implement POST /api/v1/payments/initiate (requires Idempotency-Key header)
+    - Implement POST /api/v1/payments/confirm (requires Idempotency-Key header)
     - Implement POST /api/v1/payments/webhook (verify signature)
-    - Handle payment timeout (30s) with appropriate error response
-    - _Requirements: Req 5_
+    - Handle payment timeout (30s) with RFC 9457 Problem Details response
+    - Return 428 Precondition Required if Idempotency-Key is missing
+    - _Requirements: Req 5, Req 15 (Idempotency)_
 
   - [ ] 7.4 Write payment integration tests
     - Contract tests for PaymentProvider interface with MockPaymentProvider
@@ -220,31 +221,36 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Implement OrderRepository with CRUD operations
     - Create MongoDB indexes (order_number unique, user_id+created_at, status, payment.idempotency_key unique)
     - Implement order number generation (e.g., "ORD-2024-00001")
-    - Implement order creation with MongoDB transaction (validate cart, decrement stock, create order, update cart status)
+    - Implement order creation with MongoDB transaction (validate cart, reserve stock, create order, commit reservation)
     - Implement order status state machine with validation (CREATED → PAID → PICKING → SHIPPED → DELIVERED → RETURNED/CANCELLED)
     - Store status change history with timestamp, user, and reason
-    - _Requirements: Req 5 (Checkout), Req 6 (Order Management), Req 15 (Transaction Integrity)_
+    - Implement If-Match validation for order updates (prevent concurrent modifications)
+    - _Requirements: Req 5 (Checkout), Req 6 (Order Management), Req 15 (Transaction Integrity, Optimistic Locking)_
 
   - [ ] 8.2 Create checkout API endpoints
-    - Implement POST /api/v1/checkout/initiate (validate cart, calculate shipping, initiate payment)
-    - Implement POST /api/v1/checkout/confirm (confirm payment, create order with status PAID)
+    - Implement POST /api/v1/checkout/initiate (requires Idempotency-Key, validate cart, reserve stock, calculate shipping, initiate payment)
+    - Implement POST /api/v1/checkout/confirm (requires Idempotency-Key, confirm payment, commit reservation, create order with status PAID)
     - Validate cart items for stock availability and price accuracy (within 500ms per Req 5.1)
     - Send order confirmation email within 30 seconds of order creation
-    - Handle payment failure: preserve cart state, display error with failure reason
-    - _Requirements: Req 5, Req 6_
+    - Handle payment failure: release reservation, preserve cart state, return RFC 9457 Problem Details
+    - Return 428 if Idempotency-Key is missing
+    - _Requirements: Req 5, Req 6, Req 15 (Idempotency)_
 
   - [ ] 8.3 Implement order management endpoints
-    - Implement GET /api/v1/orders (user's order history)
-    - Implement GET /api/v1/orders/:id
-    - Implement POST /api/v1/orders/:id/cancel (only before SHIPPED status, restore stock, initiate refund)
-    - Implement POST /api/v1/orders/:id/return (after DELIVERED status)
-    - _Requirements: Req 6_
+    - Implement GET /api/v1/orders (user's order history with cursor-based pagination)
+    - Implement GET /api/v1/orders/:id (return ETag header)
+    - Implement POST /api/v1/orders/:id/cancel (requires If-Match, only before SHIPPED status, release reservation, initiate refund)
+    - Implement POST /api/v1/orders/:id/return (requires If-Match, after DELIVERED status)
+    - Add RFC 8288 Link headers for order history pagination
+    - _Requirements: Req 6, Req 15 (Optimistic Locking)_
 
   - [ ] 8.4 Write checkout and order tests
-    - Integration test for order creation with MongoDB transaction (verify atomic stock decrement)
-    - Test order status state machine transitions
-    - Test order cancellation (verify stock restoration)
+    - Integration test for order creation with MongoDB transaction (verify atomic reservation commit)
+    - Test order status state machine transitions with If-Match validation
+    - Test order cancellation (verify reservation release and stock restoration)
     - Test concurrent order creation for last item in stock (verify only one succeeds)
+    - Test idempotency: duplicate checkout requests return same order
+    - Test ETag/If-Match: concurrent order updates return 409 Conflict
     - E2E test: Complete checkout flow from cart to order confirmation
     - _Requirements: Req 5, Req 6, Req 12, Req 15_
 
@@ -254,8 +260,10 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Create MongoDB indexes (email unique, phone unique sparse)
     - Implement user registration with email/phone verification
     - Implement password reset flow with time-limited token
-    - Implement KVKK consent collection (store consent_date, consent_ip, consent_text_version)
-    - Implement user address management
+    - Implement KVKK consent collection (store consent_date, consent_ip, consent_text_version, consent_type)
+    - Implement user address management with If-Match validation
+    - Implement PII masking utility for logs (email, phone, address)
+    - Implement data retention policies with TTL indexes
     - _Requirements: Req 4 (Authentication), Req 11 (KVKK Compliance)_
 
   - [ ] 9.2 Create authentication API endpoints
@@ -269,20 +277,25 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - _Requirements: Req 4, Req 11_
 
   - [ ] 9.3 Create user profile endpoints
-    - Implement GET /api/v1/users/me
-    - Implement PATCH /api/v1/users/me
+    - Implement GET /api/v1/users/me (return ETag header)
+    - Implement PATCH /api/v1/users/me (requires If-Match)
     - Implement GET /api/v1/users/me/addresses
     - Implement POST /api/v1/users/me/addresses
-    - Implement PATCH /api/v1/users/me/addresses/:id
-    - Implement DELETE /api/v1/users/me/addresses/:id
-    - _Requirements: Req 4_
+    - Implement PATCH /api/v1/users/me/addresses/:id (requires If-Match)
+    - Implement DELETE /api/v1/users/me/addresses/:id (requires If-Match)
+    - Implement GET /api/v1/users/me/data (KVKK data access right)
+    - Implement DELETE /api/v1/users/me (KVKK erasure right, soft delete with retention)
+    - _Requirements: Req 4, Req 11 (KVKK Rights)_
 
   - [ ] 9.4 Write user and auth tests
-    - Unit tests for password hashing and validation
+    - Unit tests for Argon2id password hashing and validation
     - Unit tests for JWT token generation and validation
     - Integration tests for registration and login flow
-    - Test rate limiting on auth endpoints
-    - Test KVKK consent collection
+    - Test rate limiting on auth endpoints (60 req/min per IP)
+    - Test KVKK consent collection and storage
+    - Test PII masking in logs
+    - Test data access and erasure rights (KVKK compliance)
+    - Test If-Match validation for profile updates
     - E2E test: Register, login, update profile, logout
     - _Requirements: Req 4, Req 11_
 
@@ -331,12 +344,13 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
 - [ ] 12. Implement admin order management
   - [ ] 12.1 Create admin order endpoints
-    - Implement GET /api/v1/admin/orders (with filters: status, date range, payment method)
-    - Implement PATCH /api/v1/admin/orders/:id/status (validate state transitions, send customer notification)
+    - Implement GET /api/v1/admin/orders (with filters: status, date range, payment method, cursor-based pagination)
+    - Implement PATCH /api/v1/admin/orders/:id/status (requires If-Match, validate state transitions, send customer notification)
     - Implement POST /api/v1/admin/orders/:id/shipping-label (integrate with shipping provider)
-    - Implement POST /api/v1/admin/orders/:id/refund (initiate refund via payment provider)
-    - Implement POST /api/v1/admin/orders (manual order creation)
-    - _Requirements: Req 10 (Admin Order Management)_
+    - Implement POST /api/v1/admin/orders/:id/refund (requires Idempotency-Key, initiate refund via payment provider)
+    - Implement POST /api/v1/admin/orders (requires Idempotency-Key, manual order creation)
+    - Add RFC 8288 Link headers for admin order list pagination
+    - _Requirements: Req 10 (Admin Order Management), Req 15 (Idempotency, Optimistic Locking)_
 
   - [ ] 12.2 Write admin order tests
     - Test order status update with state machine validation
@@ -346,36 +360,43 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
 - [ ] 13. Implement admin product management
   - [ ] 13.1 Create admin product endpoints
-    - Implement POST /api/v1/admin/products
-    - Implement PATCH /api/v1/admin/products/:id
-    - Implement DELETE /api/v1/admin/products/:id (soft delete, set status to ARCHIVED)
-    - Implement POST /api/v1/admin/products/:id/variants
-    - Implement PATCH /api/v1/admin/products/:id/variants/:variant_id
-    - _Requirements: Req 1 (Product Management)_
+    - Implement POST /api/v1/admin/products (requires Idempotency-Key)
+    - Implement PATCH /api/v1/admin/products/:id (requires If-Match)
+    - Implement DELETE /api/v1/admin/products/:id (requires If-Match, soft delete, set status to ARCHIVED)
+    - Implement POST /api/v1/admin/products/:id/variants (requires Idempotency-Key)
+    - Implement PATCH /api/v1/admin/products/:id/variants/:variant_id (requires If-Match)
+    - _Requirements: Req 1 (Product Management), Req 15 (Idempotency, Optimistic Locking)_
 
   - [ ] 13.2 Write admin product tests
-    - Test product creation with variants
-    - Test product update with optimistic locking
-    - Test variant management
-    - _Requirements: Req 1_
+    - Test product creation with variants and idempotency
+    - Test product update with If-Match validation (409 on mismatch)
+    - Test variant management with optimistic locking
+    - Test concurrent product updates (verify only one succeeds)
+    - _Requirements: Req 1, Req 15_
 
 - [ ] 14. Implement observability and monitoring
   - [ ] 14.1 Set up Prometheus metrics
     - Implement metrics endpoint at /metrics
-    - Add metrics: http_requests_total, http_request_duration_seconds, payment_attempts_total, order_status_transitions_total, inventory_stock_level
-    - Follow Prometheus naming conventions (use _seconds, _bytes suffixes; avoid high cardinality)
+    - Add business metrics: reservation_attempts_total{result}, reservation_committed_total, reservation_released_total, inventory_conflicts_total{reason}
+    - Add HTTP metrics: http_requests_total{method,status,endpoint}, http_409_total{endpoint}, http_428_total{endpoint}
+    - Add performance metrics: transaction_duration_seconds{operation}, cache_hit_ratio{cache_type}
+    - Follow Prometheus naming conventions (use _seconds, _bytes, _total suffixes; avoid high cardinality)
     - _Requirements: Req 14 (Observability)_
 
   - [ ] 14.2 Enhance structured logging
     - Ensure all logs include: timestamp, level, traceId, userId, endpoint, method, status, duration_ms
-    - Implement PII masking in logs (email, phone, address, payment data)
-    - Log all errors with ERROR level and full stack trace
-    - _Requirements: Req 11 (Security), Req 14_
+    - Implement PII masking in logs (email, phone, address, payment data per KVKK)
+    - Log all errors with ERROR level, full stack trace, and traceId
+    - Log all 409 Conflict and 428 Precondition Required responses with context
+    - Include correlation IDs in all log entries
+    - _Requirements: Req 11 (Security, KVKK), Req 14_
 
   - [ ] 14.3 Implement distributed tracing
     - Integrate OpenTelemetry with W3C trace context propagation
     - Propagate traceId through all service calls and external integrations
-    - Include traceId in all API responses and error messages
+    - Include traceId in all API responses, error messages, and RFC 9457 Problem Details
+    - Add trace attributes: orderId, cartId, reservationId, sku, userId
+    - Instrument MongoDB transactions and Redis operations
     - _Requirements: Req 14_
 
 - [ ] 15. Implement frontend application
@@ -385,8 +406,10 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Set up TanStack Query for server state management
     - Set up React Router for routing
     - Set up i18next for internationalization (TR, EN)
-    - Create API client with Axios (include traceId in requests, handle auth tokens)
-    - _Requirements: Req 13 (Performance)_
+    - Create API client with Axios (include traceId, handle auth tokens, generate Idempotency-Key for mutations)
+    - Implement ETag/If-Match handling in API client (store ETags, send If-Match on updates)
+    - Implement optimistic UI updates with TanStack Query
+    - _Requirements: Req 13 (Performance), Req 15 (Optimistic Locking)_
 
   - [ ] 15.2 Implement authentication UI
     - Create LoginPage with email/password form
@@ -410,7 +433,10 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Implement 3D Secure redirect flow
     - Create OrderConfirmationPage with order details
     - Show loading states during API calls (skeleton screens)
-    - _Requirements: Req 3, Req 5, Req 7_
+    - Handle 409 Conflict errors (show "Item was updated, please refresh")
+    - Handle 428 Precondition Required errors (retry with If-Match)
+    - Implement retry logic for idempotent operations
+    - _Requirements: Req 3, Req 5, Req 7, Req 15_
 
   - [ ] 15.5 Implement user account UI
     - Create AccountPage with profile info, address management
@@ -434,8 +460,10 @@ This implementation plan breaks down the Core Platform design into discrete, act
   - [ ] 15.8 Write frontend component tests
     - Unit tests for key components (ProductCard, CartItem, CheckoutForm) with Vitest
     - Test form validation with React Hook Form + Zod
-    - Test API client error handling
-    - _Requirements: All frontend requirements_
+    - Test API client error handling (409, 428, RFC 9457 Problem Details)
+    - Test ETag/If-Match handling in API client
+    - Test Idempotency-Key generation and retry logic
+    - _Requirements: All frontend requirements, Req 15_
 
 - [ ] 16. Implement end-to-end tests
   - [ ] 16.1 Set up Playwright
@@ -449,9 +477,12 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Test: Guest checkout flow
     - Test: Apply coupon code
     - Test: Out of stock handling (product not available, show "Notify When Available")
-    - Test: Order cancellation
+    - Test: Concurrent checkout for last item (verify only one succeeds, other gets 409 Conflict)
+    - Test: Order cancellation with stock restoration
     - Test: User registration and login
-    - _Requirements: Req 1-9_
+    - Test: Optimistic locking: concurrent order updates return 409 Conflict
+    - Test: Idempotency: duplicate payment requests return same result
+    - _Requirements: Req 1-9, Req 15_
 
   - [ ] 16.3 Write B2B E2E tests
     - Test: B2B user login → View products with special pricing → Add to cart → Checkout with credit account
@@ -504,16 +535,25 @@ The Core Platform implementation is complete when:
 - [ ] Users can complete full purchase flow (browse → cart → checkout → payment → order)
 - [ ] Guest users can complete checkout without registration
 - [ ] Payment integration works with mock provider (3DS flow)
-- [ ] Order status transitions follow state machine rules
-- [ ] Stock is decremented atomically during order creation
+- [ ] Order status transitions follow state machine rules with If-Match validation
+- [ ] Stock reservations use atomic operations with TTL-based expiry
+- [ ] Change Streams worker recovers expired reservations automatically
 - [ ] Concurrent orders for last item in stock are handled correctly (only one succeeds)
-- [ ] All API endpoints return proper error responses with traceId
-- [ ] Logs include structured JSON with traceId for all requests
-- [ ] Prometheus metrics endpoint exposes key metrics
+- [ ] All mutations require Idempotency-Key header (return 428 if missing)
+- [ ] Duplicate requests with same Idempotency-Key return cached response (24h window)
+- [ ] All updates require If-Match header (return 428 if missing, 409 if mismatch)
+- [ ] All API endpoints return RFC 9457 Problem Details on errors with traceId
+- [ ] Pagination uses cursor-based approach with RFC 8288 Link headers
+- [ ] Strong ETags are returned for cacheable resources
+- [ ] Logs include structured JSON with traceId and PII masking for all requests
+- [ ] Prometheus metrics endpoint exposes business, HTTP, and performance metrics
 - [ ] Rate limiting works on authentication endpoints (60 req/min per IP)
+- [ ] Passwords use Argon2id hashing (memory=128MB, time_cost=2, parallelism=4)
 - [ ] KVKK consent is collected and stored during registration
-- [ ] PII is masked in application logs
+- [ ] KVKK data access and erasure rights are implemented
+- [ ] PII is masked in application logs per KVKK requirements
 - [ ] Frontend is accessible (WCAG 2.1 AA) and responsive
+- [ ] Frontend handles 409/428 errors gracefully with user-friendly messages
 - [ ] Performance SLOs are met: homepage p95 < 2s, search p95 < 1.5s, checkout p95 < 3s
 - [ ] CI pipeline runs lint, tests, and security scans successfully
 
