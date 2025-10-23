@@ -76,6 +76,7 @@ This implementation plan breaks down the Core Platform design into discrete, act
   - [ ] 3.2 Create product service layer
     - Implement product creation with variant support
     - Implement product update with optimistic locking (version field)
+
     - Implement product search and filtering logic
     - Implement product status management (DRAFT, ACTIVE, ARCHIVED)
     - Add Redis caching for product details (5-minute TTL, cache-aside pattern)
@@ -96,6 +97,8 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - E2E test: Browse catalog, apply filters, view product details
     - _Requirements: Req 1, Req 2_
 
+
+
 - [x] 4. Implement inventory management
 
 
@@ -115,6 +118,7 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Implement GET /api/v1/admin/inventory/low-stock
     - Implement stock availability check endpoint
     - _Requirements: Req 12_
+
 
 
   - [ ] 4.3 Write inventory tests
