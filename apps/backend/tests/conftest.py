@@ -7,6 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.main import app
 from app.core.config import settings
+from app.services.db import init_db, close_db
 
 
 @pytest.fixture(scope="session")
@@ -15,6 +16,18 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def setup_db():
+    """Initialize database before each test and clean up after."""
+    # Initialize database connection
+    await init_db()
+    
+    yield
+    
+    # Close database connection
+    await close_db()
 
 
 @pytest.fixture(scope="function")

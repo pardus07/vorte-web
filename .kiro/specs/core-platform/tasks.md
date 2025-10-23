@@ -61,6 +61,8 @@ This implementation plan breaks down the Core Platform design into discrete, act
   - [ ] 3.1 Create product repository layer
     - Implement ProductRepository with CRUD operations
 
+
+
     - Create MongoDB indexes (sku unique, slug unique, category_ids, tags, text search, price, status+created_at)
     - Implement product search with filters (category, price range, tags)
     - Implement pagination helper
