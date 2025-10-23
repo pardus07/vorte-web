@@ -99,6 +99,7 @@ This implementation plan breaks down the Core Platform design into discrete, act
 - [x] 4. Implement inventory management
 
 
+
   - [ ] 4.1 Create inventory repository and service
     - Implement stock quantity tracking at variant level
     - Implement atomic stock decrement with MongoDB transactions
@@ -107,11 +108,14 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Create stock adjustment logging with reason and admin user ID
     - _Requirements: Req 12 (Inventory), Req 15 (Transaction Integrity)_
 
+
+
   - [ ] 4.2 Create inventory API endpoints
     - Implement POST /api/v1/admin/inventory/adjust (requires ADMIN role)
     - Implement GET /api/v1/admin/inventory/low-stock
     - Implement stock availability check endpoint
     - _Requirements: Req 12_
+
 
   - [ ] 4.3 Write inventory tests
     - Unit tests for atomic stock decrement
