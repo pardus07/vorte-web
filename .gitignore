@@ -1,0 +1,30 @@
+# Node / PNPM
+node_modules/
+pnpm-lock.yaml
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pytest_cache/
+dist/
+build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Env / Secrets / Local
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+.coverage*
