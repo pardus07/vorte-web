@@ -43,7 +43,12 @@ class Settings(BaseSettings):
     # Application
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:80"]
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:80"
+    
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS origins from comma-separated string."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
     
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
