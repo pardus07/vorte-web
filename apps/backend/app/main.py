@@ -23,6 +23,12 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events."""
     # Startup
     await init_db()
+    
+    # Initialize database indexes
+    from app.repositories.product_repository import product_repository
+    await product_repository.ensure_indexes()
+    print("✓ Database indexes initialized")
+    
     yield
     # Shutdown
     await close_db()

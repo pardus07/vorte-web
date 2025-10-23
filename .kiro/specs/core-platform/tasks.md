@@ -45,11 +45,14 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
   - [ ] 2.4 Create core schemas and models
     - Define Pydantic schemas for Product, ProductVariant, ProductImage
+
+
     - Define schemas for Cart, CartItem
     - Define schemas for Order, OrderItem, OrderStatus, PaymentInfo
     - Define schemas for User, Address, KVKKConsent, B2BAccount
     - Define schemas for Campaign, CampaignRule, CampaignAction
     - Define common response schemas (SuccessResponse, ErrorResponse with traceId)
+
     - _Requirements: Req 1, 3, 5, 6, 7, 11_
 
 - [ ] 3. Implement product catalog module
