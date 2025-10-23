@@ -40,7 +40,7 @@ The Core Platform provides the foundational e-commerce functionality for VORTE, 
 2. WHEN a User applies attribute filters (size, color, price range), THE System SHALL display products matching all selected criteria
 3. WHEN a User enters a search query, THE System SHALL return products with matching names, descriptions, or tags
 4. WHEN a User sorts products, THE System SHALL order results by the selected criterion (price ascending/descending, newest, best-selling)
-5. WHEN filter results exceed twenty items, THE System SHALL paginate results with page navigation controls
+5. WHEN filter results exceed twenty items, THE System SHALL paginate results using cursor-based (keyset) pagination and provide RFC 8288 Link headers with rel="next" and rel="prev" for navigation
 
 ### Requirement 3: Shopping Cart Management
 
@@ -52,7 +52,7 @@ The Core Platform provides the foundational e-commerce functionality for VORTE, 
 2. WHEN a User updates cart item quantity, THE System SHALL recalculate cart totals immediately
 3. WHEN a User removes a cart item, THE System SHALL update cart totals and display remaining items
 4. WHEN a cart item's product becomes out of stock, THE System SHALL notify the User and prevent checkout
-5. WHERE a User is not authenticated, THE System SHALL persist cart data in browser storage for seven days
+5. WHERE a User is not authenticated, THE System SHALL persist cart data server-side with MongoDB TTL index (seven days expiration) and provide client with HttpOnly, SameSite=Lax cookie containing cart identifier
 
 ### Requirement 4: User Authentication and Registration
 
@@ -146,7 +146,7 @@ The Core Platform provides the foundational e-commerce functionality for VORTE, 
 
 #### Acceptance Criteria
 
-1. THE System SHALL store passwords using bcrypt hashing with minimum cost factor of twelve and minimum password length of eight characters
+1. THE System SHALL store passwords using Argon2id hashing (OWASP-recommended) with minimum memory cost of 64 MB, time cost of 2 iterations, parallelism of 1-4 threads, and minimum password length of eight characters
 2. THE System SHALL mask personally identifiable information (email, phone, address, payment data) in application logs by replacing with asterisks except first two and last two characters
 3. WHEN a User registers, THE System SHALL collect explicit consent for data processing per KVKK requirements and store consent timestamp and IP address
 4. THE System SHALL implement rate limiting of sixty requests per minute per IP address on authentication endpoints and return HTTP 429 status when limit is exceeded
@@ -192,14 +192,27 @@ The Core Platform provides the foundational e-commerce functionality for VORTE, 
 4. WHEN an error occurs, THE System SHALL log full stack trace with ERROR level and include traceId for correlation
 5. THE System SHALL mask PII in logs before writing to log storage
 
-### Requirement 15: Multi-Step Transaction Integrity
+### Requirement 15: HTTP Standards and Error Handling
+
+**User Story:** As a Developer, I want standardized HTTP semantics and error responses, so that API clients can handle errors consistently.
+
+#### Acceptance Criteria
+
+1. THE System SHALL return error responses in RFC 9457 Problem Details format (application/problem+json) including type, title, status, detail, instance, and traceId fields
+2. WHEN a write operation (PATCH, DELETE) is performed, THE System SHALL require If-Match header with strong ETag and return HTTP 428 Precondition Required if missing
+3. WHEN If-Match header value does not match current resource ETag, THE System SHALL return HTTP 409 Conflict with problem details
+4. THE System SHALL support Idempotency-Key header on all unsafe operations (POST, PATCH, DELETE) with 24-hour replay window per Stripe pattern
+5. WHEN duplicate Idempotency-Key is received within window, THE System SHALL return cached response without re-executing operation
+
+### Requirement 16: Multi-Step Transaction Integrity
 
 **User Story:** As a System Administrator, I want atomic transactions for critical operations, so that data remains consistent.
 
 #### Acceptance Criteria
 
-1. WHEN an order is created, THE System SHALL use MongoDB transaction to atomically decrement stock, create order record, and update cart status
-2. IF any step in order creation transaction fails, THEN THE System SHALL rollback all changes and return error to User
+1. WHEN an order is created, THE System SHALL use MongoDB multi-document transaction to atomically create reservation, decrement stock, create order record, and update cart status
+2. IF any step in order creation transaction fails, THEN THE System SHALL rollback all changes automatically and return RFC 9457 problem details to User
 3. WHEN payment confirmation is received, THE System SHALL use transaction to update order status and create payment record
 4. THE System SHALL implement idempotency for payment webhooks using unique transaction identifier to prevent duplicate processing
-5. WHEN concurrent users purchase last item in stock, THE System SHALL use optimistic locking to ensure only one order succeeds
+5. WHEN concurrent users purchase last item in stock, THE System SHALL use atomic findOneAndUpdate with conditional filters to ensure only one order succeeds
+6. THE System SHALL use MongoDB TTL index for automatic cleanup of expired reservations and implement Change Streams worker for immediate stock reclamation
