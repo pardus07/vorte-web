@@ -170,7 +170,7 @@ def decode_token(token: str) -> TokenPayload:
         raise JWTError(f"Invalid token: {str(e)}")
 
 
-def is_token_revoked(jti: str) -> bool:
+async def is_token_revoked(jti: str) -> bool:
     """
     Check if a token has been revoked.
     
@@ -179,27 +179,18 @@ def is_token_revoked(jti: str) -> bool:
         
     Returns:
         True if token is revoked, False otherwise
-        
-    Note:
-        In production, this should check Redis denylist.
-        For now, returns False (no revocation).
     """
-    # TODO: Implement Redis denylist check
-    # redis_client.exists(f"revoked_token:{jti}")
-    return False
+    from app.services.redis_service import redis_service
+    return await redis_service.is_denied(jti)
 
 
-def revoke_token(jti: str, expires_in: int) -> None:
+async def revoke_token(jti: str, expires_in: int) -> None:
     """
     Revoke a token by adding it to the denylist.
     
     Args:
         jti: JWT ID
         expires_in: Time until token naturally expires (for TTL)
-        
-    Note:
-        In production, this should add to Redis with TTL.
     """
-    # TODO: Implement Redis denylist
-    # redis_client.setex(f"revoked_token:{jti}", expires_in, "1")
-    pass
+    from app.services.redis_service import redis_service
+    await redis_service.add_to_denylist(jti, expires_in)

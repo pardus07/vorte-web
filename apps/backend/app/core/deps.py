@@ -36,7 +36,7 @@ async def get_current_user(
         payload = decode_token(token)
         
         # Check if token is revoked
-        if is_token_revoked(payload.jti):
+        if await is_token_revoked(payload.jti):
             raise UnauthorizedError("Token has been revoked")
         
         return payload
@@ -114,7 +114,7 @@ async def get_current_user_optional(
     
     try:
         payload = decode_token(token)
-        if not is_token_revoked(payload.jti):
+        if not await is_token_revoked(payload.jti):
             return payload
     except JWTError:
         pass
