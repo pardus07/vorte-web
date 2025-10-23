@@ -27,8 +27,12 @@ async def lifespan(app: FastAPI):
     # Initialize database indexes
     from app.repositories.product_repository import product_repository
     from app.repositories.cart_repository import cart_repository
+    from app.repositories.inventory_repository import inventory_repository
+    from app.repositories.reservation_repository import reservation_repository
     await product_repository.ensure_indexes()
     await cart_repository.init_indexes()
+    await inventory_repository.init_indexes()
+    await reservation_repository.init_indexes()
     print("✓ Database indexes initialized")
     
     yield
@@ -94,12 +98,14 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # Routers
-from app.routers import auth, products, cart
+from app.routers import auth, products, cart, inventory
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(products.admin_router)
 app.include_router(cart.router)
+app.include_router(inventory.router)
+app.include_router(inventory.admin_router)
 
 # Prometheus metrics
 if settings.PROMETHEUS_METRICS:
