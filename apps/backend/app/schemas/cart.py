@@ -1,67 +1,84 @@
-"""Cart-related schemas."""
+"""Cart-related schemas for shopping cart management."""
 from datetime import datetime
-from decimal import Decimal
-from typing import Optional
+from typing import Optional, List, Literal
+from enum import Enum
 
 from pydantic import BaseModel, Field, ConfigDict
 
 
-class ProductSnapshot(BaseModel):
-    """Denormalized product info for cart items."""
-    product_id: str
-    variant_id: str
-    name: str
-    sku: str
-    attributes: dict[str, str]
-    image_url: Optional[str] = None
+class CartOwnerType(str, Enum):
+    """Cart owner type."""
+    USER = "user"
+    GUEST = "guest"
 
 
-class CartItemBase(BaseModel):
-    """Base cart item schema."""
+class CartStatus(str, Enum):
+    """Cart status."""
+    ACTIVE = "active"
+    CHECKED_OUT = "checked_out"
+    EXPIRED = "expired"
+
+
+class CartOwner(BaseModel):
+    """Cart owner information."""
+    type: CartOwnerType = Field(description="Owner type (user or guest)")
+    id: str = Field(description="User ID or guest session ID")
+
+
+class CartDiscount(BaseModel):
+    """Discount applied to cart item."""
+    code: str = Field(description="Discount code")
+    amount: float = Field(ge=0, description="Discount amount")
+
+
+class CartItem(BaseModel):
+    """Cart item."""
+    line_id: str = Field(description="Unique line item ID")
     product_id: str = Field(description="Product ID")
-    variant_id: str = Field(description="Variant ID")
-    quantity: int = Field(gt=0, le=99, description="Quantity (1-99)")
+    variant_id: Optional[str] = Field(default=None, description="Product variant ID")
+    qty: int = Field(gt=0, le=100, description="Quantity")
+    unit_price: float = Field(ge=0, description="Unit price snapshot")
+    discounts: List[CartDiscount] = Field(default_factory=list)
+    subtotal: float = Field(ge=0, description="Line item subtotal")
 
 
-class CartItemCreate(CartItemBase):
-    """Schema for adding item to cart."""
-    pass
-
-
-class CartItemUpdate(BaseModel):
-    """Schema for updating cart item."""
-    quantity: int = Field(gt=0, le=99, description="New quantity")
-
-
-class CartItem(CartItemBase):
-    """Cart item schema for responses."""
-    model_config = ConfigDict(from_attributes=True)
-    
-    unit_price: Decimal = Field(description="Price at time of adding")
-    subtotal: Decimal = Field(description="unit_price * quantity")
-    discount: Decimal = Field(default=Decimal("0"))
-    product_snapshot: ProductSnapshot
+class CartTotals(BaseModel):
+    """Cart totals."""
+    items: float = Field(ge=0, description="Items subtotal")
+    shipping: float = Field(ge=0, description="Shipping cost")
+    discount: float = Field(ge=0, description="Total discount")
+    grand_total: float = Field(ge=0, description="Grand total")
 
 
 class Cart(BaseModel):
-    """Cart schema for responses."""
+    """Shopping cart."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    user_id: Optional[str] = None
-    session_id: str = Field(description="Session ID for guest carts")
-    items: list[CartItem]
-    subtotal: Decimal
-    discount_total: Decimal
-    shipping_cost: Decimal
-    tax: Decimal
-    total: Decimal
-    applied_coupons: list[str] = Field(default_factory=list)
-    expires_at: datetime
+    id: str = Field(description="Cart ID")
+    owner: CartOwner
+    status: CartStatus = Field(default=CartStatus.ACTIVE)
+    currency: str = Field(default="TRY", max_length=3)
+    items: List[CartItem] = Field(default_factory=list)
+    totals: CartTotals
+    version: int = Field(ge=1, description="Version for optimistic locking")
+    expires_at: Optional[datetime] = Field(default=None, description="Expiration date (guest carts only)")
     created_at: datetime
     updated_at: datetime
 
 
-class ApplyCouponRequest(BaseModel):
-    """Request to apply coupon code."""
-    coupon_code: str = Field(min_length=1, max_length=50)
+class AddItemRequest(BaseModel):
+    """Request to add item to cart."""
+    product_id: str = Field(min_length=10, description="Product ID")
+    variant_id: Optional[str] = Field(default=None, description="Product variant ID")
+    qty: int = Field(gt=0, le=100, description="Quantity to add")
+
+
+class UpdateItemRequest(BaseModel):
+    """Request to update cart item quantity."""
+    qty: int = Field(gt=0, le=100, description="New quantity")
+
+
+class CartResponse(BaseModel):
+    """Cart response with ETag."""
+    cart: Cart
+    etag: str = Field(description="ETag for optimistic locking")

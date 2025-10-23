@@ -43,21 +43,25 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
     - _Requirements: Req 4 (Authentication), Req 11 (Security)_
 
-  - [ ] 2.4 Create core schemas and models
+  - [x] 2.4 Create core schemas and models
+
     - Define Pydantic schemas for Product, ProductVariant, ProductImage
+
 
 
     - Define schemas for Cart, CartItem
     - Define schemas for Order, OrderItem, OrderStatus, PaymentInfo
     - Define schemas for User, Address, KVKKConsent, B2BAccount
     - Define schemas for Campaign, CampaignRule, CampaignAction
+
     - Define common response schemas (SuccessResponse, ErrorResponse with traceId)
 
 
 
     - _Requirements: Req 1, 3, 5, 6, 7, 11_
 
-- [ ] 3. Implement product catalog module
+- [x] 3. Implement product catalog module
+
   - [ ] 3.1 Create product repository layer
     - Implement ProductRepository with CRUD operations
 
@@ -65,6 +69,7 @@ This implementation plan breaks down the Core Platform design into discrete, act
 
     - Create MongoDB indexes (sku unique, slug unique, category_ids, tags, text search, price, status+created_at)
     - Implement product search with filters (category, price range, tags)
+
     - Implement pagination helper
     - _Requirements: Req 1 (Product Management), Req 2 (Filtering), Req 13 (Performance)_
 
@@ -91,7 +96,9 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - E2E test: Browse catalog, apply filters, view product details
     - _Requirements: Req 1, Req 2_
 
-- [ ] 4. Implement inventory management
+- [x] 4. Implement inventory management
+
+
   - [ ] 4.1 Create inventory repository and service
     - Implement stock quantity tracking at variant level
     - Implement atomic stock decrement with MongoDB transactions

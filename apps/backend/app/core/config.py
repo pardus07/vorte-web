@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 60
+    
+    # Cart
+    CART_TTL_GUEST_DAYS: int = 7
+    CART_CACHE_TTL_SECONDS: int = 900  # 15 minutes
+    IDEMPOTENCY_TTL_SECONDS: int = 86400  # 24 hours
 
 
 settings = Settings()
