@@ -92,9 +92,11 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # Routers
-from app.routers import auth
+from app.routers import auth, products
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(auth.router)
+app.include_router(products.router)
+app.include_router(products.admin_router)
 
 # Prometheus metrics
 if settings.PROMETHEUS_METRICS:
