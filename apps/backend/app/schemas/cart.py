@@ -40,6 +40,7 @@ class CartItem(BaseModel):
     unit_price: float = Field(ge=0, description="Unit price snapshot")
     discounts: List[CartDiscount] = Field(default_factory=list)
     subtotal: float = Field(ge=0, description="Line item subtotal")
+    reservation_id: Optional[str] = Field(default=None, description="Inventory reservation ID")
 
 
 class CartTotals(BaseModel):

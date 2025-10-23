@@ -78,15 +78,20 @@ This implementation plan breaks down the Core Platform design into discrete, act
     - Implement product update with optimistic locking (version field)
 
 
+
+
     - Implement product search and filtering logic
     - Implement product status management (DRAFT, ACTIVE, ARCHIVED)
     - Add Redis caching for product details (5-minute TTL, cache-aside pattern)
     - _Requirements: Req 1, Req 2_
 
+
   - [ ] 3.3 Create product API endpoints
     - Implement GET /api/v1/products with pagination, filtering, sorting
     - Implement GET /api/v1/products/:id
     - Implement GET /api/v1/categories
+
+
     - Implement GET /api/v1/search with full-text search
     - Add HTTP Link headers for pagination (rel=next/prev/first/last per RFC 5988)
     - _Requirements: Req 1, Req 2_
