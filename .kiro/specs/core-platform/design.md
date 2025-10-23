@@ -7,9 +7,11 @@ The Core Platform design implements a layered architecture with clear separation
 **Key Design Principles:**
 - Interface-first for external integrations (payment, shipping, ERP)
 - Event-driven for cross-context communication
-- Optimistic concurrency for inventory management
-- Idempotent operations for payment processing
+- Optimistic concurrency for inventory management (ETag/If-Match per RFC 9110)
+- Idempotent operations for all unsafe endpoints (Idempotency-Key, 24h window per Stripe pattern)
 - Structured logging with distributed tracing
+- RFC-compliant HTTP semantics (RFC 9110, RFC 9457, RFC 8288)
+- Atomic operations with MongoDB transactions for multi-document consistency
 
 ## Architecture
 
