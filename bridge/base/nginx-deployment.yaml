@@ -1,0 +1,57 @@
+#! nginx-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: nginx
+    namespace: vortecomtr
+    labels:
+        com.docker.compose.project: vortecomtr
+        com.docker.compose.service: nginx
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: vortecomtr
+            com.docker.compose.service: nginx
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: vortecomtr
+                com.docker.compose.service: nginx
+                com.docker.compose.network.default: "true"
+        spec:
+            restartPolicy: unless-stopped
+            containers:
+                - name: vorte-nginx
+                  image: nginx:alpine
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command: ['wget --quiet --tries=1 --spider http://localhost/health']
+                    periodSeconds: 10
+                    timeoutSeconds: 5
+                    failureThreshold: 5
+                  ports:
+                    - name: nginx-80
+                      containerPort: 80
+                    - name: nginx-443
+                      containerPort: 443
+                  volumeMounts:
+                    - name: etc-nginx-nginx-conf
+                      mountPath: /etc/nginx/nginx.conf
+                      readOnly: true
+                    - name: etc-nginx-conf-d
+                      mountPath: /etc/nginx/conf.d
+                      readOnly: true
+            volumes:
+                - name: etc-nginx-nginx-conf
+                  hostPath:
+                    path: D:\vorte.com.tr\infra\nginx\nginx.conf
+                  readOnly: true
+                - name: etc-nginx-conf-d
+                  hostPath:
+                    path: D:\vorte.com.tr\infra\nginx\conf.d
+                  readOnly: true

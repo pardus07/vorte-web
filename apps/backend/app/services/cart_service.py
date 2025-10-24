@@ -122,12 +122,17 @@ class CartService:
             # Redis unavailable, ignore
             pass
     
-    def calculate_totals(self, items: list) -> Dict[str, float]:
+    async def calculate_totals(
+        self,
+        items: list,
+        applied_coupons: list = None
+    ) -> Dict[str, float]:
         """
-        Calculate cart totals.
+        Calculate cart totals with automatic campaign application.
         
         Args:
             items: List of cart items
+            applied_coupons: List of applied coupon codes
             
         Returns:
             Totals dict with items, shipping, discount, grand_total
@@ -137,8 +142,33 @@ class CartService:
         # TODO: Calculate shipping based on rules
         shipping = 0.0
         
-        # TODO: Apply discounts from campaigns
+        # Apply automatic campaigns and coupons
         discount = 0.0
+        
+        if items:  # Only apply campaigns if cart has items
+            try:
+                from app.services.campaign_service import campaign_service
+                
+                context = {
+                    "cart_total": items_total,
+                    "cart_items": items,
+                    "user_role": None  # TODO: Get from authenticated user
+                }
+                
+                discount_result = await campaign_service.calculate_cart_discounts(
+                    context,
+                    applied_coupons or []
+                )
+                
+                discount = discount_result["total_discount"]
+                
+                # Apply free shipping if applicable
+                if discount_result.get("free_shipping"):
+                    shipping = 0.0
+                    
+            except Exception:
+                # If campaign service fails, continue without discounts
+                pass
         
         grand_total = round(items_total + shipping - discount, 2)
         
@@ -146,7 +176,7 @@ class CartService:
             "items": items_total,
             "shipping": shipping,
             "discount": discount,
-            "grand_total": grand_total
+            "grand_total": max(0, grand_total)  # Ensure non-negative
         }
     
     async def add_item(
@@ -236,8 +266,8 @@ class CartService:
                 "subtotal": round(qty * unit_price, 2)
             })
         
-        # Recalculate totals
-        totals = self.calculate_totals(items)
+        # Recalculate totals with campaigns
+        totals = await self.calculate_totals(items, cart.get("applied_coupons", []))
         
         # Update cart with optimistic locking
         cart_id = str(cart["_id"])
@@ -315,8 +345,8 @@ class CartService:
         line_item["qty"] = qty
         line_item["subtotal"] = round(qty * line_item["unit_price"], 2)
         
-        # Recalculate totals
-        totals = self.calculate_totals(items)
+        # Recalculate totals with campaigns
+        totals = await self.calculate_totals(items, cart.get("applied_coupons", []))
         
         # Update cart with optimistic locking
         cart_id = str(cart["_id"])
@@ -370,8 +400,8 @@ class CartService:
         if len(items) == original_length:
             raise NotFoundError("Cart item not found")
         
-        # Recalculate totals
-        totals = self.calculate_totals(items)
+        # Recalculate totals with campaigns
+        totals = await self.calculate_totals(items, cart.get("applied_coupons", []))
         
         # Update cart with optimistic locking
         cart_id = str(cart["_id"])

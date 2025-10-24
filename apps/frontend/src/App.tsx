@@ -1,52 +1,73 @@
-import { useState, useEffect } from 'react'
+/**
+ * Main App component with React Query and Router.
+ */
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { LoginPage } from '@/pages/LoginPage';
+import { RegisterPage } from '@/pages/RegisterPage';
+import { ProductListPage } from '@/pages/ProductListPage';
+import { ProductDetailPage } from '@/pages/ProductDetailPage';
+
+// Create query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors (except 429)
+        if (error.status >= 400 && error.status < 500 && error.status !== 429) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+    mutations: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors
+        if (error.status >= 400 && error.status < 500) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
 function App() {
-  const [health, setHealth] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then(res => res.json())
-      .then(data => {
-        setHealth(data)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.error('Health check failed:', err)
-        setLoading(false)
-      })
-  }, [])
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          VORTE E-Ticaret
-        </h1>
-        <p className="text-lg text-gray-600 mb-6">
-          Modern e-ticaret platformu - React + Vite + TypeScript + Tailwind CSS
-        </p>
-        
-        <div className="border-t pt-6">
-          <h2 className="text-xl font-semibold mb-3">API Durumu</h2>
-          {loading ? (
-            <p className="text-gray-500">Kontrol ediliyor...</p>
-          ) : health ? (
-            <div className="bg-green-50 border border-green-200 rounded p-4">
-              <p className="text-green-800 font-medium">✓ API Bağlantısı Başarılı</p>
-              <pre className="mt-2 text-sm text-gray-700">
-                {JSON.stringify(health, null, 2)}
-              </pre>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50">
+          <header className="bg-white shadow">
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                Vorte E-Commerce
+              </h1>
             </div>
-          ) : (
-            <div className="bg-red-50 border border-red-200 rounded p-4">
-              <p className="text-red-800 font-medium">✗ API Bağlantısı Başarısız</p>
-            </div>
-          )}
+          </header>
+          
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <Routes>
+              <Route path="/" element={
+                <div className="text-center">
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    Welcome to Vorte
+                  </h2>
+                  <p className="mt-2 text-gray-600">
+                    E-commerce platform with RFC 9457, ETag, and Idempotency support
+                  </p>
+                </div>
+              } />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/products" element={<ProductListPage />} />
+              <Route path="/products/:slug" element={<ProductDetailPage />} />
+            </Routes>
+          </main>
         </div>
-      </div>
-    </div>
-  )
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
 }
 
-export default App
+export default App;

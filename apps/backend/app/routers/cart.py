@@ -310,3 +310,264 @@ async def remove_item(
     response.headers["Cache-Control"] = "private, no-cache"
     
     return updated_cart
+
+
+
+@router.post(
+    "/apply-coupon",
+    summary="Apply coupon to cart",
+    description="Apply a coupon code to the cart and calculate discount"
+)
+async def apply_coupon(
+    coupon_code: str,
+    response: Response,
+    request: Request,
+    if_match: Optional[str] = Header(None, alias="If-Match"),
+    owner: Tuple[str, str] = Depends(resolve_cart_owner)
+):
+    """
+    Apply coupon code to cart.
+    
+    Requires If-Match header with ETag for optimistic locking.
+    
+    Args:
+        coupon_code: Coupon code to apply
+        response: FastAPI response
+        request: FastAPI request
+        if_match: ETag for optimistic locking
+        owner: Cart owner tuple
+        
+    Returns:
+        Updated cart with applied coupon
+        
+    Raises:
+        428: If-Match header required
+        409: ETag mismatch or version conflict
+        404: Invalid coupon code
+    """
+    from app.services.campaign_service import campaign_service
+    
+    owner_type, owner_id = owner
+    
+    # Get current cart
+    cart = await cart_service.ensure_cart(owner_id, owner_type)
+    
+    # Validate If-Match header
+    current_etag = cart_service.generate_etag(cart)
+    
+    if if_match is None:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="If-Match header required for cart modifications"
+        )
+    
+    if if_match != current_etag:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ETag mismatch - cart was modified"
+        )
+    
+    # Prepare context for coupon validation
+    context = {
+        "cart_total": cart.get("totals", {}).get("items", 0),
+        "cart_items": cart.get("items", []),
+        "user_role": None  # TODO: Get from authenticated user
+    }
+    
+    # Validate coupon
+    validation = await campaign_service.validate_coupon(coupon_code, context)
+    
+    if not validation["valid"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=validation.get("message", "Invalid coupon code")
+        )
+    
+    # Add coupon to cart
+    applied_coupons = cart.get("applied_coupons", [])
+    
+    # Check if coupon already applied
+    if coupon_code in applied_coupons:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Coupon already applied"
+        )
+    
+    applied_coupons.append(coupon_code)
+    
+    # Recalculate cart totals with discount
+    items_total = cart.get("totals", {}).get("items", 0)
+    discount_total = validation["discount_amount"]
+    shipping = cart.get("totals", {}).get("shipping", 0)
+    grand_total = items_total + shipping - discount_total
+    
+    # Update cart
+    try:
+        from app.repositories.cart_repository import cart_repository
+        
+        updated = await cart_repository.update_with_version(
+            str(cart["_id"]),
+            cart["version"],
+            {
+                "applied_coupons": applied_coupons,
+                "totals": {
+                    "items": items_total,
+                    "shipping": shipping,
+                    "discount": discount_total,
+                    "grand_total": max(0, grand_total)
+                }
+            }
+        )
+        
+        if not updated:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cart was modified by another request"
+            )
+        
+        # Convert ObjectId to string
+        updated["_id"] = str(updated["_id"])
+        
+        # Set new ETag
+        new_etag = cart_service.generate_etag(updated)
+        response.headers["ETag"] = new_etag
+        response.headers["Cache-Control"] = "private, no-cache"
+        
+        # Invalidate cache
+        await cart_service.invalidate_cache(owner_type, owner_id)
+        
+        return updated
+        
+    except ConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
+
+
+@router.delete(
+    "/coupons/{coupon_code}",
+    summary="Remove coupon from cart",
+    description="Remove an applied coupon code from the cart"
+)
+async def remove_coupon(
+    coupon_code: str,
+    response: Response,
+    request: Request,
+    if_match: Optional[str] = Header(None, alias="If-Match"),
+    owner: Tuple[str, str] = Depends(resolve_cart_owner)
+):
+    """
+    Remove coupon from cart.
+    
+    Requires If-Match header with ETag for optimistic locking.
+    
+    Args:
+        coupon_code: Coupon code to remove
+        response: FastAPI response
+        request: FastAPI request
+        if_match: ETag for optimistic locking
+        owner: Cart owner tuple
+        
+    Returns:
+        Updated cart without the coupon
+        
+    Raises:
+        428: If-Match header required
+        409: ETag mismatch or version conflict
+        404: Coupon not found in cart
+    """
+    owner_type, owner_id = owner
+    
+    # Get current cart
+    cart = await cart_service.ensure_cart(owner_id, owner_type)
+    
+    # Validate If-Match header
+    current_etag = cart_service.generate_etag(cart)
+    
+    if if_match is None:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="If-Match header required for cart modifications"
+        )
+    
+    if if_match != current_etag:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ETag mismatch - cart was modified"
+        )
+    
+    # Remove coupon from cart
+    applied_coupons = cart.get("applied_coupons", [])
+    
+    if coupon_code not in applied_coupons:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Coupon not found in cart"
+        )
+    
+    applied_coupons.remove(coupon_code)
+    
+    # Recalculate cart totals without this coupon
+    items_total = cart.get("totals", {}).get("items", 0)
+    shipping = cart.get("totals", {}).get("shipping", 0)
+    
+    # Recalculate discount with remaining coupons
+    from app.services.campaign_service import campaign_service
+    
+    context = {
+        "cart_total": items_total,
+        "cart_items": cart.get("items", []),
+        "user_role": None
+    }
+    
+    discount_result = await campaign_service.calculate_cart_discounts(
+        context,
+        applied_coupons
+    )
+    
+    discount_total = discount_result["total_discount"]
+    grand_total = items_total + shipping - discount_total
+    
+    # Update cart
+    try:
+        from app.repositories.cart_repository import cart_repository
+        
+        updated = await cart_repository.update_with_version(
+            str(cart["_id"]),
+            cart["version"],
+            {
+                "applied_coupons": applied_coupons,
+                "totals": {
+                    "items": items_total,
+                    "shipping": shipping,
+                    "discount": discount_total,
+                    "grand_total": max(0, grand_total)
+                }
+            }
+        )
+        
+        if not updated:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cart was modified by another request"
+            )
+        
+        # Convert ObjectId to string
+        updated["_id"] = str(updated["_id"])
+        
+        # Set new ETag
+        new_etag = cart_service.generate_etag(updated)
+        response.headers["ETag"] = new_etag
+        response.headers["Cache-Control"] = "private, no-cache"
+        
+        # Invalidate cache
+        await cart_service.invalidate_cache(owner_type, owner_id)
+        
+        return updated
+        
+    except ConflictError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )

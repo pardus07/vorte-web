@@ -120,3 +120,7 @@ async def get_current_user_optional(
         pass
     
     return None
+
+
+# Alias for backward compatibility
+optional_current_user = get_current_user_optional

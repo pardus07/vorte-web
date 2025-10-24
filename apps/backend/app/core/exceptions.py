@@ -103,3 +103,27 @@ class PaymentError(AppException):
             status_code=402,
             details=details
         )
+
+
+class PreconditionRequiredError(AppException):
+    """HTTP 428 Precondition Required - missing If-Match or Idempotency-Key."""
+    
+    def __init__(self, header_name: str, message: Optional[str] = None):
+        super().__init__(
+            code="PRECONDITION_REQUIRED",
+            message=message or f"Required header '{header_name}' is missing",
+            status_code=428,
+            details={"required_header": header_name}
+        )
+
+
+class PreconditionFailedError(AppException):
+    """HTTP 412 Precondition Failed - If-Match validation failed."""
+    
+    def __init__(self, message: str = "Precondition failed", details: Optional[dict[str, Any]] = None):
+        super().__init__(
+            code="PRECONDITION_FAILED",
+            message=message,
+            status_code=412,
+            details=details
+        )

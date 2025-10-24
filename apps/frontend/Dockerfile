@@ -1,19 +1,34 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
-WORKDIR /web
+WORKDIR /app
 
-# Enable corepack for pnpm
-RUN corepack enable
-
-# Copy dependency files
-COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml* /web/
+# Copy package files
+COPY package.json ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN npm install
 
-# Copy application code
-COPY apps/frontend /web
+# Copy source code
+COPY . .
 
-EXPOSE 5173
+# Build application
+RUN npm run build
 
-CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "5173"]
+# Production stage
+FROM nginx:alpine
+
+# Copy built files
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

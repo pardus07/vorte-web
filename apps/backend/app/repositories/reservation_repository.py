@@ -1,5 +1,6 @@
 """Reservation repository for stock reservation management."""
 import uuid
+import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from bson import ObjectId
@@ -8,6 +9,12 @@ from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from app.services.db import get_db
 from app.core.config import settings
+from app.core.metrics import (
+    vorte_inventory_reservation_attempts_total,
+    vorte_inventory_reservation_committed_total,
+    vorte_inventory_reservation_released_total,
+    vorte_inventory_reservation_latency_seconds
+)
 
 
 class ReservationRepository:
@@ -15,8 +22,13 @@ class ReservationRepository:
     
     def __init__(self):
         """Initialize reservation repository."""
-        self.db = get_db()
-        self.collection = self.db["reservations"]
+        self.collection_name = "reservations"
+    
+    @property
+    def collection(self):
+        """Get MongoDB collection."""
+        db = get_db()
+        return db[self.collection_name]
     
     async def init_indexes(self):
         """
@@ -166,6 +178,133 @@ class ReservationRepository:
         }).limit(limit)
         
         return await cursor.to_list(length=limit)
+    
+    async def create_reservation(
+        self,
+        product_id: str,
+        variant_id: Optional[str],
+        quantity: int,
+        order_id: Optional[str] = None,
+        expires_in_minutes: int = 30,
+        session: Optional[AsyncIOMotorClientSession] = None
+    ) -> Dict[str, Any]:
+        """
+        Create stock reservation for order.
+        
+        Args:
+            product_id: Product ID
+            variant_id: Variant ID
+            quantity: Quantity to reserve
+            order_id: Order ID (optional, can be updated later)
+            expires_in_minutes: Expiration time in minutes
+            session: MongoDB session for transactions
+            
+        Returns:
+            Created reservation document
+        """
+        now = datetime.utcnow()
+        reservation_id = str(uuid.uuid4())
+        
+        doc = {
+            "reservation_id": reservation_id,
+            "product_id": product_id,
+            "variant_id": variant_id,
+            "quantity": quantity,
+            "order_id": order_id,
+            "status": "pending",
+            "expires_at": now + timedelta(minutes=expires_in_minutes),
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        result = await self.collection.insert_one(doc, session=session)
+        doc["_id"] = result.inserted_id
+        
+        return doc
+    
+    async def commit_reservation(
+        self,
+        reservation_id: str,
+        session: Optional[AsyncIOMotorClientSession] = None
+    ) -> bool:
+        """
+        Commit reservation (finalize stock deduction).
+        
+        Args:
+            reservation_id: Reservation ID
+            session: MongoDB session for transactions
+            
+        Returns:
+            True if committed, False otherwise
+        """
+        result = await self.collection.update_one(
+            {"_id": ObjectId(reservation_id), "status": "pending"},
+            {
+                "$set": {
+                    "status": "committed",
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            session=session
+        )
+        
+        return result.modified_count > 0
+    
+    async def release_reservation(
+        self,
+        reservation_id: str,
+        session: Optional[AsyncIOMotorClientSession] = None
+    ) -> bool:
+        """
+        Release reservation (restore stock).
+        
+        Args:
+            reservation_id: Reservation ID
+            session: MongoDB session for transactions
+            
+        Returns:
+            True if released, False otherwise
+        """
+        result = await self.collection.update_one(
+            {"_id": ObjectId(reservation_id), "status": "pending"},
+            {
+                "$set": {
+                    "status": "released",
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            session=session
+        )
+        
+        return result.modified_count > 0
+    
+    async def update_reservation(
+        self,
+        reservation_id: str,
+        updates: Dict[str, Any],
+        session: Optional[AsyncIOMotorClientSession] = None
+    ) -> bool:
+        """
+        Update reservation fields.
+        
+        Args:
+            reservation_id: Reservation ID
+            updates: Fields to update
+            session: MongoDB session for transactions
+            
+        Returns:
+            True if updated, False otherwise
+        """
+        updates["updated_at"] = datetime.utcnow()
+        
+        result = await self.collection.update_one(
+            {"_id": ObjectId(reservation_id)},
+            {"$set": updates},
+            session=session
+        )
+        
+        return result.modified_count > 0
+
 
 
 # Singleton instance

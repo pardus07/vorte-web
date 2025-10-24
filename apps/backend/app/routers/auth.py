@@ -1,7 +1,7 @@
-"""Authentication endpoints."""
+"""Authentication endpoints with rate limiting and secure cookies."""
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas.user import (
@@ -15,6 +15,12 @@ from app.schemas.user import (
 from app.services.auth_service import auth_service
 from app.core.deps import get_current_active_user
 from app.schemas.user import TokenPayload
+from app.core.rate_limit import rate_limit_dependency
+from app.core.cookies import (
+    set_session_cookie,
+    set_refresh_token_cookie,
+    clear_auth_cookies
+)
 
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
@@ -25,11 +31,13 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
     response_model=User,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description="Create a new user account with email and password"
+    description="Create a new user account with email and password",
+    dependencies=[Depends(rate_limit_dependency)]  # Rate limit: 60 req/min per IP
 )
 async def register(
     user_data: UserCreate,
-    request: Request
+    request: Request,
+    response: Response
 ) -> User:
     """
     Register a new user.
@@ -41,9 +49,23 @@ async def register(
     - **phone**: Optional phone number in E.164 format
     - **kvkk_data_processing_consent**: Required KVKK consent
     - **kvkk_marketing_consent**: Optional marketing consent
+    
+    Rate limited to 60 requests per minute per IP address.
     """
-    client_ip = request.client.host if request.client else "unknown"
+    from app.core.rate_limit import get_client_ip
+    client_ip = get_client_ip(request)
     user = await auth_service.register(user_data, client_ip)
+    
+    # Link guest orders to user account
+    from app.repositories.order_repository import order_repository
+    linked_count = await order_repository.link_guest_orders_to_user(
+        email=user.email,
+        user_id=str(user.id)
+    )
+    
+    # Set session cookie for newly registered user
+    set_session_cookie(response, str(user.id))
+    
     return user
 
 
@@ -51,17 +73,29 @@ async def register(
     "/login",
     response_model=AuthResult,
     summary="Login user",
-    description="Authenticate user and receive access + refresh tokens"
+    description="Authenticate user and receive access + refresh tokens",
+    dependencies=[Depends(rate_limit_dependency)]  # Rate limit: 60 req/min per IP
 )
-async def login(login_data: UserLogin) -> AuthResult:
+async def login(
+    login_data: UserLogin,
+    response: Response
+) -> AuthResult:
     """
     Login with email and password.
     
     Returns user information and JWT token pair.
     - Access token expires in 15 minutes
     - Refresh token expires in 7 days
+    
+    Sets secure HttpOnly cookies for session and refresh token.
+    Rate limited to 60 requests per minute per IP address.
     """
     result = await auth_service.login(login_data.email, login_data.password)
+    
+    # Set secure cookies
+    set_session_cookie(response, str(result.user.id))
+    set_refresh_token_cookie(response, result.tokens.refresh_token)
+    
     return result
 
 
@@ -69,15 +103,18 @@ async def login(login_data: UserLogin) -> AuthResult:
     "/login/form",
     response_model=AuthResult,
     summary="Login user (OAuth2 form)",
-    description="OAuth2-compatible login endpoint"
+    description="OAuth2-compatible login endpoint",
+    dependencies=[Depends(rate_limit_dependency)]  # Rate limit: 60 req/min per IP
 )
 async def login_form(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    response: Response
 ) -> AuthResult:
     """
     OAuth2-compatible login endpoint.
     
     Uses username field for email.
+    Rate limited to 60 requests per minute per IP address.
     """
     result = await auth_service.login(form_data.username, form_data.password)
     return result

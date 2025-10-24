@@ -1,6 +1,7 @@
 """Health check endpoints for monitoring and load balancers."""
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Response
 from app.services.db import get_db
+from app.services.redis_service import redis_service
 
 router = APIRouter()
 
@@ -18,26 +19,43 @@ async def health_check():
     }
 
 
-@router.get("/health/ready", status_code=status.HTTP_200_OK)
-async def readiness_check():
+@router.get("/health/ready")
+async def readiness_check(response: Response):
     """
     Readiness check endpoint.
-    Returns 200 OK if service is ready to accept traffic (DB connected).
+    Returns 200 OK if service is ready to accept traffic (DB and Redis connected).
+    Returns 503 Service Unavailable if any dependency is down.
     """
+    checks = {
+        "status": "ready",
+        "checks": {}
+    }
+    
+    all_healthy = True
+    
+    # Check MongoDB
     try:
         db = get_db()
-        # Simple ping to verify DB connection
         await db.command("ping")
-        return {
-            "status": "ready",
-            "database": "connected"
-        }
+        checks["checks"]["mongodb"] = {"status": "up"}
     except Exception as e:
-        return {
-            "status": "not_ready",
-            "database": "disconnected",
-            "error": str(e)
-        }
+        checks["checks"]["mongodb"] = {"status": "down", "error": str(e)}
+        all_healthy = False
+    
+    # Check Redis
+    try:
+        redis_client = await redis_service.get_client()
+        await redis_client.ping()
+        checks["checks"]["redis"] = {"status": "up"}
+    except Exception as e:
+        checks["checks"]["redis"] = {"status": "down", "error": str(e)}
+        all_healthy = False
+    
+    if not all_healthy:
+        checks["status"] = "not_ready"
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    
+    return checks
 
 
 @router.get("/health/live", status_code=status.HTTP_200_OK)

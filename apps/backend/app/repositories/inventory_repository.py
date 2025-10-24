@@ -14,8 +14,7 @@ class InventoryRepository:
     
     def __init__(self):
         """Initialize inventory repository."""
-        self.db = get_db()
-        self.collection = self.db["inventory"]
+        self.collection_name = "inventory"
     
     async def init_indexes(self):
         """
@@ -23,7 +22,9 @@ class InventoryRepository:
         
         Creates unique index on SKU for fast lookups and uniqueness.
         """
-        await self.collection.create_index("sku", unique=True)
+        db = get_db()
+        collection = db[self.collection_name]
+        await collection.create_index("sku", unique=True)
     
     async def get_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
         """
@@ -35,7 +36,9 @@ class InventoryRepository:
         Returns:
             Inventory document or None
         """
-        return await self.collection.find_one({"sku": sku})
+        db = get_db()
+        collection = db[self.collection_name]
+        return await collection.find_one({"sku": sku})
     
     async def create(
         self,
@@ -66,7 +69,9 @@ class InventoryRepository:
             "created_at": now
         }
         
-        result = await self.collection.insert_one(doc)
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.insert_one(doc)
         doc["_id"] = result.inserted_id
         
         return doc
@@ -118,7 +123,9 @@ class InventoryRepository:
         
         # Atomic conditional update:
         # Only update if available (on_hand - reserved) >= qty
-        result = await self.collection.find_one_and_update(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.find_one_and_update(
             {
                 "sku": sku,
                 "$expr": {
@@ -157,7 +164,9 @@ class InventoryRepository:
         """
         now = datetime.utcnow()
         
-        result = await self.collection.find_one_and_update(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.find_one_and_update(
             {"sku": sku},
             {
                 "$inc": {"reserved": -qty, "version": 1},
@@ -190,7 +199,9 @@ class InventoryRepository:
         """
         now = datetime.utcnow()
         
-        result = await self.collection.find_one_and_update(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.find_one_and_update(
             {"sku": sku},
             {
                 "$inc": {
@@ -225,7 +236,9 @@ class InventoryRepository:
         """
         now = datetime.utcnow()
         
-        result = await self.collection.find_one_and_update(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.find_one_and_update(
             {"sku": sku},
             {
                 "$inc": {"on_hand": delta, "version": 1},
@@ -252,7 +265,9 @@ class InventoryRepository:
         Returns:
             List of inventory documents
         """
-        cursor = self.collection.aggregate([
+        db = get_db()
+        collection = db[self.collection_name]
+        cursor = collection.aggregate([
             {
                 "$addFields": {
                     "available": {"$subtract": ["$on_hand", "$reserved"]}
@@ -269,6 +284,42 @@ class InventoryRepository:
         ])
         
         return await cursor.to_list(length=limit)
+    
+    async def check_availability(
+        self,
+        product_id: str,
+        variant_id: Optional[str],
+        quantity: int
+    ) -> bool:
+        """
+        Check if sufficient stock is available.
+        
+        Args:
+            product_id: Product ID
+            variant_id: Variant ID (optional)
+            quantity: Required quantity
+            
+        Returns:
+            True if available, False otherwise
+        """
+        # Build SKU from product_id and variant_id
+        # This is a simplified version - in production, you'd look up the actual SKU
+        sku = f"{product_id}"
+        if variant_id:
+            sku = f"{product_id}-{variant_id}"
+        
+        inventory = await self.get_by_sku(sku)
+        
+        if not inventory:
+            return False
+        
+        # Check if available quantity (on_hand - reserved) is sufficient
+        on_hand = inventory.get("on_hand", 0)
+        reserved = inventory.get("reserved", 0)
+        available = on_hand - reserved
+        
+        return available >= quantity
+
 
 
 # Singleton instance

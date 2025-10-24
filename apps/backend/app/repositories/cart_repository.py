@@ -13,8 +13,7 @@ class CartRepository:
     
     def __init__(self):
         """Initialize cart repository."""
-        self.db = get_db()
-        self.collection = self.db["carts"]
+        self.collection_name = "carts"
     
     async def init_indexes(self):
         """
@@ -24,17 +23,37 @@ class CartRepository:
         - Owner lookup (owner.id + owner.type + status)
         - TTL index for guest cart expiration
         """
+        db = get_db()
+        collection = db[self.collection_name]
+        
         # Owner/type/status lookup
-        await self.collection.create_index(
+        await collection.create_index(
             [("owner.id", 1), ("owner.type", 1), ("status", 1)]
         )
         
         # TTL index for guest carts (expires_at field)
         # MongoDB automatically removes documents when expires_at < current time
-        await self.collection.create_index(
+        await collection.create_index(
             "expires_at",
             expireAfterSeconds=0
         )
+    
+    async def get_by_id(self, cart_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get cart by ID.
+        
+        Args:
+            cart_id: Cart ID
+            
+        Returns:
+            Cart document or None
+        """
+        db = get_db()
+        collection = db[self.collection_name]
+        try:
+            return await collection.find_one({"_id": ObjectId(cart_id)})
+        except Exception:
+            return None
     
     async def get_active(self, owner_id: str, owner_type: str) -> Optional[Dict[str, Any]]:
         """
@@ -47,7 +66,9 @@ class CartRepository:
         Returns:
             Cart document or None
         """
-        return await self.collection.find_one({
+        db = get_db()
+        collection = db[self.collection_name]
+        return await collection.find_one({
             "owner.id": owner_id,
             "owner.type": owner_type,
             "status": "active"
@@ -98,7 +119,9 @@ class CartRepository:
             "updated_at": now
         }
         
-        result = await self.collection.insert_one(doc)
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.insert_one(doc)
         doc["_id"] = result.inserted_id
         
         return doc
@@ -148,7 +171,9 @@ class CartRepository:
         """
         updates["updated_at"] = datetime.utcnow()
         
-        result = await self.collection.find_one_and_update(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.find_one_and_update(
             {
                 "_id": ObjectId(cart_id),
                 "version": current_version,
@@ -173,7 +198,9 @@ class CartRepository:
         Returns:
             True if deleted, False otherwise
         """
-        result = await self.collection.delete_one({"_id": ObjectId(cart_id)})
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.delete_one({"_id": ObjectId(cart_id)})
         return result.deleted_count > 0
     
     async def mark_checked_out(self, cart_id: str) -> bool:
@@ -186,7 +213,9 @@ class CartRepository:
         Returns:
             True if updated, False otherwise
         """
-        result = await self.collection.update_one(
+        db = get_db()
+        collection = db[self.collection_name]
+        result = await collection.update_one(
             {"_id": ObjectId(cart_id), "status": "active"},
             {
                 "$set": {

@@ -1,10 +1,11 @@
-"""Product repository for database operations."""
-from typing import Optional, List
+"""Product repository for database operations with cursor-based pagination and ETag support."""
+from typing import Optional, List, Tuple
 from datetime import datetime, timezone
 from bson import ObjectId
 
 from app.services.db import get_db
 from app.schemas.product import ProductStatus
+from app.core.etag import generate_etag
 
 
 class ProductRepository:
@@ -97,12 +98,12 @@ class ProductRepository:
         cursor: Optional[str] = None,
         sort_field: str = "_id",
         sort_direction: int = -1
-    ) -> List[dict]:
+    ) -> Tuple[List[dict], Optional[str], Optional[str]]:
         """
-        List products with keyset pagination.
+        List products with cursor-based (keyset) pagination.
         
         Uses cursor-based pagination for stable results.
-        Avoids skip/limit for better performance.
+        Avoids skip/limit for better performance on large datasets.
         
         Args:
             filters: MongoDB query filters
@@ -112,7 +113,10 @@ class ProductRepository:
             sort_direction: 1 for ascending, -1 for descending
             
         Returns:
-            List of product documents
+            Tuple of (products, next_cursor, prev_cursor)
+            - products: List of product documents
+            - next_cursor: Cursor for next page (None if no more items)
+            - prev_cursor: Cursor for previous page (None if first page)
         """
         db = get_db()
         
@@ -128,11 +132,32 @@ class ProductRepository:
             except Exception:
                 pass  # Invalid cursor, ignore
         
+        # Fetch limit + 1 to check if there are more items
         cursor_obj = db[self.collection_name].find(query)
         cursor_obj = cursor_obj.sort([(sort_field, sort_direction)])
-        cursor_obj = cursor_obj.limit(limit)
+        cursor_obj = cursor_obj.limit(limit + 1)
         
-        return [doc async for doc in cursor_obj]
+        items = [doc async for doc in cursor_obj]
+        
+        # Check if there are more items
+        has_more = len(items) > limit
+        if has_more:
+            items = items[:limit]  # Remove extra item
+        
+        # Generate cursors
+        next_cursor = None
+        prev_cursor = None
+        
+        if items:
+            if has_more:
+                # Next cursor is the last item's ID
+                next_cursor = str(items[-1]["_id"])
+            
+            # Prev cursor is the first item's ID (for reverse pagination)
+            if cursor:  # Not first page
+                prev_cursor = str(items[0]["_id"])
+        
+        return items, next_cursor, prev_cursor
     
     async def update_with_version(
         self,
@@ -201,7 +226,11 @@ class ProductRepository:
         return count > 0
     
     def to_public(self, doc: dict) -> dict:
-        """Convert database document to public product dict."""
+        """
+        Convert database document to public product dict.
+        
+        Includes ETag generation for optimistic locking.
+        """
         return {
             "id": str(doc["_id"]),
             "sku": doc["sku"],
@@ -217,8 +246,67 @@ class ProductRepository:
             "status": doc["status"],
             "created_at": doc["created_at"],
             "updated_at": doc["updated_at"],
-            "version": doc["version"]
+            "version": doc["version"],
+            "etag": generate_etag(doc["version"])  # Strong ETag for conditional requests
         }
+    
+    async def search_products(
+        self,
+        search_query: str,
+        filters: Optional[dict] = None,
+        limit: int = 20,
+        cursor: Optional[str] = None
+    ) -> Tuple[List[dict], Optional[str], Optional[str]]:
+        """
+        Full-text search products with filters and pagination.
+        
+        Args:
+            search_query: Text search query
+            filters: Additional filters (category, price range, etc.)
+            limit: Number of items to return
+            cursor: Pagination cursor
+            
+        Returns:
+            Tuple of (products, next_cursor, prev_cursor)
+        """
+        db = get_db()
+        
+        # Build query with text search
+        query = {
+            "$text": {"$search": search_query}
+        }
+        
+        # Add additional filters
+        if filters:
+            query.update(filters)
+        
+        # Keyset pagination with cursor
+        if cursor:
+            try:
+                query["_id"] = {"$lt": ObjectId(cursor)}
+            except Exception:
+                pass
+        
+        # Execute search with text score sorting
+        cursor_obj = db[self.collection_name].find(
+            query,
+            {"score": {"$meta": "textScore"}}
+        )
+        cursor_obj = cursor_obj.sort([("score", {"$meta": "textScore"}), ("_id", -1)])
+        cursor_obj = cursor_obj.limit(limit + 1)
+        
+        items = [doc async for doc in cursor_obj]
+        
+        # Check if there are more items
+        has_more = len(items) > limit
+        if has_more:
+            items = items[:limit]
+        
+        # Generate cursors
+        next_cursor = str(items[-1]["_id"]) if items and has_more else None
+        prev_cursor = str(items[0]["_id"]) if items and cursor else None
+        
+        return items, next_cursor, prev_cursor
 
 
 # Singleton instance

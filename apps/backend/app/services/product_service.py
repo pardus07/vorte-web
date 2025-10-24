@@ -1,12 +1,22 @@
-"""Product service with business logic and caching."""
+"""
+Product service with business logic, caching, and optimistic locking.
+
+Implements:
+- Cache-aside pattern with 5-minute TTL
+- Optimistic locking with version field
+- If-Match header validation
+- Automatic cache invalidation on updates
+"""
 import json
 from typing import Optional, List, Tuple
 from decimal import Decimal
 from bson import ObjectId
+from fastapi import Request
 
 from app.repositories.product_repository import product_repository
 from app.services.redis_service import redis_service
 from app.core.exceptions import ValidationError, NotFoundError, ConflictError
+from app.core.etag import validate_if_match, set_etag_header
 from app.schemas.product import (
     ProductCreate,
     ProductUpdate,
@@ -161,12 +171,12 @@ class ProductService:
         limit: int = 20,
         cursor: Optional[str] = None,
         published_only: bool = True
-    ) -> Tuple[List[ProductListItem], Optional[str]]:
+    ) -> Tuple[List[ProductListItem], Optional[str], Optional[str]]:
         """
-        List products with filtering and keyset pagination.
+        List products with filtering and cursor-based pagination.
         
         Returns:
-            Tuple of (products, next_cursor)
+            Tuple of (products, next_cursor, prev_cursor)
         """
         # Build filters
         filters = self._build_filters(
@@ -179,8 +189,8 @@ class ProductService:
             status=ProductStatus.ACTIVE if published_only else None
         )
         
-        # Get products
-        products = await product_repository.list_products(
+        # Get products with cursors
+        products, next_cursor, prev_cursor = await product_repository.list_products(
             filters=filters,
             limit=limit,
             cursor=cursor
@@ -201,10 +211,7 @@ class ProductService:
             for doc in products
         ]
         
-        # Next cursor
-        next_cursor = str(products[-1]["_id"]) if products else None
-        
-        return items, next_cursor
+        return items, next_cursor, prev_cursor
     
     async def create_product(self, product_data: ProductCreate) -> Product:
         """Create a new product (admin only)."""
@@ -235,20 +242,32 @@ class ProductService:
     async def update_product(
         self,
         product_id: str,
-        current_version: int,
-        update_data: ProductUpdate
+        update_data: ProductUpdate,
+        request: Optional[Request] = None
     ) -> Product:
         """
         Update product with optimistic locking (admin only).
         
+        Validates If-Match header if request is provided.
+        Uses atomic findOneAndUpdate for version checking.
+        
+        Args:
+            product_id: Product ID to update
+            update_data: Fields to update
+            request: Optional FastAPI request for If-Match validation
+        
         Raises:
             NotFoundError: If product not found
-            ConflictError: If version conflict
+            ConflictError: If version conflict (409)
         """
         # Get current product
         current = await product_repository.get_by_id(product_id)
         if not current:
             raise NotFoundError("Product", product_id)
+        
+        # Validate If-Match header if request provided
+        if request:
+            validate_if_match(request, current["version"])
         
         # Prepare update data
         update_dict = update_data.model_dump(exclude_unset=True)
@@ -260,17 +279,20 @@ class ProductService:
                     f"Product with slug '{update_dict['slug']}' already exists"
                 )
         
-        # Update with version check
+        # Update with version check (atomic findOneAndUpdate)
         success = await product_repository.update_with_version(
             product_id,
-            current_version,
+            current["version"],
             update_dict
         )
         
         if not success:
             raise ConflictError(
-                "Version conflict: product was modified by another request",
-                details={"current_version": current_version}
+                "Resource has been modified by another request",
+                details={
+                    "current_version": current["version"],
+                    "message": "Please refresh and try again"
+                }
             )
         
         # Invalidate cache
@@ -278,16 +300,237 @@ class ProductService:
         
         # Get updated product
         updated = await product_repository.get_by_id(product_id)
+        
+        # Set ETag header if request provided
+        if request:
+            set_etag_header(request, updated["version"])
+        
         return Product(**product_repository.to_public(updated))
     
-    async def delete_product(self, product_id: str) -> bool:
-        """Delete product (admin only)."""
-        success = await product_repository.delete(product_id)
+    async def delete_product(
+        self,
+        product_id: str,
+        request: Optional[Request] = None
+    ) -> bool:
+        """
+        Delete product (admin only).
         
-        if success:
-            await self._invalidate_cache(product_id)
+        Validates If-Match header if request is provided.
+        Actually performs soft delete by setting status to ARCHIVED.
         
-        return success
+        Args:
+            product_id: Product ID to delete
+            request: Optional FastAPI request for If-Match validation
+        
+        Returns:
+            True if deleted successfully
+        
+        Raises:
+            NotFoundError: If product not found
+            ConflictError: If version conflict
+        """
+        # Get current product
+        current = await product_repository.get_by_id(product_id)
+        if not current:
+            raise NotFoundError("Product", product_id)
+        
+        # Validate If-Match header if request provided
+        if request:
+            validate_if_match(request, current["version"])
+        
+        # Soft delete: set status to ARCHIVED
+        success = await product_repository.update_with_version(
+            product_id,
+            current["version"],
+            {"status": ProductStatus.ARCHIVED.value}
+        )
+        
+        if not success:
+            raise ConflictError(
+                "Resource has been modified by another request",
+                details={"message": "Please refresh and try again"}
+            )
+        
+        # Invalidate cache
+        await self._invalidate_cache(product_id)
+        
+        return True
+    
+    async def change_status(
+        self,
+        product_id: str,
+        new_status: ProductStatus,
+        request: Optional[Request] = None
+    ) -> Product:
+        """
+        Change product status (DRAFT → ACTIVE → ARCHIVED).
+        
+        Args:
+            product_id: Product ID
+            new_status: New status
+            request: Optional FastAPI request for If-Match validation
+        
+        Returns:
+            Updated product
+        
+        Raises:
+            NotFoundError: If product not found
+            ConflictError: If version conflict
+        """
+        # Get current product
+        current = await product_repository.get_by_id(product_id)
+        if not current:
+            raise NotFoundError("Product", product_id)
+        
+        # Validate If-Match header if request provided
+        if request:
+            validate_if_match(request, current["version"])
+        
+        # Update status
+        success = await product_repository.update_with_version(
+            product_id,
+            current["version"],
+            {"status": new_status.value}
+        )
+        
+        if not success:
+            raise ConflictError(
+                "Resource has been modified by another request"
+            )
+        
+        # Invalidate cache
+        await self._invalidate_cache(product_id)
+        
+        # Get updated product
+        updated = await product_repository.get_by_id(product_id)
+        
+        # Set ETag header if request provided
+        if request:
+            set_etag_header(request, updated["version"])
+        
+        return Product(**product_repository.to_public(updated))
+
+    async def add_variant(
+        self,
+        product_id: str,
+        variant_data: dict,
+        idempotency_key: str
+    ) -> dict:
+        """
+        Add variant to product.
+        
+        Args:
+            product_id: Product ID
+            variant_data: Variant data
+            idempotency_key: Idempotency key
+            
+        Returns:
+            Updated product with new variant
+        """
+        from app.services.db import get_db
+        from bson import ObjectId
+        import uuid
+        
+        db = get_db()
+        
+        # Check idempotency
+        cache_key = f"variant:add:{idempotency_key}"
+        cached = await self.redis.get(cache_key)
+        if cached:
+            return json.loads(cached)
+        
+        # Get product
+        product = await self.repo.get_by_id(product_id)
+        if not product:
+            raise NotFoundError(f"Product {product_id} not found")
+        
+        # Generate variant ID
+        variant_id = str(uuid.uuid4())
+        variant_data["id"] = variant_id
+        variant_data["created_at"] = datetime.utcnow()
+        
+        # Add variant
+        result = await db["products"].find_one_and_update(
+            {"_id": ObjectId(product_id)},
+            {
+                "$push": {"variants": variant_data},
+                "$inc": {"version": 1},
+                "$set": {"updated_at": datetime.utcnow()}
+            },
+            return_document=True
+        )
+        
+        if not result:
+            raise NotFoundError(f"Product {product_id} not found")
+        
+        # Cache result
+        result["_id"] = str(result["_id"])
+        await self.redis.setex(cache_key, 86400, json.dumps(result, default=str))
+        
+        # Invalidate product cache
+        await self._invalidate_cache(product_id)
+        
+        return result
+    
+    async def update_variant(
+        self,
+        product_id: str,
+        variant_id: str,
+        variant_updates: dict,
+        current_version: int
+    ) -> dict:
+        """
+        Update product variant with optimistic locking.
+        
+        Args:
+            product_id: Product ID
+            variant_id: Variant ID
+            variant_updates: Fields to update
+            current_version: Current product version
+            
+        Returns:
+            Updated product
+        """
+        from app.services.db import get_db
+        from bson import ObjectId
+        
+        db = get_db()
+        
+        # Build update for array element
+        update_fields = {}
+        for key, value in variant_updates.items():
+            update_fields[f"variants.$.{key}"] = value
+        
+        update_fields["variants.$.updated_at"] = datetime.utcnow()
+        
+        # Update with optimistic locking
+        result = await db["products"].find_one_and_update(
+            {
+                "_id": ObjectId(product_id),
+                "version": current_version,
+                "variants.id": variant_id
+            },
+            {
+                "$set": update_fields,
+                "$inc": {"version": 1}
+            },
+            return_document=True
+        )
+        
+        if not result:
+            # Check if product exists
+            product = await self.repo.get_by_id(product_id)
+            if not product:
+                raise NotFoundError(f"Product {product_id} not found")
+            
+            # Version mismatch
+            raise ConflictError("Product was modified by another request")
+        
+        # Invalidate cache
+        await self._invalidate_cache(product_id)
+        
+        result["_id"] = str(result["_id"])
+        return result
 
 
 # Singleton instance

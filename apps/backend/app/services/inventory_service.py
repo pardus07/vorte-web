@@ -1,4 +1,5 @@
 """Inventory service for stock management with atomic operations."""
+import time
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from bson import ObjectId
@@ -8,6 +9,14 @@ from app.repositories.reservation_repository import reservation_repository
 from app.services.db import get_db, get_client
 from app.core.exceptions import ConflictError, NotFoundError
 from app.core.config import settings
+from app.core.metrics import (
+    vorte_inventory_reservation_attempts_total,
+    vorte_inventory_reservation_committed_total,
+    vorte_inventory_reservation_released_total,
+    vorte_inventory_conflicts_total,
+    vorte_inventory_available,
+    vorte_inventory_reservation_latency_seconds
+)
 
 
 class InventoryService:
@@ -38,6 +47,9 @@ class InventoryService:
         
         available = item["on_hand"] - item["reserved"]
         low_stock = available <= item.get("low_stock_threshold", 10)
+        
+        # Update Prometheus gauge
+        vorte_inventory_available.labels(sku=sku).set(available)
         
         return {
             "sku": sku,

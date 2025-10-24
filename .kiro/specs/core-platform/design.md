@@ -206,13 +206,12 @@ class Product:
 
 class ProductVariant:
     id: str                     # Unique within product
-    sku: str                    # Unique variant code
+    sku: str                    # Unique variant code (links to Inventory)
     attributes: Dict[str, str]  # {size: "M", color: "Red"}
     price_adjustment: Decimal   # Offset from base_price
-    stock_quantity: int
-    low_stock_threshold: int
     weight: Decimal             # For shipping calculation
     status: VariantStatus       # AVAILABLE, OUT_OF_STOCK, DISCONTINUED
+    # Note: Stock is managed separately in Inventory collection
 
 class ProductImage:
     url: str
@@ -248,6 +247,7 @@ class CartItem:
     unit_price: Decimal          # Price at time of adding
     subtotal: Decimal
     discount: Decimal
+    reservation_id: Optional[str]  # Links to Inventory reservation
     product_snapshot: ProductSnapshot  # Denormalized for display
 ```
 
@@ -306,6 +306,79 @@ class PaymentInfo:
 ```
 
 **Requirements Traceability:** Req 5 (Checkout), Req 6 (Order Management), Req 15 (Transaction Integrity)
+
+#### Inventory Aggregate
+
+```python
+class Inventory:
+    id: ObjectId
+    sku: str                     # Unique, links to ProductVariant
+    product_id: ObjectId
+    variant_id: str
+    on_hand: int                 # Physical stock
+    reserved: int                # Temporarily held for orders
+    available: int               # Computed: on_hand - reserved
+    low_stock_threshold: int
+    reservations: List[Reservation]
+    version: int                 # For optimistic locking
+    updated_at: datetime
+
+class Reservation:
+    id: str                      # UUID
+    sku: str
+    quantity: int
+    order_id: Optional[ObjectId]
+    cart_id: Optional[ObjectId]
+    status: ReservationStatus    # PENDING, COMMITTED, RELEASED, EXPIRED
+    expires_at: datetime         # TTL index for auto-cleanup
+    created_at: datetime
+
+class ReservationStatus(Enum):
+    PENDING = "pending"          # Initial reservation
+    COMMITTED = "committed"      # Order confirmed
+    RELEASED = "released"        # Cancelled/expired
+    EXPIRED = "expired"          # TTL cleanup
+```
+
+**Atomic Stock Operations:**
+```python
+# Reserve stock (conditional update)
+db.inventory.update_one(
+    {
+        "sku": sku,
+        "$expr": {"$gte": [{"$subtract": ["$on_hand", "$reserved"]}, quantity]}
+    },
+    {
+        "$inc": {"reserved": quantity},
+        "$push": {"reservations": reservation_doc}
+    }
+)
+
+# Commit reservation (finalize order)
+db.inventory.update_one(
+    {"sku": sku},
+    {
+        "$inc": {"on_hand": -quantity, "reserved": -quantity},
+        "$pull": {"reservations": {"id": reservation_id}}
+    }
+)
+
+# Release reservation (cancel/expire)
+db.inventory.update_one(
+    {"sku": sku},
+    {
+        "$inc": {"reserved": -quantity},
+        "$pull": {"reservations": {"id": reservation_id}}
+    }
+)
+```
+
+**Change Streams Worker:**
+- Listens for TTL deletions on reservations collection
+- Automatically releases expired reservations
+- Restores reserved stock to available
+
+**Requirements Traceability:** Req 12 (Inventory Management), Req 15 (Atomicity, Transaction Integrity)
 
 #### User Aggregate
 
@@ -496,7 +569,8 @@ GET    /api/v1/search?q=...&filters=...
 ```
 
 **Query Parameters:**
-- `page`, `limit`: Pagination
+- `cursor`: Cursor for pagination (keyset pagination using ObjectId)
+- `limit`: Items per page (default: 20, max: 100)
 - `category`: Filter by category ID
 - `price_min`, `price_max`: Price range
 - `sort`: Sort field (e.g., `-price`, `created_at`)
@@ -518,13 +592,19 @@ GET    /api/v1/search?q=...&filters=...
       }
     ],
     "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 150,
-      "pages": 8
+      "next_cursor": "507f1f77bcf86cd799439011",
+      "prev_cursor": null,
+      "has_more": true,
+      "limit": 20
     }
   }
 }
+```
+
+**Response Headers (RFC 8288 Link):**
+```
+Link: </api/v1/products?cursor=507f1f77bcf86cd799439011&limit=20>; rel="next"
+ETag: "v1"
 ```
 
 **Requirements Traceability:** Req 1, Req 2
@@ -636,13 +716,13 @@ GET    /api/v1/admin/reports/sales
   variants: [
     {
       id: String,
-      sku: String (unique),
+      sku: String (unique),  // Links to inventory collection
       attributes: Object,
-      stock_quantity: Number,
-      version: Number  // For optimistic locking
+      price_adjustment: Number,
+      weight: Number
     }
   ],
-  version: Number
+  version: Number  // For optimistic locking
 }
 
 // Indexes
@@ -653,6 +733,39 @@ db.products.createIndex({ "tags": 1 })
 db.products.createIndex({ "name": "text", "description": "text" })
 db.products.createIndex({ "base_price": 1 })
 db.products.createIndex({ "status": 1, "created_at": -1 })
+```
+
+**inventory**
+```javascript
+{
+  _id: ObjectId,
+  sku: String (unique),
+  product_id: ObjectId,
+  variant_id: String,
+  on_hand: Number,
+  reserved: Number,
+  available: Number,  // Computed: on_hand - reserved
+  low_stock_threshold: Number,
+  reservations: [
+    {
+      id: String,
+      quantity: Number,
+      order_id: ObjectId,
+      cart_id: ObjectId,
+      status: String,
+      expires_at: Date
+    }
+  ],
+  version: Number,
+  updated_at: Date
+}
+
+// Indexes
+db.inventory.createIndex({ sku: 1 }, { unique: true })
+db.inventory.createIndex({ product_id: 1, variant_id: 1 })
+db.inventory.createIndex({ "reservations.expires_at": 1 }, { expireAfterSeconds: 0 })  // TTL
+db.inventory.createIndex({ available: 1 })
+db.inventory.createIndex({ on_hand: 1 })
 ```
 
 **carts**
@@ -868,20 +981,39 @@ class ERPAdapter(ABC):
 
 ## Error Handling
 
-### Error Response Schema
+### Error Response Schema (RFC 9457 Problem Details)
 
+**Success Response:**
 ```json
 {
-  "code": "PAYMENT_DECLINED",
-  "message": "Payment was declined by the provider",
-  "details": {
-    "reason": "insufficient_funds",
-    "provider": "iyzico",
-    "transaction_id": "..."
-  },
+  "code": "SUCCESS",
+  "message": "Operation completed successfully",
+  "data": {...},
   "traceId": "abc123..."
 }
 ```
+
+**Error Response (RFC 9457):**
+```json
+{
+  "type": "https://api.vorte.com/problems/payment-declined",
+  "title": "Payment Declined",
+  "status": 402,
+  "detail": "Payment was declined by the provider due to insufficient funds",
+  "instance": "/api/v1/payments/initiate",
+  "traceId": "abc123...",
+  "provider": "iyzico",
+  "transaction_id": "..."
+}
+```
+
+**Content-Type:** `application/problem+json` for errors
+
+**HTTP Status Codes:**
+- `428 Precondition Required`: Missing Idempotency-Key or If-Match header
+- `409 Conflict`: ETag mismatch (concurrent modification)
+- `402 Payment Required`: Payment declined
+- `422 Unprocessable Entity`: Validation errors
 
 ### Application Error Codes
 
@@ -947,8 +1079,12 @@ class ERPAdapter(ABC):
 
 ### Data Protection
 
-- Password hashing: bcrypt with cost factor 12
-- PII masking in logs
+- Password hashing: Argon2id (OWASP recommended)
+  - memory_cost: 128MB (131072 KiB)
+  - time_cost: 2 iterations
+  - parallelism: 4 threads
+  - Per OWASP Password Storage Cheat Sheet
+- PII masking in logs (email, phone, address, payment data)
 - No plain-text card data storage
 - Payment provider tokenization for saved cards
 

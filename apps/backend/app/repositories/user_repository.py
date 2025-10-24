@@ -92,6 +92,167 @@ class UserRepository:
             "created_at": doc["created_at"],
             "last_login_at": doc.get("last_login_at")
         }
+    
+    async def init_indexes(self):
+        """
+        Initialize database indexes.
+        
+        Creates:
+        - Unique index on email
+        - Unique sparse index on phone
+        """
+        db = get_db()
+        coll = db[self.collection_name]
+        
+        # Email unique index
+        await coll.create_index("email", unique=True)
+        
+        # Phone unique sparse index (not all users have phone)
+        await coll.create_index("phone", unique=True, sparse=True)
+    
+    async def add_address(
+        self,
+        user_id: str,
+        address: dict,
+        set_as_default: bool = False
+    ) -> Optional[dict]:
+        """
+        Add address to user.
+        
+        Args:
+            user_id: User ID
+            address: Address dict
+            set_as_default: Whether to set as default address
+            
+        Returns:
+            Updated user document or None
+        """
+        db = get_db()
+        
+        # Generate address ID
+        import uuid
+        address_id = str(uuid.uuid4())
+        address["id"] = address_id
+        address["created_at"] = datetime.now(timezone.utc)
+        
+        update = {"$push": {"addresses": address}}
+        
+        if set_as_default:
+            update["$set"] = {"default_address_id": address_id}
+        
+        result = await db[self.collection_name].find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            update,
+            return_document=True
+        )
+        
+        return result
+    
+    async def update_address(
+        self,
+        user_id: str,
+        address_id: str,
+        address_updates: dict
+    ) -> bool:
+        """
+        Update user address.
+        
+        Args:
+            user_id: User ID
+            address_id: Address ID
+            address_updates: Fields to update
+            
+        Returns:
+            True if updated, False otherwise
+        """
+        db = get_db()
+        
+        # Build update for array element
+        update_fields = {}
+        for key, value in address_updates.items():
+            update_fields[f"addresses.$.{key}"] = value
+        
+        result = await db[self.collection_name].update_one(
+            {
+                "_id": ObjectId(user_id),
+                "addresses.id": address_id
+            },
+            {"$set": update_fields}
+        )
+        
+        return result.modified_count > 0
+    
+    async def delete_address(
+        self,
+        user_id: str,
+        address_id: str
+    ) -> bool:
+        """
+        Delete user address.
+        
+        Args:
+            user_id: User ID
+            address_id: Address ID
+            
+        Returns:
+            True if deleted, False otherwise
+        """
+        db = get_db()
+        
+        result = await db[self.collection_name].update_one(
+            {"_id": ObjectId(user_id)},
+            {"$pull": {"addresses": {"id": address_id}}}
+        )
+        
+        return result.modified_count > 0
+    
+    @staticmethod
+    def mask_pii(text: str, visible_chars: int = 2) -> str:
+        """
+        Mask PII data for logging.
+        
+        Shows first and last N characters, masks the rest.
+        
+        Args:
+            text: Text to mask
+            visible_chars: Number of visible characters at start/end
+            
+        Returns:
+            Masked text
+        """
+        if not text or len(text) <= visible_chars * 2:
+            return "***"
+        
+        return f"{text[:visible_chars]}***{text[-visible_chars:]}"
+    
+    @staticmethod
+    def mask_email(email: str) -> str:
+        """
+        Mask email for logging.
+        
+        Example: john.doe@example.com -> jo***@ex***.com
+        """
+        if not email or "@" not in email:
+            return "***"
+        
+        local, domain = email.split("@", 1)
+        domain_parts = domain.split(".", 1)
+        
+        masked_local = UserRepository.mask_pii(local, 2)
+        masked_domain = UserRepository.mask_pii(domain_parts[0], 2)
+        
+        if len(domain_parts) > 1:
+            return f"{masked_local}@{masked_domain}.{domain_parts[1]}"
+        return f"{masked_local}@{masked_domain}"
+    
+    @staticmethod
+    def mask_phone(phone: str) -> str:
+        """
+        Mask phone number for logging.
+        
+        Example: +905551234567 -> +9***67
+        """
+        return UserRepository.mask_pii(phone, 2)
 
 
 # Singleton instance
