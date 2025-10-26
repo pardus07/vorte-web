@@ -345,6 +345,73 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Reconciliation Worker (Cron: every 10 minutes)
+  reconciliation-worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=production
+    image: vorte-api:${VERSION:-latest}
+    container_name: vorte-reconciliation-worker
+    restart: unless-stopped
+    environment:
+      # Database
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/vorte?authSource=admin&replicaSet=rs0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      
+      # Payment Providers
+      - IYZICO_API_KEY=${IYZICO_API_KEY}
+      - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY}
+      - IYZICO_BASE_URL=${IYZICO_BASE_URL:-https://api.iyzipay.com}
+      - PAYTR_MERCHANT_ID=${PAYTR_MERCHANT_ID:-}
+      - PAYTR_MERCHANT_KEY=${PAYTR_MERCHANT_KEY:-}
+      - PAYTR_MERCHANT_SALT=${PAYTR_MERCHANT_SALT:-}
+      
+      # Application
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      
+      # Observability
+      - PROMETHEUS_METRICS=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_ENDPOINT:-}
+      - OTEL_SERVICE_NAME=vorte-reconciliation-worker
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        while true; do
+          echo '[$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")] Starting reconciliation worker...'
+          python -m app.workers.reconciliation
+          EXIT_CODE=$$?
+          if [ $$EXIT_CODE -eq 0 ]; then
+            echo '[$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")] Reconciliation completed successfully'
+          else
+            echo '[$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")] Reconciliation failed with exit code $$EXIT_CODE'
+          fi
+          echo '[$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")] Sleeping for 10 minutes...'
+          sleep 600
+        done
+      "
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
 volumes:
   mongo_data:
     driver: local

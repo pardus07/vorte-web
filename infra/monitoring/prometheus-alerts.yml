@@ -206,6 +206,135 @@ groups:
           description: "Current error rate: {{ $value | humanizePercentage }}"
           action: "Review recent changes, prepare rollback plan"
 
+  - name: vorte-payment-reconciliation
+    interval: 30s
+    rules:
+      # Stuck payments requiring manual investigation
+      - alert: ReconciliationStuckPayments
+        expr: sum(reconciliation_stuck_total) by (provider) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Payments stuck for > 60 minutes"
+          description: "{{ $value }} {{ $labels.provider }} payments stuck and require investigation"
+          runbook: "https://docs.vorte.com.tr/runbooks/stuck-payments"
+
+      # High reconciliation failure rate
+      - alert: ReconciliationHighFailureRate
+        expr: |
+          sum(rate(payment_webhook_total{result="recon_fail"}[15m])) by (provider)
+          / sum(rate(reconciliation_calls_total[15m])) by (provider) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Reconciliation failure rate > 5% for {{ $labels.provider }}"
+          description: "Current failure rate: {{ $value | humanizePercentage }}"
+          runbook: "https://docs.vorte.com.tr/runbooks/reconciliation-failures"
+
+      # Reconciliation API high latency (p95)
+      - alert: ReconciliationHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(reconciliation_call_latency_seconds_bucket[5m])) by (le, provider)
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Reconciliation API p95 latency > 5s for {{ $labels.provider }}"
+          description: "Current p95 latency: {{ $value }}s"
+          runbook: "https://docs.vorte.com.tr/runbooks/reconciliation-latency"
+
+      # No reconciliation runs in 15+ minutes
+      - alert: ReconciliationWorkerNotRunning
+        expr: |
+          (time() - max(timestamp(reconciliation_calls_total))) > 900
+        for: 5m
+        labels:
+          severity: page
+          component: payment
+        annotations:
+          summary: "Reconciliation worker hasn't run in 15+ minutes"
+          description: "Last run: {{ $value | humanizeDuration }} ago"
+          action: "Check reconciliation worker container status"
+          runbook: "https://docs.vorte.com.tr/runbooks/reconciliation-worker-down"
+
+      # Stuck payment backlog growing
+      - alert: ReconciliationBacklogGrowing
+        expr: |
+          increase(reconciliation_stuck_total[30m]) > 5
+        for: 10m
+        labels:
+          severity: page
+          component: payment
+        annotations:
+          summary: "Stuck payment backlog growing rapidly"
+          description: "{{ $value }} new stuck payments in last 30 minutes"
+          action: "Investigate payment provider status and webhook delivery"
+          runbook: "https://docs.vorte.com.tr/runbooks/stuck-payments-backlog"
+
+  - name: vorte-payment-providers
+    interval: 30s
+    rules:
+      # High payment initialization failure rate
+      - alert: PaymentInitHighFailureRate
+        expr: |
+          sum(rate(payment_init_total{result="fail"}[15m])) by (provider)
+          / sum(rate(payment_init_total[15m])) by (provider) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Payment init failure rate > 5% for {{ $labels.provider }}"
+          description: "Current failure rate: {{ $value | humanizePercentage }}"
+          runbook: "https://docs.vorte.com.tr/runbooks/payment-init-failures"
+
+      # Provider circuit breaker open
+      - alert: PaymentProviderCircuitOpen
+        expr: sum(increase(payment_init_total{result="circuit_open"}[5m])) by (provider) > 0
+        for: 2m
+        labels:
+          severity: page
+          component: payment
+        annotations:
+          summary: "Circuit breaker OPEN for {{ $labels.provider }}"
+          description: "{{ $value }} requests blocked due to circuit breaker"
+          action: "Check provider API status and recent errors"
+          runbook: "https://docs.vorte.com.tr/runbooks/circuit-breaker-open"
+
+      # Webhook processing failures
+      - alert: WebhookProcessingFailures
+        expr: |
+          sum(rate(payment_webhook_total{result="error"}[10m])) by (provider) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Webhook processing failures for {{ $labels.provider }}"
+          description: "{{ $value }} errors per second"
+          runbook: "https://docs.vorte.com.tr/runbooks/webhook-failures"
+
+      # High duplicate webhook rate
+      - alert: HighDuplicateWebhookRate
+        expr: |
+          sum(rate(payment_webhook_total{result="dup"}[10m])) by (provider)
+          / sum(rate(payment_webhook_total[10m])) by (provider) > 0.20
+        for: 15m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Duplicate webhook rate > 20% for {{ $labels.provider }}"
+          description: "Current duplicate rate: {{ $value | humanizePercentage }}"
+          action: "Check provider webhook retry logic and deduplication"
+
   - name: vorte-security
     interval: 30s
     rules:

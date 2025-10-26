@@ -1,0 +1,77 @@
+{# apps/backend/app/notifications/templates/tr/emails/payment_failed.html.j2 #}
+{% extends "tr/base.html.j2" %}
+
+{% set subject = "Ödeme Başarısız • " ~ payment.id %}
+{% set preheader = "Ödemeniz işlenemedi. Lütfen tekrar deneyin." %}
+
+{% block content %}
+<h1>Ödeme Başarısız ⚠️</h1>
+
+<p>Merhaba {{ customer.first_name }},</p>
+
+<p>
+  Maalesef <strong>{{ payment.amount_formatted }}</strong> tutarındaki ödemeniz işlenemedi.
+</p>
+
+{% if payment.error_message %}
+<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; border-radius: 4px;">
+  <p style="margin: 0; color: #991b1b;">
+    <strong>Hata:</strong> {{ payment.error_message }}
+  </p>
+</div>
+{% endif %}
+
+<div class="divider"></div>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">Olası Nedenler</h2>
+
+<ul style="color: #4b5563; margin: 0 0 16px; padding-left: 20px;">
+  <li>Yetersiz bakiye</li>
+  <li>Kart limiti aşıldı</li>
+  <li>Yanlış kart bilgileri</li>
+  <li>3D Secure doğrulaması başarısız</li>
+  <li>Bankanız tarafından reddedildi</li>
+</ul>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">Ne Yapmalısınız?</h2>
+
+<ol style="color: #4b5563; margin: 0 0 16px; padding-left: 20px;">
+  <li>Kart bilgilerinizi kontrol edin</li>
+  <li>Farklı bir kart deneyin</li>
+  <li>Bankanızla iletişime geçin</li>
+</ol>
+
+<p style="margin-top: 24px;">
+  <a href="{{ retry_url }}" class="btn">Tekrar Dene</a>
+  <a href="{{ support_url }}" class="btn btn-secondary">Destek Al</a>
+</p>
+
+<div class="divider"></div>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">Ödeme Detayları</h2>
+
+<table role="presentation" cellpadding="0" cellspacing="0">
+  <tbody>
+    <tr>
+      <td><strong>Ödeme ID:</strong></td>
+      <td class="text-right">{{ payment.id }}</td>
+    </tr>
+    <tr>
+      <td><strong>Sipariş ID:</strong></td>
+      <td class="text-right">{{ order.id }}</td>
+    </tr>
+    <tr>
+      <td><strong>Tutar:</strong></td>
+      <td class="text-right">{{ payment.amount_formatted }}</td>
+    </tr>
+    <tr>
+      <td><strong>Tarih:</strong></td>
+      <td class="text-right">{{ payment.created_at }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top: 24px;">
+  Yardıma ihtiyacınız varsa, lütfen ödeme ID'nizi ({{ payment.id }}) belirterek destek ekibimizle iletişime geçin.
+</p>
+{% endblock %}

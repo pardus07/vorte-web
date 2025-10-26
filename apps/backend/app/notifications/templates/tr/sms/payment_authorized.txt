@@ -1,0 +1,1 @@
+Ödemeniz onaylandı. Sipariş: {{ order_id }}. Tutar: {{ amount }}. {{ brand_name }}

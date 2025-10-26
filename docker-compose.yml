@@ -151,6 +151,77 @@ services:
       timeout: 5s
       retries: 5
 
+  # Reconciliation Worker (Cron: every 10 minutes)
+  reconciliation-worker:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: vorte-reconciliation-worker
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/vorte?replicaSet=rs0
+      - REDIS_URL=redis://redis:6379/0
+      - IYZICO_API_KEY=${IYZICO_API_KEY:-sandbox-key}
+      - IYZICO_SECRET_KEY=${IYZICO_SECRET_KEY:-sandbox-secret}
+      - IYZICO_BASE_URL=${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
+      - PAYTR_MERCHANT_ID=${PAYTR_MERCHANT_ID:-}
+      - PAYTR_MERCHANT_KEY=${PAYTR_MERCHANT_KEY:-}
+      - PAYTR_MERCHANT_SALT=${PAYTR_MERCHANT_SALT:-}
+      - ENVIRONMENT=development
+      - PROMETHEUS_METRICS=true
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        while true; do
+          echo '[$(date)] Running reconciliation worker...'
+          python -m app.workers.reconciliation
+          echo '[$(date)] Reconciliation completed. Sleeping for 10 minutes...'
+          sleep 600
+        done
+      "
+
+  # Notification Dispatcher Worker (Cron: every minute)
+  notification-dispatcher:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: vorte-notification-dispatcher
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/vorte?replicaSet=rs0
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-sendgrid}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@vorte.com}
+      - SMS_PROVIDER=${SMS_PROVIDER:-netgsm}
+      - NETGSM_USERNAME=${NETGSM_USERNAME:-}
+      - NETGSM_PASSWORD=${NETGSM_PASSWORD:-}
+      - NETGSM_SENDER=${NETGSM_SENDER:-VORTE}
+      - VERIMOR_USERNAME=${VERIMOR_USERNAME:-}
+      - VERIMOR_PASSWORD=${VERIMOR_PASSWORD:-}
+      - VERIMOR_SENDER=${VERIMOR_SENDER:-VORTE}
+      - ENVIRONMENT=development
+      - PROMETHEUS_METRICS=true
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    command: >
+      sh -c "
+        while true; do
+          echo '[$(date)] Running notification dispatcher...'
+          python -m app.workers.notification_dispatcher
+          echo '[$(date)] Dispatch completed. Sleeping for 60 seconds...'
+          sleep 60
+        done
+      "
+
 volumes:
   mongo_data:
   redis_data:

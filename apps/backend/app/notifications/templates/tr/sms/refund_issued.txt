@@ -1,0 +1,1 @@
+İade işleminiz başlatıldı. Sipariş: {{ order_id }}. Tutar: {{ amount }}. 5-10 iş günü içinde hesabınıza yansıyacaktır. {{ brand_name }}

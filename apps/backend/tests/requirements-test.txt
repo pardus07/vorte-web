@@ -1,0 +1,24 @@
+# Test dependencies for notification system tests
+
+# Core testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+
+# HTTP mocking
+respx>=0.20.2
+httpx>=0.24.1
+
+# Time control
+freezegun>=1.2.2
+
+# MongoDB testing
+motor>=3.3.0
+pymongo>=4.5.0
+
+# Metrics testing
+prometheus-client>=0.17.1
+
+# Mocking
+unittest-mock>=1.5.0

@@ -53,6 +53,53 @@ async def lifespan(app: FastAPI):
     await redis_client.ping()
     print("✓ Connected to Redis")
     
+    # Initialize Payment Orchestrator
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from app.repositories.payment_repository import PaymentRepository
+    from app.services.adapters.iyzico_adapter import IyzicoAdapter
+    from app.services.adapters.paytr_adapter import PayTRAdapter
+    from app.services.idempotency import IdempotencyStore
+    from app.services.payment_orchestrator import PaymentOrchestrator
+    from app.bootstrap.mongo_indexes import ensure_payment_indexes
+    
+    mongo_client = AsyncIOMotorClient(settings.MONGO_URI)
+    db = mongo_client["vorte"]
+    
+    # Ensure payment indexes
+    await ensure_payment_indexes(db)
+    print("✓ Payment indexes initialized")
+    
+    # Create payment orchestrator
+    payment_repo = PaymentRepository(db)
+    iyzico_adapter = IyzicoAdapter(
+        api_key=settings.IYZICO_API_KEY,
+        secret_key=settings.IYZICO_SECRET_KEY,
+        base_url=settings.IYZICO_BASE_URL,
+    )
+    
+    # PayTR adapter (optional - only if credentials configured)
+    paytr_adapter = None
+    if hasattr(settings, 'PAYTR_MERCHANT_ID') and settings.PAYTR_MERCHANT_ID:
+        paytr_adapter = PayTRAdapter(
+            merchant_id=settings.PAYTR_MERCHANT_ID,
+            merchant_key=settings.PAYTR_MERCHANT_KEY,
+            merchant_salt=settings.PAYTR_MERCHANT_SALT,
+            test_mode=settings.ENVIRONMENT != "production",
+        )
+        print("✓ PayTR adapter initialized")
+    
+    idempotency_store = IdempotencyStore(redis_client)
+    
+    app.state.payment_orchestrator = PaymentOrchestrator(
+        mongo=mongo_client,
+        repo=payment_repo,
+        idem=idempotency_store,
+        iyzico=iyzico_adapter,
+        paytr=paytr_adapter,
+        db_name="vorte",
+    )
+    print("✓ Payment orchestrator initialized")
+    
     # Initialize database indexes
     from app.repositories.product_repository import product_repository
     from app.repositories.cart_repository import cart_repository
@@ -70,12 +117,23 @@ async def lifespan(app: FastAPI):
     await user_repository.init_indexes()
     print("✓ Database indexes initialized")
     
+    # Start background workers
+    from app.tasks.erasure_worker import worker
+    await worker.start()
+    print("✓ Background workers started")
+    
     print("✅ VORTE API ready")
     
     yield
     
     # Shutdown
     print("🛑 Shutting down VORTE API...")
+    
+    # Stop background workers
+    from app.tasks.erasure_worker import worker
+    await worker.stop()
+    print("✓ Background workers stopped")
+    
     await close_db()
     await redis_service.close()
     print("✅ Shutdown complete")
@@ -165,7 +223,12 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # Routers
-from app.routers import auth, products, cart, inventory, payments, checkout, orders, users, wishlist, admin_orders
+from app.routers import auth, products, cart, inventory, payments, checkout, orders, users, wishlist, admin_orders, profile
+from app.api.v1.payments import iyzico as iyzico_payments
+from app.api.v1.payments import paytr as paytr_payments
+from app.api.v1.webhooks import iyzico as iyzico_webhooks
+from app.api.v1.webhooks import paytr as paytr_webhooks
+
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(auth.router)
 app.include_router(products.router)
@@ -179,6 +242,13 @@ app.include_router(orders.router)
 app.include_router(users.router)
 app.include_router(wishlist.router)
 app.include_router(admin_orders.router)
+app.include_router(profile.router)
+
+# Payment provider endpoints
+app.include_router(iyzico_payments.router)
+app.include_router(iyzico_webhooks.router)
+app.include_router(paytr_payments.router)
+app.include_router(paytr_webhooks.router)
 
 # OpenTelemetry tracing
 from app.core.tracing import init_tracing

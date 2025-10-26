@@ -1,1 +1,43 @@
-* text=auto eol=lf
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts should always use LF
+*.sh text eol=lf
+
+# PowerShell scripts use CRLF on Windows
+*.ps1 text eol=crlf
+
+# Python files use LF
+*.py text eol=lf
+
+# JavaScript/TypeScript files use LF
+*.js text eol=lf
+*.ts text eol=lf
+*.jsx text eol=lf
+*.tsx text eol=lf
+
+# JSON files use LF
+*.json text eol=lf
+
+# YAML files use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Markdown files use LF
+*.md text eol=lf
+
+# Docker files use LF
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

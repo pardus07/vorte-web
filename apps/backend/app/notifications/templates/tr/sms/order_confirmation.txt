@@ -1,0 +1,1 @@
+Siparişiniz alındı. Sipariş No: {{ order_id }}. Tutar: {{ amount }}. Teşekkürler! {{ brand_name }}

@@ -1,0 +1,77 @@
+{# apps/backend/app/notifications/templates/en/emails/payment_failed.html.j2 #}
+{% extends "en/base.html.j2" %}
+
+{% set subject = "Payment Failed • " ~ payment.id %}
+{% set preheader = "Your payment could not be processed. Please try again." %}
+
+{% block content %}
+<h1>Payment Failed ⚠️</h1>
+
+<p>Hello {{ customer.first_name }},</p>
+
+<p>
+  Unfortunately, your payment of <strong>{{ payment.amount_formatted }}</strong> could not be processed.
+</p>
+
+{% if payment.error_message %}
+<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; border-radius: 4px;">
+  <p style="margin: 0; color: #991b1b;">
+    <strong>Error:</strong> {{ payment.error_message }}
+  </p>
+</div>
+{% endif %}
+
+<div class="divider"></div>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">Possible Reasons</h2>
+
+<ul style="color: #4b5563; margin: 0 0 16px; padding-left: 20px;">
+  <li>Insufficient funds</li>
+  <li>Card limit exceeded</li>
+  <li>Incorrect card details</li>
+  <li>3D Secure verification failed</li>
+  <li>Declined by your bank</li>
+</ul>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">What Should You Do?</h2>
+
+<ol style="color: #4b5563; margin: 0 0 16px; padding-left: 20px;">
+  <li>Check your card details</li>
+  <li>Try a different card</li>
+  <li>Contact your bank</li>
+</ol>
+
+<p style="margin-top: 24px;">
+  <a href="{{ retry_url }}" class="btn">Try Again</a>
+  <a href="{{ support_url }}" class="btn btn-secondary">Get Support</a>
+</p>
+
+<div class="divider"></div>
+
+<h2 style="font-size: 18px; margin: 16px 0 8px;">Payment Details</h2>
+
+<table role="presentation" cellpadding="0" cellspacing="0">
+  <tbody>
+    <tr>
+      <td><strong>Payment ID:</strong></td>
+      <td class="text-right">{{ payment.id }}</td>
+    </tr>
+    <tr>
+      <td><strong>Order ID:</strong></td>
+      <td class="text-right">{{ order.id }}</td>
+    </tr>
+    <tr>
+      <td><strong>Amount:</strong></td>
+      <td class="text-right">{{ payment.amount_formatted }}</td>
+    </tr>
+    <tr>
+      <td><strong>Date:</strong></td>
+      <td class="text-right">{{ payment.created_at }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top: 24px;">
+  If you need assistance, please contact our support team with your payment ID ({{ payment.id }}).
+</p>
+{% endblock %}

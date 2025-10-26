@@ -1,0 +1,120 @@
+# infra/k8s/notification-stuck-reset-cronjob.yaml
+#
+# Kubernetes CronJob for resetting stuck notifications (visibility timeout pattern).
+#
+# Runs every minute to reset notifications stuck in SENDING state.
+# Handles worker crashes and pod terminations gracefully.
+#
+# Refs:
+# - https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/
+# - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notification-stuck-reset
+  namespace: vorte
+  labels:
+    app: notification-stuck-reset
+    component: worker
+    tier: backend
+spec:
+  # Run every minute
+  schedule: "*/1 * * * *"
+  
+  # Keep last 3 successful and 1 failed job for debugging
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  
+  # Don't start new job if previous is still running
+  concurrencyPolicy: Forbid
+  
+  jobTemplate:
+    metadata:
+      labels:
+        app: notification-stuck-reset
+        component: worker
+    spec:
+      # Job timeout: 2 minutes (should complete in <10 seconds)
+      activeDeadlineSeconds: 120
+      
+      # Retry once on failure
+      backoffLimit: 1
+      
+      template:
+        metadata:
+          labels:
+            app: notification-stuck-reset
+            component: worker
+        spec:
+          restartPolicy: OnFailure
+          
+          # Graceful shutdown: 10 seconds
+          terminationGracePeriodSeconds: 10
+          
+          containers:
+          - name: stuck-reset
+            image: vorte/backend:latest
+            imagePullPolicy: Always
+            
+            command:
+            - python
+            - -m
+            - app.workers.notification_stuck_reset
+            
+            env:
+            # MongoDB connection
+            - name: MONGODB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: url
+            
+            - name: MONGODB_DB_NAME
+              value: "vorte"
+            
+            # Logging
+            - name: LOG_LEVEL
+              value: "INFO"
+            
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+            
+            # Liveness probe: check if process is alive
+            livenessProbe:
+              exec:
+                command:
+                - pgrep
+                - -f
+                - notification_stuck_reset
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+          
+          # Image pull secrets (if using private registry)
+          # imagePullSecrets:
+          # - name: regcred
+
+---
+# Service Monitor for Prometheus (optional)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: notification-stuck-reset
+  namespace: vorte
+  labels:
+    app: notification-stuck-reset
+spec:
+  selector:
+    matchLabels:
+      app: notification-stuck-reset
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics

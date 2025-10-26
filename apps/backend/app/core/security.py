@@ -12,14 +12,31 @@ from app.schemas.user import TokenPayload, UserRole
 
 
 # Argon2 password hasher (OWASP recommended)
-# Parameters follow OWASP recommendations for 2024
-ph = PasswordHasher(
-    time_cost=2,  # Number of iterations
-    memory_cost=65536,  # 64 MB
-    parallelism=4,  # Number of parallel threads
-    hash_len=32,  # Length of hash in bytes
-    salt_len=16,  # Length of salt in bytes
-)
+# Parameters loaded from environment configuration
+_password_hasher: Optional[PasswordHasher] = None
+
+
+def get_password_hasher() -> PasswordHasher:
+    """
+    Get singleton Argon2id password hasher configured from environment.
+    
+    Uses environment-specific parameters:
+    - Development: 64MB memory, 2 parallelism
+    - Production: 128MB memory, 4 parallelism
+    
+    Returns:
+        Configured PasswordHasher instance
+    """
+    global _password_hasher
+    if _password_hasher is None:
+        _password_hasher = PasswordHasher(
+            time_cost=settings.ARGON2_TIME_COST,
+            memory_cost=settings.ARGON2_MEMORY_COST,
+            parallelism=settings.ARGON2_PARALLELISM,
+            hash_len=32,  # Length of hash in bytes
+            salt_len=16,  # Length of salt in bytes
+        )
+    return _password_hasher
 
 
 def hash_password(password: str) -> str:
@@ -35,8 +52,9 @@ def hash_password(password: str) -> str:
     Note:
         Uses Argon2id variant which provides resistance against both
         side-channel and GPU-based attacks (OWASP recommendation).
+        Parameters are loaded from environment configuration.
     """
-    return ph.hash(password)
+    return get_password_hasher().hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -51,10 +69,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         True if password matches, False otherwise
     """
     try:
-        ph.verify(hashed_password, plain_password)
+        hasher = get_password_hasher()
+        hasher.verify(hashed_password, plain_password)
         
         # Check if rehashing is needed (parameters changed)
-        if ph.check_needs_rehash(hashed_password):
+        if hasher.check_needs_rehash(hashed_password):
             # In production, trigger a background job to rehash
             # For now, just log it
             pass

@@ -101,6 +101,22 @@ api_rate_limiter = RateLimiter(
     key_prefix="ratelimit:api"
 )
 
+# Profile-specific rate limiters (per user)
+password_change_limiter = RateLimiter(
+    requests_per_minute=settings.RATE_LIMIT_PASSWORD_CHANGE_PER_10MIN,  # 3 per 10 min
+    key_prefix="ratelimit:password"
+)
+
+avatar_upload_limiter = RateLimiter(
+    requests_per_minute=settings.RATE_LIMIT_AVATAR_UPLOAD_PER_10MIN,  # 5 per 10 min
+    key_prefix="ratelimit:avatar"
+)
+
+email_change_limiter = RateLimiter(
+    requests_per_minute=settings.RATE_LIMIT_EMAIL_CHANGE_PER_HOUR,  # 3 per hour
+    key_prefix="ratelimit:email"
+)
+
 
 def get_client_ip(request: Request) -> str:
     """

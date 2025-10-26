@@ -1,0 +1,1 @@
+Order received. Order #{{ order_id }}. Amount: {{ amount }}. Thank you! {{ brand_name }}
