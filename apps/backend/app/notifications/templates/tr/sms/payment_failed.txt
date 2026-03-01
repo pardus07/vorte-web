@@ -1,1 +1,0 @@
-Ödeme başarısız. Sipariş: {{ order_id }}. Lütfen tekrar deneyin. {{ brand_name }}

@@ -1,1 +1,0 @@
-# VORTE API Application

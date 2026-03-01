@@ -1,0 +1,123 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+interface ProductImagesProps {
+  images: string[];
+  productName: string;
+}
+
+export function ProductImages({ images, productName }: ProductImagesProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  const handleError = (index: number) => {
+    setImageErrors((prev) => new Set(prev).add(index));
+  };
+
+  if (images.length === 0) {
+    return (
+      <div className="aspect-[3/4] rounded-lg bg-gray-100 flex items-center justify-center">
+        <span className="text-6xl font-bold text-gray-300">V</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-4">
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div className="hidden flex-col gap-2 md:flex">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setSelectedIndex(i)}
+              className={`relative h-20 w-20 overflow-hidden rounded border-2 transition-colors ${
+                selectedIndex === i
+                  ? "border-[#7AC143]"
+                  : "border-transparent hover:border-gray-300"
+              }`}
+            >
+              {!imageErrors.has(i) ? (
+                <Image
+                  src={img}
+                  alt={`${productName} - ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  onError={() => handleError(i)}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center bg-gray-200 text-gray-400 text-xs">
+                  V
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Main image */}
+      <div className="relative flex-1">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-gray-100">
+          {!imageErrors.has(selectedIndex) ? (
+            <Image
+              src={images[selectedIndex]}
+              alt={`${productName} - ${selectedIndex + 1}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+              onError={() => handleError(selectedIndex)}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-gray-200">
+              <span className="text-6xl font-bold text-gray-300">V</span>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() =>
+                setSelectedIndex(
+                  selectedIndex > 0 ? selectedIndex - 1 : images.length - 1
+                )
+              }
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 shadow-md backdrop-blur-sm md:hidden"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() =>
+                setSelectedIndex(
+                  selectedIndex < images.length - 1 ? selectedIndex + 1 : 0
+                )
+              }
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 shadow-md backdrop-blur-sm md:hidden"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+
+            {/* Mobile dots */}
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 md:hidden">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedIndex(i)}
+                  className={`h-2 w-2 rounded-full transition-colors ${
+                    selectedIndex === i ? "bg-[#7AC143]" : "bg-white/70"
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

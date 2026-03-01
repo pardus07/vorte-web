@@ -1,1 +1,0 @@
-Payment confirmed. Order: {{ order_id }}. Amount: {{ amount }}. {{ brand_name }}

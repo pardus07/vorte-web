@@ -1,0 +1,12 @@
+node_modules
+.next
+.env.local
+.env.*.local
+*.log
+.git
+.gitignore
+README.md
+VORTE_TEKNIK_DOKUM.md
+Vorte_logo.jpg
+vorte.png
+.claude
