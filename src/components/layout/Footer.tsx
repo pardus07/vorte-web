@@ -166,6 +166,28 @@ export function Footer() {
           </p>
         </div>
       </div>
+
+      {/* ETBIS */}
+      <div className="border-t border-gray-200">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 py-4 lg:px-8">
+          <div id="ETBIS">
+            <div id="5383876846473146">
+              <a
+                href="https://etbis.eticaret.gov.tr/sitedogrulama/5383876846473146"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  style={{ width: 100, height: 120 }}
+                  alt="ETBIS - E-Ticaret Bilgi Sistemi"
+                  src="/etbis-badge.png"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </footer>
   );
 }
