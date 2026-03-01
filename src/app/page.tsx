@@ -2,46 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { HeroSlider } from "@/components/home/HeroSlider";
 
 export default function HomePage() {
   return (
     <>
-      {/* Hero Banner */}
-      <section className="relative h-[70vh] min-h-[500px] w-full overflow-hidden bg-[#1A1A1A]">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/80 to-transparent z-10" />
-        <div className="relative z-20 flex h-full items-center">
-          <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-8">
-            <div className="max-w-xl">
-              <span className="inline-block mb-4 text-sm font-semibold tracking-widest text-[#7AC143] uppercase">
-                Yeni Sezon 2026
-              </span>
-              <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
-                Kaliteli İç Giyim,
-                <br />
-                <span className="text-[#7AC143]">Uygun Fiyat</span>
-              </h1>
-              <p className="mt-4 text-lg text-gray-300">
-                Vorte Tekstil - Erkek boxer ve kadın iç giyim koleksiyonu.
-                Premium kumaş kalitesi ile konfor ve şıklık bir arada.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/erkek-ic-giyim">
-                  <Button size="lg" variant="primary">
-                    Erkek Koleksiyonu
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/kadin-ic-giyim">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-[#1A1A1A]">
-                    Kadın Koleksiyonu
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Slider */}
+      <HeroSlider />
 
       {/* Trust Bar */}
       <section className="border-b border-gray-200 bg-[#FAFAFA]">
@@ -88,10 +55,14 @@ export default function HomePage() {
             href="/erkek-ic-giyim"
             className="group relative flex h-[400px] items-end overflow-hidden bg-gray-100"
           >
+            <Image
+              src="/images/category-erkek.png"
+              alt="Erkek İç Giyim"
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A]/70 to-transparent z-10 group-hover:from-[#1A1A1A]/80 transition-all" />
-            <div className="absolute inset-0 bg-[#333333] flex items-center justify-center">
-              <span className="text-8xl font-bold text-white/10">ERKEK</span>
-            </div>
             <div className="relative z-20 p-8">
               <h3 className="text-3xl font-bold text-white">
                 Erkek İç Giyim
@@ -110,10 +81,14 @@ export default function HomePage() {
             href="/kadin-ic-giyim"
             className="group relative flex h-[400px] items-end overflow-hidden bg-gray-100"
           >
+            <Image
+              src="/images/category-kadin.png"
+              alt="Kadın İç Giyim"
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A]/70 to-transparent z-10 group-hover:from-[#1A1A1A]/80 transition-all" />
-            <div className="absolute inset-0 bg-[#444444] flex items-center justify-center">
-              <span className="text-8xl font-bold text-white/10">KADIN</span>
-            </div>
             <div className="relative z-20 p-8">
               <h3 className="text-3xl font-bold text-white">
                 Kadın İç Giyim
@@ -156,28 +131,6 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
-        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-lg font-bold tracking-wide text-[#1A1A1A]">
-              E-BÜLTENE KAYIT OLUN
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Kampanya ve indirimlerden ilk siz haberdar olun.
-            </p>
-          </div>
-          <form className="flex w-full max-w-md gap-2">
-            <input
-              type="email"
-              placeholder="E-posta adresiniz"
-              className="h-11 flex-1 border-b border-gray-300 bg-transparent px-2 text-sm placeholder:text-gray-400 focus:border-[#1A1A1A] focus:outline-none"
-            />
-            <Button type="submit">Kayıt Ol</Button>
-          </form>
         </div>
       </section>
     </>

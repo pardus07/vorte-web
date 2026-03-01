@@ -115,8 +115,27 @@ export default async function ProductListingPage({ params, searchParams }: PageP
 
   const totalPages = Math.ceil(totalCount / perPage);
 
+  const bannerImage = genderKey === "erkek" ? "/images/banner-erkek.png" : "/images/banner-kadin.png";
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <div>
+      {/* Category Banner */}
+      <div className="relative h-[200px] w-full overflow-hidden md:h-[280px]">
+        <img
+          src={bannerImage}
+          alt={genderInfo.label}
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="mx-auto w-full max-w-7xl px-4">
+            <h1 className="text-3xl font-bold text-white md:text-4xl">{genderInfo.label}</h1>
+            <p className="mt-2 text-sm text-gray-200">{genderInfo.description}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-6">
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
@@ -157,8 +176,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
       {/* Header */}
       <div className="mt-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{genderInfo.label}</h1>
-          <p className="mt-1 text-sm text-gray-500">{totalCount} ürün</p>
+          <p className="text-sm text-gray-500">{totalCount} ürün</p>
         </div>
         <div className="flex items-center gap-3">
           <Suspense>
@@ -206,6 +224,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

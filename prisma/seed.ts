@@ -120,7 +120,7 @@ async function main() {
       gender: "ERKEK",
       basePrice: 89.90,
       featured: true,
-      images: ["/images/products/boxer-siyah-1.jpg", "/images/products/boxer-siyah-2.jpg"],
+      images: ["/images/erkek-boxer-siyah-1.png", "/images/erkek-boxer-siyah-2.png", "/images/erkek-boxer-siyah-3.png", "/images/erkek-boxer-siyah-4.png"],
     },
   });
 
@@ -164,7 +164,7 @@ async function main() {
       gender: "ERKEK",
       basePrice: 69.90,
       featured: false,
-      images: ["/images/products/boxer-gri-1.jpg"],
+      images: ["/images/erkek-boxer-lacivert-1.png", "/images/erkek-boxer-lacivert-2.png", "/images/erkek-boxer-lacivert-3.png", "/images/erkek-boxer-lacivert-4.png"],
     },
   });
 
@@ -197,7 +197,7 @@ async function main() {
       gender: "ERKEK",
       basePrice: 99.90,
       featured: true,
-      images: ["/images/products/boxer-sport-1.jpg"],
+      images: ["/images/erkek-boxer-siyah-1.png", "/images/erkek-boxer-siyah-4.png"],
     },
   });
 
@@ -223,7 +223,7 @@ async function main() {
       categoryId: catErkekAtlet.id,
       gender: "ERKEK",
       basePrice: 59.90,
-      images: ["/images/products/atlet-beyaz-1.jpg"],
+      images: ["/images/erkek-boxer-lacivert-1.png", "/images/erkek-boxer-lacivert-4.png"],
     },
   });
 
@@ -256,7 +256,7 @@ async function main() {
       gender: "KADIN",
       basePrice: 59.90,
       featured: true,
-      images: ["/images/products/kulot-pembe-1.jpg", "/images/products/kulot-pembe-2.jpg"],
+      images: ["/images/kadin-kulot-siyah-1.png", "/images/kadin-kulot-siyah-2.png", "/images/kadin-kulot-siyah-3.png", "/images/kadin-kulot-siyah-4.png"],
     },
   });
 
@@ -290,7 +290,7 @@ async function main() {
       categoryId: catKadinKulot.id,
       gender: "KADIN",
       basePrice: 49.90,
-      images: ["/images/products/kulot-bej-1.jpg"],
+      images: ["/images/kadin-kulot-beyaz-1.png", "/images/kadin-kulot-beyaz-2.png", "/images/kadin-kulot-beyaz-3.png", "/images/kadin-kulot-beyaz-4.png"],
     },
   });
 
@@ -324,7 +324,7 @@ async function main() {
       gender: "KADIN",
       basePrice: 69.90,
       featured: true,
-      images: ["/images/products/kulot-sport-1.jpg"],
+      images: ["/images/kadin-kulot-ten-1.png", "/images/kadin-kulot-ten-2.png", "/images/kadin-kulot-ten-3.png", "/images/kadin-kulot-ten-4.png"],
     },
   });
 
