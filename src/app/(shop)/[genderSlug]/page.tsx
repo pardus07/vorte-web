@@ -6,8 +6,8 @@ import { db } from "@/lib/db";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { SortDropdown } from "@/components/product/SortDropdown";
-import { FilterSidebar } from "@/components/product/FilterSidebar";
 import { FilterToggle } from "./FilterToggle";
+import { DesktopFilter } from "./DesktopFilter";
 import type { Metadata } from "next";
 
 const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; description: string }> = {
@@ -190,9 +190,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
       <div className="mt-6 flex gap-8">
         {/* Filter sidebar (desktop) */}
         <div className="hidden w-64 shrink-0 lg:block">
-          <Suspense>
-            <FilterSidebar isOpen={false} onClose={() => {}} />
-          </Suspense>
+          <DesktopFilter />
         </div>
 
         {/* Products */}
