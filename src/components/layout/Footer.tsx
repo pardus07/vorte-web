@@ -173,7 +173,7 @@ export function Footer() {
           <div id="ETBIS">
             <div id="5383876846473146">
               <a
-                href="https://etbis.eticaret.gov.tr/sitedogrulama/5383876846473146"
+                href="https://etbis.ticaret.gov.tr/tr/Anasayfa/SiteAraSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
                 target="_blank"
                 rel="noopener noreferrer"
               >
