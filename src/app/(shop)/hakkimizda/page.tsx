@@ -24,7 +24,7 @@ export default function AboutPage() {
       <div className="mt-8 space-y-4 text-gray-600 leading-relaxed">
         <p>Vorte Tekstil, Bursa Nilüfer&apos;de faaliyet gösteren, kaliteli iç giyim ürünleri üreten ve satan bir firmadır.</p>
         <p>Premium kumaş kalitesi, modern tasarımlar ve uygun fiyat politikamız ile müşterilerimize en iyi deneyimi sunmayı hedefliyoruz.</p>
-        <p>Bayilik ağımız ile Shell benzin istasyonları başta olmak üzere Bursa ve çevresinde birçok noktada ürünlerimize ulaşabilirsiniz.</p>
+        <p>Bayilik ağımız ile Bursa ve çevresinde birçok satış noktasında ürünlerimize ulaşabilirsiniz.</p>
 
         {/* Quality Control Image */}
         <div className="relative h-[250px] w-full overflow-hidden rounded-lg md:h-[350px]">

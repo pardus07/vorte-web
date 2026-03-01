@@ -49,7 +49,7 @@ export default function WholesalePage() {
 
         <div className="mt-10 rounded-lg bg-[#333333] p-8 text-center text-white">
           <h2 className="text-2xl font-bold">Bayilik Başvurusu</h2>
-          <p className="mt-2 text-gray-300">Shell benzin istasyonları ve perakende noktaları için bayilik başvurunuzu hemen yapın.</p>
+          <p className="mt-2 text-gray-300">Perakende satış noktaları için bayilik başvurunuzu hemen yapın.</p>
           <div className="mt-6 flex justify-center gap-4">
             <Link href="/bayi-girisi"><Button variant="primary" size="lg">Bayi Girişi</Button></Link>
             <Link href="/iletisim"><Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">Başvuru İçin İletişim</Button></Link>

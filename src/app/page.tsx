@@ -111,7 +111,7 @@ export default function HomePage() {
             Toptan Satış Bayisi Olun
           </h2>
           <p className="max-w-lg text-gray-400">
-            Shell benzin istasyonlarında Vorte ürünlerini satmak ister misiniz?
+            Vorte ürünlerini kendi satış noktanızda satmak ister misiniz?
             Bayilik başvurusu yapın, özel toptan fiyatlardan yararlanın.
           </p>
           <div className="flex gap-4">

@@ -40,7 +40,7 @@ const slides = [
     title: "Bayilik Fırsatı,",
     highlight: "%45'e Varan İndirim",
     description:
-      "Shell benzin istasyonları ve perakende noktaları için özel toptan fiyatlardan yararlanın.",
+      "Perakende satış noktaları için özel toptan fiyatlardan yararlanın.",
     primaryLink: "/toptan",
     primaryLabel: "Toptan Satış",
     secondaryLink: "/bayi-girisi",
