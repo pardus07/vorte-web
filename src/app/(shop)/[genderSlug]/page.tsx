@@ -24,12 +24,12 @@ const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; descri
 };
 
 interface PageProps {
-  params: Promise<{ "gender": string }>;
+  params: Promise<{ genderSlug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { gender: genderSlug } = await params;
+  const { genderSlug } = await params;
   const genderKey = genderSlug.replace("-ic-giyim", "");
   const genderInfo = GENDERS[genderKey];
   if (!genderInfo) return {};
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductListingPage({ params, searchParams }: PageProps) {
-  const { gender: genderSlug } = await params;
+  const { genderSlug } = await params;
   const genderKey = genderSlug.replace("-ic-giyim", "");
   const genderInfo = GENDERS[genderKey];
 
