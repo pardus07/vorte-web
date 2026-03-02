@@ -6,13 +6,9 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
 
   // Redirect non-www to www (SEO: single canonical domain)
-  if (
-    hostname === "vorte.com.tr" ||
-    hostname === "vorte.com.tr:3000"
-  ) {
-    const url = request.nextUrl.clone();
-    url.host = hostname.replace("vorte.com.tr", "www.vorte.com.tr");
-    return NextResponse.redirect(url, 301);
+  if (hostname === "vorte.com.tr" || hostname.startsWith("vorte.com.tr:")) {
+    const target = `https://www.vorte.com.tr${pathname}${request.nextUrl.search}`;
+    return NextResponse.redirect(target, 301);
   }
 
   // Admin routes - check for admin session
