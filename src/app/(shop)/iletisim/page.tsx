@@ -53,7 +53,7 @@ export default function ContactPage() {
         <h2 className="text-lg font-bold text-gray-900">Konum</h2>
         <div className="mt-4 h-[300px] w-full overflow-hidden rounded-lg md:h-[400px]">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3047.5!2d28.95!3d40.22!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDEzJzEyLjAiTiAyOMKwNTcnMDAuMCJF!5e0!3m2!1str!2str!4v1"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1523!2d28.8313634!3d40.2295192!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14ca0fdfe4833a67%3A0xcf4970ae2fd2138e!2sVorte%20Tekstil%20%C4%B0%C3%A7%20Giyim%20%26%20%C3%87orap%20Toptan!5e0!3m2!1str!2str!4v1"
             width="100%"
             height="100%"
             style={{ border: 0 }}
