@@ -7,6 +7,7 @@ import { ProductImages } from "@/components/product/ProductImages";
 import { ProductInfo } from "./ProductInfo";
 import { ProductAccordion } from "@/components/product/ProductAccordion";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -22,10 +23,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!product) return {};
 
+  const description = product.description || `${product.name} - Vorte Tekstil`;
+
   return {
     title: product.name,
-    description: product.description || `${product.name} - Vorte Tekstil`,
+    description,
+    alternates: { canonical: `/urun/${slug}` },
     openGraph: {
+      title: `${product.name} | Vorte Tekstil`,
+      description,
+      images: product.images[0]
+        ? [{ url: product.images[0], width: 800, height: 1067, alt: product.name }]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
       images: product.images[0] ? [product.images[0]] : [],
     },
   };
@@ -65,8 +79,36 @@ export default async function ProductDetailPage({ params }: PageProps) {
     take: 4,
   });
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
+  const variantPrices = product.variants.filter(v => v.price).map(v => v.price!);
+  const allPrices = [product.basePrice, ...variantPrices];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.description || `${product.name} - Vorte Tekstil`,
+          image: product.images.map(img => `${baseUrl}${img}`),
+          brand: { "@type": "Brand", name: "Vorte" },
+          category: product.category.name,
+          sku: product.variants[0]?.sku,
+          ...(product.variants[0]?.gtinBarcode && { gtin13: product.variants[0].gtinBarcode }),
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "TRY",
+            lowPrice: Math.min(...allPrices),
+            highPrice: Math.max(...allPrices),
+            offerCount: product.variants.length,
+            availability: product.variants.some(v => v.stock > 0)
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+            url: `${baseUrl}/urun/${product.slug}`,
+          },
+        }}
+      />
       {/* Breadcrumb */}
       <Breadcrumb
         items={[

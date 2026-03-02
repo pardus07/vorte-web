@@ -1,7 +1,11 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Kullanım Koşulları" };
+export const metadata: Metadata = {
+  title: "Kullanım Koşulları",
+  description: "Vorte Tekstil web sitesi kullanım koşulları ve şartları.",
+  alternates: { canonical: "/kullanim-kosullari" },
+};
 
 export default function TermsPage() {
   return (

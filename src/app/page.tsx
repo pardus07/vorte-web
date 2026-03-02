@@ -3,10 +3,45 @@ import Image from "next/image";
 import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { db } from "@/lib/db";
+import type { Metadata } from "next";
 
-export default function HomePage() {
+export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+export default async function HomePage() {
+  const fetchProducts = () =>
+    db.product.findMany({
+      where: { active: true },
+      include: {
+        category: true,
+        variants: { where: { active: true }, orderBy: { size: "asc" } },
+      },
+      orderBy: [{ gender: "asc" }, { featured: "desc" }, { createdAt: "desc" }],
+    });
+
+  let products: Awaited<ReturnType<typeof fetchProducts>> = [];
+  try {
+    products = await fetchProducts();
+  } catch {
+    // DB unavailable during build
+  }
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Vorte Tekstil",
+          url: "https://www.vorte.com.tr",
+        }}
+      />
+
       {/* Hero Slider */}
       <HeroSlider />
 
@@ -103,6 +138,28 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Featured Products */}
+      {products.length > 0 && (
+        <section className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
+          <h2 className="mb-8 text-center text-2xl font-bold tracking-wide text-[#1A1A1A]">
+            ÖNE ÇIKAN ÜRÜNLER
+          </h2>
+          <ProductGrid products={products} />
+          <div className="mt-8 flex justify-center gap-4">
+            <Link href="/erkek-ic-giyim">
+              <Button variant="outline" size="lg">
+                Erkek Koleksiyonu <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/kadin-ic-giyim">
+              <Button variant="outline" size="lg">
+                Kadın Koleksiyonu <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Wholesale CTA */}
       <section className="bg-[#1A1A1A]">

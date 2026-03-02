@@ -1,7 +1,11 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "KVKK Aydınlatma Metni" };
+export const metadata: Metadata = {
+  title: "KVKK Aydınlatma Metni",
+  description: "Vorte Tekstil KVKK aydınlatma metni. 6698 sayılı kanun kapsamında kişisel veri işleme politikamız.",
+  alternates: { canonical: "/kvkk" },
+};
 
 export default function KVKKPage() {
   return (

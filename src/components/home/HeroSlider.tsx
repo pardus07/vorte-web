@@ -79,7 +79,7 @@ export function HeroSlider() {
           {/* Desktop */}
           <Image
             src={s.image}
-            alt=""
+            alt={`Vorte Tekstil - ${s.title} ${s.highlight}`}
             fill
             className="hidden md:block object-cover object-center"
             priority={i === 0}
@@ -88,7 +88,7 @@ export function HeroSlider() {
           {/* Mobile */}
           <Image
             src={s.mobileImage}
-            alt=""
+            alt={`Vorte Tekstil - ${s.title} ${s.highlight}`}
             fill
             className="block md:hidden object-cover object-center"
             priority={i === 0}

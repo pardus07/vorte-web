@@ -1,7 +1,11 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Gizlilik Politikası" };
+export const metadata: Metadata = {
+  title: "Gizlilik Politikası",
+  description: "Vorte Tekstil gizlilik politikası. Kişisel verilerin korunması ve gizlilik ilkelerimiz.",
+  alternates: { canonical: "/gizlilik-politikasi" },
+};
 
 export default function PrivacyPage() {
   return (

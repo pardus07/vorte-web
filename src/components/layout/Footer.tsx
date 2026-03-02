@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, MapPin, Phone, Mail } from "lucide-react";
+import { NewsletterForm } from "./NewsletterForm";
 
 const footerLinks = {
   kurumsal: [
@@ -39,19 +40,7 @@ export function Footer() {
               Kampanya ve yeniliklerden ilk siz haberdar olun.
             </p>
           </div>
-          <form className="flex w-full max-w-md gap-2">
-            <input
-              type="email"
-              placeholder="E-posta adresiniz"
-              className="h-11 flex-1 border-b border-gray-300 bg-transparent px-2 text-sm placeholder:text-gray-400 focus:border-[#1A1A1A] focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="h-11 bg-[#1A1A1A] px-6 text-sm font-semibold text-white hover:bg-[#333333] transition-colors"
-            >
-              Kayıt Ol
-            </button>
-          </form>
+          <NewsletterForm />
         </div>
       </div>
 
@@ -71,8 +60,21 @@ export function Footer() {
               className="h-8 w-auto object-contain"
             />
             <p className="mt-4 text-xs leading-relaxed text-gray-500">
-              Vorte Tekstil Toptan — Kaliteli iç giyim ürünleri. Nilüfer/Bursa, Türkiye.
+              Vorte Tekstil Toptan — Kaliteli iç giyim ürünleri.
             </p>
+            <div className="mt-3 space-y-1.5 text-xs text-gray-500">
+              <p className="flex items-center gap-1.5">
+                <MapPin className="h-3 w-3 shrink-0 text-[#7AC143]" /> Nilüfer, Bursa / Türkiye
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Phone className="h-3 w-3 shrink-0 text-[#7AC143]" />
+                <a href="tel:+905376220694" className="hover:text-[#1A1A1A]">0537 622 06 94</a>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Mail className="h-3 w-3 shrink-0 text-[#7AC143]" />
+                <a href="mailto:info@vorte.com.tr" className="hover:text-[#1A1A1A]">info@vorte.com.tr</a>
+              </p>
+            </div>
           </div>
 
           {/* Kurumsal */}

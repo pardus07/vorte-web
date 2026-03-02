@@ -34,9 +34,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const genderInfo = GENDERS[genderKey];
   if (!genderInfo) return {};
 
+  const ogImage = genderKey === "erkek"
+    ? "/images/banner-erkek.png"
+    : "/images/banner-kadin.png";
+
   return {
     title: genderInfo.label,
     description: genderInfo.description,
+    alternates: { canonical: `/${genderSlug}` },
+    openGraph: {
+      title: `${genderInfo.label} | Vorte Tekstil`,
+      description: genderInfo.description,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: genderInfo.label }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: genderInfo.label,
+      description: genderInfo.description,
+    },
   };
 }
 

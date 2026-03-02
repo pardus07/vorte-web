@@ -1,7 +1,11 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "İade Politikası" };
+export const metadata: Metadata = {
+  title: "İade Politikası",
+  description: "Vorte Tekstil iade ve değişim politikası. 14 gün içinde koşulsuz iade hakkı.",
+  alternates: { canonical: "/iade-politikasi" },
+};
 
 export default function ReturnPolicyPage() {
   return (

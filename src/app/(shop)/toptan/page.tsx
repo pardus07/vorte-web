@@ -5,7 +5,11 @@ import { Building2, Percent, Truck, Shield } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Toptan Satış" };
+export const metadata: Metadata = {
+  title: "Toptan Satış",
+  description: "Vorte Tekstil toptan satış ve bayilik fırsatları. Özel toptan fiyatlar, hızlı teslimat. Bayilik başvurusu.",
+  alternates: { canonical: "/toptan" },
+};
 
 export default function WholesalePage() {
   return (

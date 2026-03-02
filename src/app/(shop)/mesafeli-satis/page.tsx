@@ -1,7 +1,11 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Mesafeli Satış Sözleşmesi" };
+export const metadata: Metadata = {
+  title: "Mesafeli Satış Sözleşmesi",
+  description: "Vorte Tekstil mesafeli satış sözleşmesi. Online alışveriş koşulları ve haklarınız.",
+  alternates: { canonical: "/mesafeli-satis" },
+};
 
 export default function DistanceSellingPage() {
   return (

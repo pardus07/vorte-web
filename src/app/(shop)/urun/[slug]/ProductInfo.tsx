@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ShoppingBag, Heart, Share2, Barcode } from "lucide-react";
+import { ShoppingBag, Heart, Barcode } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ColorSelector } from "@/components/product/ColorSelector";
 import { SizeSelector } from "@/components/product/SizeSelector";
+import { SocialShare } from "@/components/product/SocialShare";
 import { formatPrice } from "@/lib/utils";
 
 interface Variant {
@@ -208,10 +209,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <Button size="lg" variant="outline" className="px-4">
           <Heart className="h-5 w-5" />
         </Button>
-        <Button size="lg" variant="outline" className="px-4">
-          <Share2 className="h-5 w-5" />
-        </Button>
       </div>
+
+      {/* Social Share */}
+      <SocialShare
+        url={typeof window !== "undefined" ? window.location.href : ""}
+        title={product.name}
+      />
 
       {/* Stock indicator */}
       {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 10 && (

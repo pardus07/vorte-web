@@ -2,7 +2,11 @@ import Image from "next/image";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Hakkımızda" };
+export const metadata: Metadata = {
+  title: "Hakkımızda",
+  description: "Vorte Tekstil hakkında. Bursa Nilüfer'de kaliteli iç giyim üretimi ve satış. Premium kumaş, uygun fiyat.",
+  alternates: { canonical: "/hakkimizda" },
+};
 
 export default function AboutPage() {
   return (
