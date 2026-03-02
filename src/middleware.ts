@@ -3,6 +3,17 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get("host") || "";
+
+  // Redirect non-www to www (SEO: single canonical domain)
+  if (
+    hostname === "vorte.com.tr" ||
+    hostname === "vorte.com.tr:3000"
+  ) {
+    const url = request.nextUrl.clone();
+    url.host = hostname.replace("vorte.com.tr", "www.vorte.com.tr");
+    return NextResponse.redirect(url, 301);
+  }
 
   // Admin routes - check for admin session
   if (pathname.startsWith("/admin")) {
@@ -41,5 +52,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/hesabim/:path*", "/bayi/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico, sitemap.xml, robots.txt
+     * - public files (images, etc.)
+     */
+    "/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)",
+  ],
 };
