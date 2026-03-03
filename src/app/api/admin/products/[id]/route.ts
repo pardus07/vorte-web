@@ -40,19 +40,35 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const { name, description, categoryId, gender, basePrice, active, featured, variants } = body;
+  const {
+    name, description, categoryId, gender, basePrice, costPrice,
+    weight, active, featured, images, seoTitle, seoDescription,
+    googleCategory, variants,
+  } = body;
+
+  let slug = slugify(name);
+  const existingSlug = await db.product.findFirst({
+    where: { slug, id: { not: id } },
+  });
+  if (existingSlug) slug = `${slug}-${Date.now()}`;
 
   const product = await db.product.update({
     where: { id },
     data: {
       name,
-      slug: slugify(name),
-      description,
+      slug,
+      description: description || null,
       categoryId,
       gender,
-      basePrice,
+      basePrice: Number(basePrice),
+      costPrice: costPrice ? Number(costPrice) : null,
+      weight: weight ? Number(weight) : null,
       active,
       featured,
+      images: images || [],
+      seoTitle: seoTitle || null,
+      seoDescription: seoDescription || null,
+      googleCategory: googleCategory || null,
     },
   });
 
@@ -60,20 +76,35 @@ export async function PUT(
   await db.variant.deleteMany({ where: { productId: id } });
   if (variants?.length > 0) {
     await db.variant.createMany({
-      data: variants.map((v: { color: string; colorHex: string; size: string; sku: string; gtinBarcode: string; stock: number; price: string }) => ({
-        productId: product.id,
-        color: v.color,
-        colorHex: v.colorHex,
-        size: v.size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: v.sku,
-        gtinBarcode: v.gtinBarcode || null,
-        stock: v.stock || 0,
-        price: v.price ? parseFloat(v.price) : null,
-      })),
+      data: variants.map(
+        (v: {
+          color: string;
+          colorHex: string;
+          size: string;
+          sku: string;
+          gtinBarcode: string;
+          stock: number;
+          price: string;
+        }) => ({
+          productId: product.id,
+          color: v.color,
+          colorHex: v.colorHex,
+          size: v.size as "S" | "M" | "L" | "XL" | "XXL",
+          sku: v.sku,
+          gtinBarcode: v.gtinBarcode || null,
+          stock: v.stock || 0,
+          price: v.price ? parseFloat(v.price) : null,
+        })
+      ),
     });
   }
 
-  return NextResponse.json(product);
+  const updated = await db.product.findUnique({
+    where: { id },
+    include: { category: true, variants: true },
+  });
+
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(

@@ -14,7 +14,7 @@ export default async function AdminLayout({
   }
 
   const role = (session.user as unknown as { role: string }).role;
-  if (role !== "ADMIN") {
+  if (!["ADMIN", "EDITOR", "VIEWER"].includes(role)) {
     redirect("/");
   }
 

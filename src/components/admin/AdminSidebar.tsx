@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Users,
   DollarSign,
   Truck,
   FileText,
@@ -15,17 +14,25 @@ import {
   Bell,
   Settings,
   Building2,
+  SlidersHorizontal,
+  RectangleHorizontal,
+  Users,
+  UserCircle,
 } from "lucide-react";
 
 const menuItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Ürünler", href: "/admin/urunler", icon: Package },
+  { label: "Slider", href: "/admin/slider", icon: SlidersHorizontal },
+  { label: "Bannerlar", href: "/admin/bannerlar", icon: RectangleHorizontal },
   { label: "Siparişler", href: "/admin/siparisler", icon: ShoppingCart },
   { label: "Bayiler", href: "/admin/bayiler", icon: Building2 },
   { label: "Fiyatlandırma", href: "/admin/fiyatlandirma", icon: DollarSign },
   { label: "Kargo", href: "/admin/kargo", icon: Truck },
   { label: "Faturalar", href: "/admin/faturalar", icon: FileText },
   { label: "Kuponlar", href: "/admin/kuponlar", icon: Tag },
+  { label: "Müşteriler", href: "/admin/musteriler", icon: UserCircle },
+  { label: "Kullanıcılar", href: "/admin/kullanicilar", icon: Users },
   { label: "Bildirimler", href: "/admin/bildirimler", icon: Bell },
   { label: "Ayarlar", href: "/admin/ayarlar", icon: Settings },
 ];

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import type { SlideData } from "@/components/home/HeroSlider";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { db } from "@/lib/db";
@@ -15,6 +16,40 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  // Fetch active sliders from DB
+  let sliderData: SlideData[] = [];
+  try {
+    const now = new Date();
+    const dbSliders = await db.slider.findMany({
+      where: {
+        active: true,
+        OR: [
+          { startDate: null },
+          { startDate: { lte: now } },
+        ],
+      },
+      orderBy: { sortOrder: "asc" },
+    });
+    // Filter by endDate in JS (Prisma OR nesting can be complex)
+    sliderData = dbSliders
+      .filter((s) => !s.endDate || new Date(s.endDate) >= now)
+      .map((s) => ({
+        imageDesktop: s.imageDesktop,
+        imageMobile: s.imageMobile,
+        subtitle: s.subtitle,
+        title: s.title,
+        highlight: s.highlight,
+        description: s.description,
+        buttonText: s.buttonText,
+        buttonLink: s.buttonLink,
+        secondaryButtonText: s.secondaryButtonText,
+        secondaryButtonLink: s.secondaryButtonLink,
+        altText: s.altText,
+      }));
+  } catch {
+    // DB unavailable - fallback slides will be used
+  }
+
   const fetchProducts = () =>
     db.product.findMany({
       where: { active: true },
@@ -43,7 +78,7 @@ export default async function HomePage() {
       />
 
       {/* Hero Slider */}
-      <HeroSlider />
+      <HeroSlider slides={sliderData} />
 
       {/* Trust Bar */}
       <section className="border-b border-gray-200 bg-[#FAFAFA]">

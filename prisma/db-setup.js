@@ -272,6 +272,117 @@ async function createSchema() {
     `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cart_items_productId_fkey') THEN ALTER TABLE "cart_items" ADD CONSTRAINT "cart_items_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
     `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cart_items_variantId_fkey') THEN ALTER TABLE "cart_items" ADD CONSTRAINT "cart_items_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "variants"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
 
+    // SiteSettings table
+    `CREATE TABLE IF NOT EXISTS "site_settings" (
+      "id" TEXT NOT NULL DEFAULT 'main',
+      "siteName" TEXT NOT NULL DEFAULT 'Vorte Tekstil',
+      "siteDescription" TEXT,
+      "siteUrl" TEXT NOT NULL DEFAULT 'https://www.vorte.com.tr',
+      "contactEmail" TEXT,
+      "contactPhone" TEXT,
+      "contactAddress" TEXT,
+      "logoUrl" TEXT,
+      "logoDarkUrl" TEXT,
+      "faviconUrl" TEXT,
+      "ogImageUrl" TEXT,
+      "metaTitle" TEXT,
+      "metaDescription" TEXT,
+      "metaKeywords" TEXT,
+      "googleVerificationCode" TEXT,
+      "googleAnalyticsId" TEXT,
+      "googleAdsCode" TEXT,
+      "googleMerchantId" TEXT,
+      "facebookPixelId" TEXT,
+      "aiSystemPrompt" TEXT,
+      "aiEnabled" BOOLEAN NOT NULL DEFAULT false,
+      "aiRules" TEXT,
+      "instagramUrl" TEXT,
+      "facebookUrl" TEXT,
+      "twitterUrl" TEXT,
+      "tiktokUrl" TEXT,
+      "youtubeUrl" TEXT,
+      "smtpHost" TEXT,
+      "smtpPort" INTEGER,
+      "smtpUser" TEXT,
+      "smtpPassword" TEXT,
+      "freeShippingThreshold" DOUBLE PRECISION,
+      "defaultShippingCost" DOUBLE PRECISION,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "site_settings_pkey" PRIMARY KEY ("id")
+    )`,
+
+    // User new columns (Faz 11)
+    `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "permissions" JSONB`,
+    `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "active" BOOLEAN NOT NULL DEFAULT true`,
+    `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "lastLoginAt" TIMESTAMP(3)`,
+
+    // UserRole enum update (Faz 11)
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'EDITOR' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'UserRole')) THEN ALTER TYPE "UserRole" ADD VALUE 'EDITOR'; END IF; END $$`,
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'VIEWER' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'UserRole')) THEN ALTER TYPE "UserRole" ADD VALUE 'VIEWER'; END IF; END $$`,
+
+    // Activity Logs table (Faz 11)
+    `CREATE TABLE IF NOT EXISTS "activity_logs" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "userId" TEXT NOT NULL,
+      "action" TEXT NOT NULL,
+      "target" TEXT,
+      "details" TEXT,
+      "ip" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "activity_logs_pkey" PRIMARY KEY ("id")
+    )`,
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'activity_logs_userId_fkey') THEN ALTER TABLE "activity_logs" ADD CONSTRAINT "activity_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
+
+    // Product new columns (Faz 2)
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "costPrice" DOUBLE PRECISION`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "weight" DOUBLE PRECISION`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "seoTitle" TEXT`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "seoDescription" TEXT`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "googleCategory" TEXT`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "merchantSynced" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "merchantSyncedAt" TIMESTAMP(3)`,
+
+    // Sliders table (Faz 3)
+    `CREATE TABLE IF NOT EXISTS "sliders" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "title" TEXT,
+      "subtitle" TEXT,
+      "highlight" TEXT,
+      "description" TEXT,
+      "buttonText" TEXT,
+      "buttonLink" TEXT,
+      "secondaryButtonText" TEXT,
+      "secondaryButtonLink" TEXT,
+      "imageDesktop" TEXT NOT NULL,
+      "imageMobile" TEXT NOT NULL,
+      "altText" TEXT,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "startDate" TIMESTAMP(3),
+      "endDate" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "sliders_pkey" PRIMARY KEY ("id")
+    )`,
+
+    // Banners table (Faz 3)
+    `CREATE TABLE IF NOT EXISTS "banners" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "name" TEXT NOT NULL,
+      "position" TEXT NOT NULL,
+      "imageDesktop" TEXT NOT NULL,
+      "imageMobile" TEXT,
+      "link" TEXT,
+      "altText" TEXT,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "startDate" TIMESTAMP(3),
+      "endDate" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "banners_pkey" PRIMARY KEY ("id")
+    )`,
+
     // Prisma migrations table
     `CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
       "id" VARCHAR(36) NOT NULL,
@@ -553,6 +664,23 @@ async function seedData() {
     },
   });
   console.log("  ✓ Notifications created");
+
+  // ===== SITE SETTINGS =====
+  await db.siteSettings.upsert({
+    where: { id: "main" },
+    update: {},
+    create: {
+      id: "main",
+      siteName: "Vorte Tekstil",
+      siteUrl: "https://www.vorte.com.tr",
+      contactEmail: "info@vorte.com.tr",
+      contactPhone: "+90 537 622 0694",
+      contactAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG, Nilüfer/Bursa",
+      freeShippingThreshold: 200,
+      defaultShippingCost: 39.90,
+    },
+  });
+  console.log("  ✓ Site settings created");
 
   console.log("\n✅ Seed completed!");
   console.log("\n📋 Test Credentials:");

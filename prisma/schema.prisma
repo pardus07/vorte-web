@@ -12,6 +12,8 @@ datasource db {
 enum UserRole {
   CUSTOMER
   ADMIN
+  EDITOR
+  VIEWER
 }
 
 enum DealerStatus {
@@ -90,17 +92,35 @@ model User {
   phone         String?
   passwordHash  String
   role          UserRole  @default(CUSTOMER)
+  permissions   Json?     // Granüler yetkiler: { "products": "rw", "orders": "r", ... }
   emailVerified DateTime?
   image         String?
+  active        Boolean   @default(true)
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  addresses  Address[]
-  orders     Order[]
-  favorites  Favorite[]
-  cartItems  CartItem[]
+  addresses     Address[]
+  orders        Order[]
+  favorites     Favorite[]
+  cartItems     CartItem[]
+  activityLogs  ActivityLog[]
 
   @@map("users")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "login", "product.create", "order.update", etc.
+  target    String?  // Target resource ID
+  details   String?  // Additional context
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
 }
 
 model Dealer {
@@ -175,9 +195,21 @@ model Product {
   categoryId  String
   gender      Gender
   basePrice   Float
+  costPrice   Float?
+  weight      Float?
   images      String[]
   active      Boolean  @default(true)
   featured    Boolean  @default(false)
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // Google Merchant
+  googleCategory   String?
+  merchantSynced   Boolean   @default(false)
+  merchantSyncedAt DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -361,4 +393,101 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@map("notifications")
+}
+
+model SiteSettings {
+  id                    String   @id @default("main")
+
+  // Genel
+  siteName              String   @default("Vorte Tekstil")
+  siteDescription       String?
+  siteUrl               String   @default("https://www.vorte.com.tr")
+  contactEmail          String?
+  contactPhone          String?
+  contactAddress        String?
+
+  // Logo & Favicon
+  logoUrl               String?
+  logoDarkUrl           String?
+  faviconUrl            String?
+  ogImageUrl            String?
+
+  // SEO
+  metaTitle             String?
+  metaDescription       String?
+  metaKeywords          String?
+
+  // Üçüncü Parti Kodlar
+  googleVerificationCode String?
+  googleAnalyticsId      String?
+  googleAdsCode          String?  @db.Text
+  googleMerchantId       String?
+  facebookPixelId        String?
+
+  // AI Chatbot
+  aiSystemPrompt        String?  @db.Text
+  aiEnabled             Boolean  @default(false)
+  aiRules               String?  @db.Text
+
+  // Sosyal Medya
+  instagramUrl          String?
+  facebookUrl           String?
+  twitterUrl            String?
+  tiktokUrl             String?
+  youtubeUrl            String?
+
+  // E-posta Ayarları
+  smtpHost              String?
+  smtpPort              Int?
+  smtpUser              String?
+  smtpPassword          String?
+
+  // Kargo Ayarları
+  freeShippingThreshold Float?
+  defaultShippingCost   Float?
+
+  updatedAt             DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model Slider {
+  id            String    @id @default(cuid())
+  title         String?
+  subtitle      String?
+  highlight     String?
+  description   String?
+  buttonText    String?
+  buttonLink    String?
+  secondaryButtonText String?
+  secondaryButtonLink String?
+  imageDesktop  String
+  imageMobile   String
+  altText       String?
+  sortOrder     Int       @default(0)
+  active        Boolean   @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("sliders")
+}
+
+model Banner {
+  id            String    @id @default(cuid())
+  name          String
+  position      String    // "homepage-top", "homepage-mid", "product-sidebar", etc.
+  imageDesktop  String
+  imageMobile   String?
+  link          String?
+  altText       String?
+  active        Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("banners")
 }

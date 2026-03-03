@@ -6,6 +6,8 @@ import { Footer } from "@/components/layout/Footer";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { CookieConsent } from "@/components/ui/CookieConsent";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { AnalyticsScripts } from "@/components/seo/AnalyticsScripts";
+import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,53 +15,78 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Vorte Tekstil | Kaliteli İç Giyim - Toptan ve Perakende",
-    template: "%s | Vorte Tekstil",
-  },
-  description:
-    "Vorte Tekstil - Erkek boxer ve kadın iç giyim ürünleri. Toptan ve perakende satış. Premium kalite, uygun fiyat. Bursa, Türkiye.",
-  keywords: [
-    "iç giyim",
-    "erkek boxer",
-    "kadın külot",
-    "toptan iç giyim",
-    "toptan erkek boxer",
-    "toptan kadın külot",
-    "erkek boxer üretici",
-    "bursa iç giyim toptancısı",
-    "toptan boxer imalatçısı",
-    "vorte tekstil",
-    "bursa tekstil",
-  ],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-    ],
-  },
-  openGraph: {
-    type: "website",
-    locale: "tr_TR",
-    siteName: "Vorte Tekstil",
-    images: [{ url: "/logo.png", width: 512, height: 512, alt: "Vorte Tekstil" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-  },
-  alternates: {
-    canonical: "/",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
 
-export default function RootLayout({
+  const title = settings.metaTitle || "Vorte Tekstil | Kaliteli İç Giyim - Toptan ve Perakende";
+  const description =
+    settings.metaDescription ||
+    "Vorte Tekstil - Erkek boxer ve kadın iç giyim ürünleri. Toptan ve perakende satış. Premium kalite, uygun fiyat. Bursa, Türkiye.";
+  const keywords = settings.metaKeywords
+    ? settings.metaKeywords.split(",").map((k) => k.trim())
+    : [
+        "iç giyim",
+        "erkek boxer",
+        "kadın külot",
+        "toptan iç giyim",
+        "toptan erkek boxer",
+        "toptan kadın külot",
+        "erkek boxer üretici",
+        "bursa iç giyim toptancısı",
+        "toptan boxer imalatçısı",
+        "vorte tekstil",
+        "bursa tekstil",
+      ];
+
+  const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+  return {
+    title: {
+      default: title,
+      template: `%s | ${settings.siteName || "Vorte Tekstil"}`,
+    },
+    description,
+    keywords,
+    metadataBase: new URL(siteUrl),
+    icons: {
+      icon: [
+        { url: settings.faviconUrl || "/favicon.ico", sizes: "any" },
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      ],
+    },
+    openGraph: {
+      type: "website",
+      locale: "tr_TR",
+      siteName: settings.siteName || "Vorte Tekstil",
+      images: [
+        {
+          url: settings.ogImageUrl || "/logo.png",
+          width: settings.ogImageUrl ? 1200 : 512,
+          height: settings.ogImageUrl ? 630 : 512,
+          alt: settings.siteName || "Vorte Tekstil",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+    alternates: {
+      canonical: "/",
+    },
+    verification: settings.googleVerificationCode
+      ? { google: settings.googleVerificationCode }
+      : undefined,
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getSiteSettings();
+
   return (
     <html lang="tr">
       <body className={`${inter.variable} font-sans antialiased`}>
@@ -67,11 +94,11 @@ export default function RootLayout({
           data={{
             "@context": "https://schema.org",
             "@type": ["Organization", "ClothingStore"],
-            name: "Vorte Tekstil",
-            url: "https://www.vorte.com.tr",
-            logo: "https://www.vorte.com.tr/logo.png",
-            telephone: "+90-537-622-0694",
-            email: "info@vorte.com.tr",
+            name: settings.siteName || "Vorte Tekstil",
+            url: settings.siteUrl || "https://www.vorte.com.tr",
+            logo: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
+            telephone: settings.contactPhone || "+90-537-622-0694",
+            email: settings.contactEmail || "info@vorte.com.tr",
             address: {
               "@type": "PostalAddress",
               streetAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
@@ -82,11 +109,17 @@ export default function RootLayout({
             },
             contactPoint: {
               "@type": "ContactPoint",
-              telephone: "+90-537-622-0694",
+              telephone: settings.contactPhone || "+90-537-622-0694",
               contactType: "customer service",
               availableLanguage: "Turkish",
             },
-            sameAs: [],
+            sameAs: [
+              settings.instagramUrl,
+              settings.facebookUrl,
+              settings.twitterUrl,
+              settings.youtubeUrl,
+              settings.tiktokUrl,
+            ].filter(Boolean),
           }}
         />
         <Providers>
@@ -98,6 +131,7 @@ export default function RootLayout({
             <CookieConsent />
           </div>
         </Providers>
+        <AnalyticsScripts />
       </body>
     </html>
   );

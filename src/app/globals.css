@@ -52,3 +52,35 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
+
+/* Admin form input - reusable class */
+.form-input {
+  display: flex;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-radius: 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--vorte-green);
+  box-shadow: 0 0 0 1px var(--vorte-green);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+textarea.form-input {
+  resize: vertical;
+}
