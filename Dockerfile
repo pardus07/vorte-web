@@ -21,9 +21,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN corepack enable pnpm && pnpm build
 
-# Compile seed.ts to seed.js so it can run in the runner stage
-RUN npx tsc prisma/seed.ts --outDir prisma/compiled --esModuleInterop --module commonjs --target es2020 --skipLibCheck
-
 # Stage 3: Runner
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -39,11 +36,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema for runtime migrations
-COPY --from=builder /app/prisma/schema.prisma ./prisma/schema.prisma
+# Copy Prisma files + seed for database seeding
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy compiled seed.js for database seeding
-COPY --from=builder /app/prisma/compiled/seed.js ./prisma/seed.js
+# Install tsx for running seed.ts
+RUN npm install -g tsx
 
 USER nextjs
 
