@@ -36,19 +36,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema + seed script for database seeding
+# Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
-
-# Install seed dependencies in isolated directory (avoids npm/pnpm conflicts in standalone node_modules)
-RUN npm install -g tsx \
-    && mkdir -p /seed \
-    && cd /seed \
-    && npm init -y > /dev/null 2>&1 \
-    && npm install @prisma/client@6 prisma@6 bcryptjs \
-    && npx prisma generate --schema=/app/prisma/schema.prisma
-
-# To run seed: NODE_PATH=/seed/node_modules tsx prisma/seed.ts
-ENV NODE_PATH=/seed/node_modules
 
 USER nextjs
 
