@@ -44,7 +44,7 @@ RUN npm install -g tsx \
     && mkdir -p /seed \
     && cd /seed \
     && npm init -y > /dev/null 2>&1 \
-    && npm install @prisma/client prisma bcryptjs \
+    && npm install @prisma/client@6 prisma@6 bcryptjs \
     && npx prisma generate --schema=/app/prisma/schema.prisma
 
 # To run seed: NODE_PATH=/seed/node_modules tsx prisma/seed.ts
