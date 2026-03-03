@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Tag } from "lucide-react";
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Tag, Lock, Truck, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatPrice } from "@/lib/utils";
@@ -48,6 +48,9 @@ export default function CartPage() {
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   const fetchCart = useCallback(async () => {
     try {
@@ -132,9 +135,10 @@ export default function CartPage() {
     );
   }
 
-  const shippingCost = cart.total >= FREE_SHIPPING_THRESHOLD ? 0 : 29.90;
-  const grandTotal = cart.total + shippingCost;
-  const remainingForFreeShipping = FREE_SHIPPING_THRESHOLD - cart.total;
+  const subtotalAfterCoupon = Math.max(0, cart.total - couponDiscount);
+  const shippingCost = subtotalAfterCoupon >= FREE_SHIPPING_THRESHOLD ? 0 : 29.90;
+  const grandTotal = subtotalAfterCoupon + shippingCost;
+  const remainingForFreeShipping = FREE_SHIPPING_THRESHOLD - subtotalAfterCoupon;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -156,7 +160,7 @@ export default function CartPage() {
             <div
               className="h-full rounded-full bg-[#7AC143] transition-all"
               style={{
-                width: `${Math.min(100, (cart.total / FREE_SHIPPING_THRESHOLD) * 100)}%`,
+                width: `${Math.min(100, (subtotalAfterCoupon / FREE_SHIPPING_THRESHOLD) * 100)}%`,
               }}
             />
           </div>
@@ -272,6 +276,7 @@ export default function CartPage() {
                     onChange={(e) => {
                       setCouponCode(e.target.value.toUpperCase());
                       setCouponError("");
+                      setCouponSuccess("");
                     }}
                     placeholder="Kupon Kodu"
                     className="w-full rounded border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
@@ -280,16 +285,41 @@ export default function CartPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
+                  disabled={couponLoading}
+                  onClick={async () => {
                     if (!couponCode) return;
-                    setCouponError("Geçersiz kupon kodu");
+                    setCouponLoading(true);
+                    setCouponError("");
+                    setCouponSuccess("");
+                    try {
+                      const res = await fetch(`/api/cart?coupon=${encodeURIComponent(couponCode)}`);
+                      const data = await res.json();
+                      if (!res.ok || data.error) {
+                        setCouponError(data.error || "Gecersiz kupon kodu");
+                        setCouponDiscount(0);
+                      } else if (data.couponDiscount) {
+                        setCouponDiscount(data.couponDiscount);
+                        setCouponSuccess(`Kupon uygulandi! ${formatPrice(data.couponDiscount)} indirim`);
+                      } else {
+                        setCouponError("Gecersiz kupon kodu");
+                        setCouponDiscount(0);
+                      }
+                    } catch {
+                      setCouponError("Gecersiz kupon kodu");
+                      setCouponDiscount(0);
+                    } finally {
+                      setCouponLoading(false);
+                    }
                   }}
                 >
-                  Uygula
+                  {couponLoading ? "Kontrol ediliyor..." : "Uygula"}
                 </Button>
               </div>
               {couponError && (
                 <p className="mt-1 text-xs text-red-500">{couponError}</p>
+              )}
+              {couponSuccess && (
+                <p className="mt-1 text-xs text-[#7AC143]">{couponSuccess}</p>
               )}
             </div>
 
@@ -298,6 +328,12 @@ export default function CartPage() {
                 <span className="text-gray-600">Ara Toplam</span>
                 <span>{formatPrice(cart.total)}</span>
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Kupon Indirimi</span>
+                  <span className="text-[#7AC143] font-medium">-{formatPrice(couponDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Kargo</span>
                 <span className={shippingCost === 0 ? "text-[#7AC143] font-medium" : ""}>
@@ -323,10 +359,10 @@ export default function CartPage() {
           </div>
 
           {/* Trust badges */}
-          <div className="mt-4 space-y-2 text-center text-xs text-gray-500">
-            <p>🔒 256-bit SSL ile güvenli ödeme</p>
-            <p>🚚 1-3 iş günü teslimat</p>
-            <p>↩️ 14 gün koşulsuz iade</p>
+          <div className="mt-4 space-y-2 text-xs text-gray-500">
+            <p className="flex items-center justify-center gap-1.5"><Lock className="h-3.5 w-3.5 text-[#7AC143]" /> 256-bit SSL ile güvenli ödeme</p>
+            <p className="flex items-center justify-center gap-1.5"><Truck className="h-3.5 w-3.5 text-[#7AC143]" /> 1-3 iş günü teslimat</p>
+            <p className="flex items-center justify-center gap-1.5"><RotateCcw className="h-3.5 w-3.5 text-[#7AC143]" /> 14 gün koşulsuz iade</p>
           </div>
         </div>
       </div>

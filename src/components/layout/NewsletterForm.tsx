@@ -6,12 +6,36 @@ import Link from "next/link";
 export function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed || !email) return;
-    setStatus("success");
+
+    setStatus("loading");
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus("error");
+        setErrorMessage(data.error || "Bir hata olustu.");
+        return;
+      }
+
+      setStatus("success");
+    } catch {
+      setStatus("error");
+      setErrorMessage("Baglanti hatasi. Lutfen tekrar deneyin.");
+    }
   };
 
   if (status === "success") {
@@ -35,10 +59,10 @@ export function NewsletterForm() {
         />
         <button
           type="submit"
-          disabled={!agreed}
+          disabled={!agreed || status === "loading"}
           className="h-11 bg-[#1A1A1A] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#333333] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Kayıt Ol
+          {status === "loading" ? "Kaydediliyor..." : "Kayıt Ol"}
         </button>
       </div>
       <label className="flex cursor-pointer items-start gap-2">
@@ -56,6 +80,9 @@ export function NewsletterForm() {
           &apos;ni okudum, e-posta ile bilgilendirme yapılmasını kabul ediyorum.
         </span>
       </label>
+      {status === "error" && (
+        <p className="text-sm text-red-500">{errorMessage}</p>
+      )}
     </form>
   );
 }

@@ -6,10 +6,12 @@ import Image from "next/image";
 import { Menu, Search, Heart, User, ShoppingBag } from "lucide-react";
 import { MobileMenu } from "./MobileMenu";
 import { SearchBar } from "./SearchBar";
+import { useCart } from "@/contexts/CartContext";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const { cartCount } = useCart();
 
   return (
     <>
@@ -92,7 +94,7 @@ export function Header() {
             <Link href="/sepet" className="relative p-1.5 hover:opacity-70 transition-opacity">
               <ShoppingBag className="h-5 w-5" />
               <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#7AC143] text-[10px] font-bold text-white">
-                0
+                {cartCount}
               </span>
             </Link>
           </div>

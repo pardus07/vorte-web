@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { FilterSidebar } from "@/components/product/FilterSidebar";
 
-export function FilterToggle() {
+export function FilterToggle({ availableColors }: { availableColors: string[] }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -20,7 +20,7 @@ export function FilterToggle() {
       {/* Mobile filter sidebar */}
       <div className="lg:hidden">
         <Suspense>
-          <FilterSidebar isOpen={isOpen} onClose={() => setIsOpen(false)} />
+          <FilterSidebar isOpen={isOpen} onClose={() => setIsOpen(false)} availableColors={availableColors} />
         </Suspense>
       </div>
     </>

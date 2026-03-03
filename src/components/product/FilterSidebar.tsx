@@ -6,18 +6,19 @@ import { X, SlidersHorizontal } from "lucide-react";
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 
-const COLORS = [
-  { name: "Siyah", hex: "#000000" },
-  { name: "Beyaz", hex: "#FFFFFF" },
-  { name: "Gri", hex: "#808080" },
-  { name: "Lacivert", hex: "#1B2A4A" },
-  { name: "Bordo", hex: "#800020" },
-  { name: "Kırmızı", hex: "#DC2626" },
-  { name: "Mavi", hex: "#2563EB" },
-  { name: "Yeşil", hex: "#16A34A" },
-  { name: "Pembe", hex: "#EC4899" },
-  { name: "Bej", hex: "#D4B896" },
-];
+const COLOR_HEX: Record<string, string> = {
+  Siyah: "#000000",
+  Beyaz: "#FFFFFF",
+  Lacivert: "#1B2A4A",
+  Ten: "#D4A574",
+  Gri: "#808080",
+  Bordo: "#800020",
+  Kırmızı: "#DC2626",
+  Mavi: "#2563EB",
+  Yeşil: "#16A34A",
+  Pembe: "#EC4899",
+  Bej: "#D4B896",
+};
 
 const PRICE_RANGES = [
   { label: "0 - 100 ₺", min: 0, max: 100 },
@@ -29,9 +30,14 @@ const PRICE_RANGES = [
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  availableColors?: string[];
 }
 
-export function FilterSidebar({ isOpen, onClose }: FilterSidebarProps) {
+export function FilterSidebar({ isOpen, onClose, availableColors = [] }: FilterSidebarProps) {
+  const colors = availableColors.map((name) => ({
+    name,
+    hex: COLOR_HEX[name] || "#808080",
+  }));
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -140,7 +146,7 @@ export function FilterSidebar({ isOpen, onClose }: FilterSidebarProps) {
             Renk
           </h3>
           <div className="flex flex-wrap gap-2">
-            {COLORS.map((color) => (
+            {colors.map((color) => (
               <button
                 key={color.name}
                 onClick={() =>

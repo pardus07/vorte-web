@@ -12,7 +12,7 @@ async function getSessionId(): Promise<string> {
   return sessionId;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id;
   const sessionId = !userId ? await getSessionId() : undefined;
@@ -31,11 +31,39 @@ export async function GET() {
   });
 
   const total = items.reduce((sum, item) => {
-    const price = item.variant.price || item.product.basePrice;
+    const price = item.variant.price ?? item.product.basePrice;
     return sum + price * item.quantity;
   }, 0);
 
-  const response = NextResponse.json({
+  // Coupon validation
+  const couponCode = request.nextUrl.searchParams.get("coupon");
+  let couponDiscount = 0;
+  let couponError: string | null = null;
+
+  if (couponCode) {
+    const coupon = await db.coupon.findUnique({
+      where: { code: couponCode },
+    });
+
+    if (!coupon || !coupon.active) {
+      couponError = "Geçersiz kupon kodu.";
+    } else if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+      couponError = "Kupon kodunun süresi dolmuş.";
+    } else if (coupon.maxUses && coupon.currentUses >= coupon.maxUses) {
+      couponError = "Bu kupon kodunun kullanım limiti dolmuş.";
+    } else if (coupon.minAmount && total < coupon.minAmount) {
+      couponError = `Bu kupon için minimum sepet tutarı ${coupon.minAmount} TL'dir.`;
+    } else {
+      if (coupon.discountType === "PERCENT") {
+        couponDiscount = Math.round((total * coupon.discountValue) / 100 * 100) / 100;
+      } else {
+        couponDiscount = coupon.discountValue;
+      }
+      couponDiscount = Math.min(couponDiscount, total);
+    }
+  }
+
+  const responseData: Record<string, unknown> = {
     items: items.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -58,12 +86,24 @@ export async function GET() {
         stock: item.variant.stock,
         price: item.variant.price,
       },
-      unitPrice: item.variant.price || item.product.basePrice,
-      totalPrice: (item.variant.price || item.product.basePrice) * item.quantity,
+      unitPrice: item.variant.price ?? item.product.basePrice,
+      totalPrice: (item.variant.price ?? item.product.basePrice) * item.quantity,
     })),
     total,
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-  });
+  };
+
+  if (couponCode) {
+    if (couponError) {
+      responseData.error = couponError;
+    } else {
+      responseData.couponDiscount = couponDiscount;
+    }
+  }
+
+  const response = couponError
+    ? NextResponse.json(responseData, { status: 400 })
+    : NextResponse.json(responseData);
 
   if (!userId && sessionId) {
     response.cookies.set("cart-session", sessionId, {

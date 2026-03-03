@@ -1,23 +1,8 @@
 import { ProductCard } from "./ProductCard";
+import { ProductWithVariants } from "@/lib/types";
 
 interface ProductGridProps {
-  products: {
-    id: string;
-    name: string;
-    slug: string;
-    basePrice: number;
-    images: string[];
-    featured: boolean;
-    category: { name: string };
-    variants: {
-      id: string;
-      color: string;
-      colorHex: string;
-      size: string;
-      stock: number;
-      price: number | null;
-    }[];
-  }[];
+  products: ProductWithVariants[];
 }
 
 export function ProductGrid({ products }: ProductGridProps) {

@@ -94,264 +94,178 @@ async function main() {
     data: { name: "Erkek Boxer", slug: "erkek-boxer", gender: "ERKEK", sortOrder: 1 },
   });
 
-  const catErkekAtlet = await db.category.create({
-    data: { name: "Erkek Atlet", slug: "erkek-atlet", gender: "ERKEK", sortOrder: 2 },
-  });
-
   const catKadinKulot = await db.category.create({
     data: { name: "Kadın Külot", slug: "kadin-kulot", gender: "KADIN", sortOrder: 1 },
-  });
-
-  const catKadinSutyen = await db.category.create({
-    data: { name: "Kadın Sütyen", slug: "kadin-sutyen", gender: "KADIN", sortOrder: 2 },
   });
 
   console.log("  ✓ Categories created");
 
   // ===== PRODUCTS & VARIANTS =====
 
-  // Erkek Boxer 1 - Premium Siyah/Lacivert
-  const boxer1 = await db.product.create({
+  // --- ERKEK BOXER: Siyah ---
+  const erkekBoxerSiyah = await db.product.create({
     data: {
-      name: "Vorte Premium Erkek Boxer",
-      slug: "vorte-premium-erkek-boxer",
-      description: "Premium pamuk kumaş, elastik bel bandı, konforlu kesim. Günlük kullanıma uygun kaliteli erkek boxer.",
+      name: "Erkek Modal Boxer Siyah",
+      slug: "erkek-modal-boxer-siyah",
+      description: "Premium modal kumaş, elastik bel bandı, konforlu kesim. Günlük kullanıma uygun kaliteli erkek boxer. Siyah renk.",
       categoryId: catErkekBoxer.id,
       gender: "ERKEK",
-      basePrice: 89.90,
+      basePrice: 149.90,
       featured: true,
-      images: ["/images/erkek-boxer-siyah-1.png", "/images/erkek-boxer-siyah-2.png", "/images/erkek-boxer-siyah-3.png", "/images/erkek-boxer-siyah-4.png"],
+      images: [
+        "/images/erkek-boxer-siyah-1.png",
+        "/images/erkek-boxer-siyah-2.png",
+        "/images/erkek-boxer-siyah-3.png",
+        "/images/erkek-boxer-siyah-4.png",
+      ],
     },
   });
 
-  // Siyah variants
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
     await db.variant.create({
       data: {
-        productId: boxer1.id,
+        productId: erkekBoxerSiyah.id,
         color: "Siyah",
-        colorHex: "#1A1A1A",
+        colorHex: "#000000",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-BXR-SYH-${size}`,
-        gtinBarcode: `869000100${size === "S" ? "1" : size === "M" ? "2" : size === "L" ? "3" : size === "XL" ? "4" : "5"}001`,
-        stock: size === "M" || size === "L" ? 50 : size === "XL" ? 30 : 20,
+        sku: `VRT-MBX-SYH-${size}`,
+        stock: 50,
       },
     });
   }
 
-  // Lacivert variants
+  // --- ERKEK BOXER: Lacivert ---
+  const erkekBoxerLacivert = await db.product.create({
+    data: {
+      name: "Erkek Modal Boxer Lacivert",
+      slug: "erkek-modal-boxer-lacivert",
+      description: "Premium modal kumaş, elastik bel bandı, konforlu kesim. Günlük kullanıma uygun kaliteli erkek boxer. Lacivert renk.",
+      categoryId: catErkekBoxer.id,
+      gender: "ERKEK",
+      basePrice: 149.90,
+      featured: true,
+      images: [
+        "/images/erkek-boxer-lacivert-1.png",
+        "/images/erkek-boxer-lacivert-2.png",
+        "/images/erkek-boxer-lacivert-3.png",
+        "/images/erkek-boxer-lacivert-4.png",
+      ],
+    },
+  });
+
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
     await db.variant.create({
       data: {
-        productId: boxer1.id,
+        productId: erkekBoxerLacivert.id,
         color: "Lacivert",
         colorHex: "#1B2A4A",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-BXR-LCV-${size}`,
-        gtinBarcode: `869000100${size === "S" ? "1" : size === "M" ? "2" : size === "L" ? "3" : size === "XL" ? "4" : "5"}002`,
-        stock: size === "M" || size === "L" ? 45 : 15,
+        sku: `VRT-MBX-LCV-${size}`,
+        stock: 50,
       },
     });
   }
 
-  // Erkek Boxer 2 - Comfort
-  const boxer2 = await db.product.create({
+  // --- KADIN KÜLOT: Siyah ---
+  const kadinKulotSiyah = await db.product.create({
     data: {
-      name: "Vorte Comfort Erkek Boxer",
-      slug: "vorte-comfort-erkek-boxer",
-      description: "Yumuşak modal kumaş, dikişsiz tasarım. Tüm gün konfor sunan erkek boxer.",
-      categoryId: catErkekBoxer.id,
-      gender: "ERKEK",
-      basePrice: 69.90,
-      featured: false,
-      images: ["/images/erkek-boxer-lacivert-1.png", "/images/erkek-boxer-lacivert-2.png", "/images/erkek-boxer-lacivert-3.png", "/images/erkek-boxer-lacivert-4.png"],
-    },
-  });
-
-  for (const color of [
-    { name: "Gri", hex: "#808080" },
-    { name: "Bordo", hex: "#800020" },
-  ]) {
-    for (const size of ["S", "M", "L", "XL", "XXL"]) {
-      const prefix = color.name === "Gri" ? "GRI" : "BRD";
-      await db.variant.create({
-        data: {
-          productId: boxer2.id,
-          color: color.name,
-          colorHex: color.hex,
-          size: size as "S" | "M" | "L" | "XL" | "XXL",
-          sku: `VRT-CMF-${prefix}-${size}`,
-          stock: Math.floor(Math.random() * 40) + 10,
-        },
-      });
-    }
-  }
-
-  // Erkek Boxer 3 - Sport
-  const boxer3 = await db.product.create({
-    data: {
-      name: "Vorte Sport Erkek Boxer",
-      slug: "vorte-sport-erkek-boxer",
-      description: "Nefes alabilir kumaş, spor aktiviteler için ideal. Ter tutmaz yapı.",
-      categoryId: catErkekBoxer.id,
-      gender: "ERKEK",
+      name: "Kadın Modal Külot Siyah",
+      slug: "kadin-modal-kulot-siyah",
+      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Siyah renk.",
+      categoryId: catKadinKulot.id,
+      gender: "KADIN",
       basePrice: 99.90,
       featured: true,
-      images: ["/images/erkek-boxer-siyah-1.png", "/images/erkek-boxer-siyah-4.png"],
+      images: [
+        "/images/kadin-kulot-siyah-1.png",
+        "/images/kadin-kulot-siyah-2.png",
+        "/images/kadin-kulot-siyah-3.png",
+        "/images/kadin-kulot-siyah-4.png",
+      ],
     },
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
     await db.variant.create({
       data: {
-        productId: boxer3.id,
+        productId: kadinKulotSiyah.id,
         color: "Siyah",
-        colorHex: "#1A1A1A",
+        colorHex: "#000000",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-SPR-SYH-${size}`,
-        stock: Math.floor(Math.random() * 30) + 5,
+        sku: `VRT-MKL-SYH-${size}`,
+        stock: 50,
       },
     });
   }
 
-  // Erkek Atlet
-  const atlet1 = await db.product.create({
+  // --- KADIN KÜLOT: Beyaz ---
+  const kadinKulotBeyaz = await db.product.create({
     data: {
-      name: "Vorte Classic Erkek Atlet",
-      slug: "vorte-classic-erkek-atlet",
-      description: "%100 pamuk, klasik kesim erkek atlet. Günlük kullanıma ideal.",
-      categoryId: catErkekAtlet.id,
-      gender: "ERKEK",
-      basePrice: 59.90,
-      images: ["/images/erkek-boxer-lacivert-1.png", "/images/erkek-boxer-lacivert-4.png"],
-    },
-  });
-
-  for (const color of [
-    { name: "Beyaz", hex: "#FFFFFF" },
-    { name: "Siyah", hex: "#1A1A1A" },
-  ]) {
-    for (const size of ["S", "M", "L", "XL", "XXL"]) {
-      const prefix = color.name === "Beyaz" ? "BYZ" : "SYH";
-      await db.variant.create({
-        data: {
-          productId: atlet1.id,
-          color: color.name,
-          colorHex: color.hex,
-          size: size as "S" | "M" | "L" | "XL" | "XXL",
-          sku: `VRT-ATL-${prefix}-${size}`,
-          stock: Math.floor(Math.random() * 60) + 10,
-        },
-      });
-    }
-  }
-
-  // Kadın Külot 1 - Premium
-  const kulot1 = await db.product.create({
-    data: {
-      name: "Vorte Premium Kadın Külot",
-      slug: "vorte-premium-kadin-kulot",
-      description: "Yumuşak pamuk kumaş, dantel detaylı. Zarif ve konforlu kadın külot.",
+      name: "Kadın Modal Külot Beyaz",
+      slug: "kadin-modal-kulot-beyaz",
+      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Beyaz renk.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
-      basePrice: 59.90,
+      basePrice: 99.90,
       featured: true,
-      images: ["/images/kadin-kulot-siyah-1.png", "/images/kadin-kulot-siyah-2.png", "/images/kadin-kulot-siyah-3.png", "/images/kadin-kulot-siyah-4.png"],
+      images: [
+        "/images/kadin-kulot-beyaz-1.png",
+        "/images/kadin-kulot-beyaz-2.png",
+        "/images/kadin-kulot-beyaz-3.png",
+        "/images/kadin-kulot-beyaz-4.png",
+      ],
     },
   });
 
-  for (const color of [
-    { name: "Pembe", hex: "#EC4899" },
-    { name: "Beyaz", hex: "#FFFFFF" },
-    { name: "Siyah", hex: "#1A1A1A" },
-  ]) {
-    for (const size of ["S", "M", "L", "XL", "XXL"]) {
-      const prefix = color.name === "Pembe" ? "PMB" : color.name === "Beyaz" ? "BYZ" : "SYH";
-      await db.variant.create({
-        data: {
-          productId: kulot1.id,
-          color: color.name,
-          colorHex: color.hex,
-          size: size as "S" | "M" | "L" | "XL" | "XXL",
-          sku: `VRT-KLT-${prefix}-${size}`,
-          gtinBarcode: `869000200${size === "S" ? "1" : size === "M" ? "2" : size === "L" ? "3" : size === "XL" ? "4" : "5"}00${color.name === "Pembe" ? "1" : color.name === "Beyaz" ? "2" : "3"}`,
-          stock: Math.floor(Math.random() * 50) + 10,
-        },
-      });
-    }
+  for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    await db.variant.create({
+      data: {
+        productId: kadinKulotBeyaz.id,
+        color: "Beyaz",
+        colorHex: "#FFFFFF",
+        size: size as "S" | "M" | "L" | "XL" | "XXL",
+        sku: `VRT-MKL-BYZ-${size}`,
+        stock: 50,
+      },
+    });
   }
 
-  // Kadın Külot 2 - Comfort
-  const kulot2 = await db.product.create({
+  // --- KADIN KÜLOT: Ten ---
+  const kadinKulotTen = await db.product.create({
     data: {
-      name: "Vorte Comfort Kadın Külot",
-      slug: "vorte-comfort-kadin-kulot",
-      description: "Dikişsiz tasarım, gün boyu konfor. Modal kumaş ile yumuşak dokunuş.",
+      name: "Kadın Modal Külot Ten",
+      slug: "kadin-modal-kulot-ten",
+      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Ten rengi.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
-      basePrice: 49.90,
-      images: ["/images/kadin-kulot-beyaz-1.png", "/images/kadin-kulot-beyaz-2.png", "/images/kadin-kulot-beyaz-3.png", "/images/kadin-kulot-beyaz-4.png"],
-    },
-  });
-
-  for (const color of [
-    { name: "Bej", hex: "#D4B896" },
-    { name: "Gri", hex: "#808080" },
-    { name: "Pembe", hex: "#F9A8D4" },
-  ]) {
-    for (const size of ["S", "M", "L", "XL", "XXL"]) {
-      const prefix = color.name === "Bej" ? "BEJ" : color.name === "Gri" ? "GRI" : "PMB";
-      await db.variant.create({
-        data: {
-          productId: kulot2.id,
-          color: color.name,
-          colorHex: color.hex,
-          size: size as "S" | "M" | "L" | "XL" | "XXL",
-          sku: `VRT-CMF-K-${prefix}-${size}`,
-          stock: Math.floor(Math.random() * 40) + 5,
-        },
-      });
-    }
-  }
-
-  // Kadın Külot 3 - Sport
-  const kulot3 = await db.product.create({
-    data: {
-      name: "Vorte Sport Kadın Külot",
-      slug: "vorte-sport-kadin-kulot",
-      description: "Spor kesim, nefes alabilir kumaş. Aktif yaşam için tasarlandı.",
-      categoryId: catKadinKulot.id,
-      gender: "KADIN",
-      basePrice: 69.90,
+      basePrice: 99.90,
       featured: true,
-      images: ["/images/kadin-kulot-ten-1.png", "/images/kadin-kulot-ten-2.png", "/images/kadin-kulot-ten-3.png", "/images/kadin-kulot-ten-4.png"],
+      images: [
+        "/images/kadin-kulot-ten-1.png",
+        "/images/kadin-kulot-ten-2.png",
+        "/images/kadin-kulot-ten-3.png",
+        "/images/kadin-kulot-ten-4.png",
+      ],
     },
   });
 
-  for (const color of [
-    { name: "Siyah", hex: "#1A1A1A" },
-    { name: "Beyaz", hex: "#FFFFFF" },
-    { name: "Pembe", hex: "#EC4899" },
-  ]) {
-    for (const size of ["S", "M", "L", "XL", "XXL"]) {
-      const prefix = color.name === "Siyah" ? "SYH" : color.name === "Beyaz" ? "BYZ" : "PMB";
-      await db.variant.create({
-        data: {
-          productId: kulot3.id,
-          color: color.name,
-          colorHex: color.hex,
-          size: size as "S" | "M" | "L" | "XL" | "XXL",
-          sku: `VRT-SPR-K-${prefix}-${size}`,
-          stock: size === "XXL" ? 2 : Math.floor(Math.random() * 35) + 5,
-        },
-      });
-    }
+  for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    await db.variant.create({
+      data: {
+        productId: kadinKulotTen.id,
+        color: "Ten",
+        colorHex: "#D4A574",
+        size: size as "S" | "M" | "L" | "XL" | "XXL",
+        sku: `VRT-MKL-TEN-${size}`,
+        stock: 50,
+      },
+    });
   }
 
-  console.log("  ✓ Products & variants created (7 products, 85 variants)");
+  console.log("  ✓ Products & variants created (5 products, 25 variants)");
 
   // ===== DEALER PRICES =====
-  const allProducts = [boxer1, boxer2, boxer3, atlet1, kulot1, kulot2, kulot3];
+  const allProducts = [erkekBoxerSiyah, erkekBoxerLacivert, kadinKulotSiyah, kadinKulotBeyaz, kadinKulotTen];
 
   for (const product of allProducts) {
     // General wholesale price (for all dealers)

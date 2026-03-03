@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductGrid } from "@/components/product/ProductGrid";
@@ -14,12 +16,12 @@ const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; descri
   erkek: {
     label: "Erkek İç Giyim",
     gender: "ERKEK",
-    description: "Erkek boxer, atlet ve iç giyim ürünleri. Premium kalite, uygun fiyat.",
+    description: "Erkek modal boxer koleksiyonu. Premium kumaş kalitesi, uygun fiyat.",
   },
   kadin: {
     label: "Kadın İç Giyim",
     gender: "KADIN",
-    description: "Kadın külot, sütyen ve iç giyim ürünleri. Konfor ve şıklık bir arada.",
+    description: "Kadın modal külot koleksiyonu. Konfor ve şıklık bir arada.",
   },
 };
 
@@ -107,7 +109,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
   else if (sort === "price_desc") orderBy = { basePrice: "desc" };
   else if (sort === "newest") orderBy = { createdAt: "desc" };
 
-  const [products, totalCount, categories] = await Promise.all([
+  const [products, totalCount, categories, availableColorRows] = await Promise.all([
     db.product.findMany({
       where,
       include: {
@@ -123,10 +125,24 @@ export default async function ProductListingPage({ params, searchParams }: PageP
     }),
     db.product.count({ where }),
     db.category.findMany({
-      where: { gender: genderInfo.gender, active: true },
+      where: {
+        gender: genderInfo.gender,
+        active: true,
+        products: { some: { active: true } },
+      },
       orderBy: { sortOrder: "asc" },
     }),
+    db.variant.findMany({
+      where: {
+        active: true,
+        product: { gender: genderInfo.gender, active: true },
+      },
+      select: { color: true },
+      distinct: ["color"],
+    }),
   ]);
+
+  const availableColors = availableColorRows.map((v) => v.color);
 
   const totalPages = Math.ceil(totalCount / perPage);
 
@@ -136,10 +152,13 @@ export default async function ProductListingPage({ params, searchParams }: PageP
     <div>
       {/* Category Banner */}
       <div className="relative h-[200px] w-full overflow-hidden md:h-[280px]">
-        <img
+        <Image
           src={bannerImage}
           alt={genderInfo.label}
-          className="h-full w-full object-cover"
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/60 to-transparent" />
         <div className="absolute inset-0 flex items-center">
@@ -162,7 +181,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
       {/* Category tabs */}
       {categories.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          <a
+          <Link
             href={`/${genderKey}-ic-giyim`}
             className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
               !categorySlug
@@ -171,9 +190,9 @@ export default async function ProductListingPage({ params, searchParams }: PageP
             }`}
           >
             Tümü
-          </a>
+          </Link>
           {categories.map((cat) => (
-            <a
+            <Link
               key={cat.id}
               href={`/${genderKey}-ic-giyim?category=${cat.slug}`}
               className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
@@ -183,7 +202,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
               }`}
             >
               {cat.name}
-            </a>
+            </Link>
           ))}
         </div>
       )}
@@ -197,7 +216,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
           <Suspense>
             <SortDropdown />
           </Suspense>
-          <FilterToggle />
+          <FilterToggle availableColors={availableColors} />
         </div>
       </div>
 
@@ -205,7 +224,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
       <div className="mt-6 flex gap-8">
         {/* Filter sidebar (desktop) */}
         <div className="hidden w-64 shrink-0 lg:block">
-          <DesktopFilter />
+          <DesktopFilter availableColors={availableColors} />
         </div>
 
         {/* Products */}
@@ -216,7 +235,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
           {totalPages > 1 && (
             <div className="mt-8 flex justify-center gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <a
+                <Link
                   key={p}
                   href={`?${new URLSearchParams({
                     ...Object.fromEntries(
@@ -231,7 +250,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
                   }`}
                 >
                   {p}
-                </a>
+                </Link>
               ))}
             </div>
           )}

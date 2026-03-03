@@ -5,33 +5,43 @@ import Image from "next/image";
 import { Heart } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { ProductWithVariants } from "@/lib/types";
 
 interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    slug: string;
-    basePrice: number;
-    images: string[];
-    featured: boolean;
-    category: {
-      name: string;
-    };
-    variants: {
-      id: string;
-      color: string;
-      colorHex: string;
-      size: string;
-      stock: number;
-      price: number | null;
-    }[];
-  };
+  product: ProductWithVariants;
+}
+
+function getFavorites(): string[] {
+  try {
+    const stored = localStorage.getItem("favorites");
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const checkFavorite = useCallback(() => {
+    const favorites = getFavorites();
+    setIsFavorite(favorites.includes(product.id));
+  }, [product.id]);
+
+  useEffect(() => {
+    checkFavorite();
+
+    const handleFavoritesChange = () => {
+      checkFavorite();
+    };
+
+    window.addEventListener("favorites-updated", handleFavoritesChange);
+    return () => {
+      window.removeEventListener("favorites-updated", handleFavoritesChange);
+    };
+  }, [checkFavorite]);
 
   const uniqueColors = Array.from(
     new Map(
@@ -41,7 +51,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const lowestPrice = Math.min(
     product.basePrice,
-    ...product.variants.filter((v) => v.price).map((v) => v.price!)
+    ...product.variants.filter((v) => v.price != null).map((v) => v.price!)
   );
 
   const hasDiscount = lowestPrice < product.basePrice;
@@ -84,9 +94,18 @@ export function ProductCard({ product }: ProductCardProps) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              const favorites = getFavorites();
+              let updated: string[];
+              if (favorites.includes(product.id)) {
+                updated = favorites.filter((id) => id !== product.id);
+              } else {
+                updated = [...favorites, product.id];
+              }
+              localStorage.setItem("favorites", JSON.stringify(updated));
               setIsFavorite(!isFavorite);
+              window.dispatchEvent(new CustomEvent("favorites-updated"));
             }}
-            className="absolute right-2 top-2 rounded-full bg-white/80 p-2 opacity-0 backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
+            className="absolute right-2 top-2 rounded-full bg-white/80 p-2 opacity-100 backdrop-blur-sm transition-all hover:bg-white md:opacity-0 md:group-hover:opacity-100"
             aria-label="Favorilere ekle"
           >
             <Heart

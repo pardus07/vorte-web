@@ -9,7 +9,6 @@ const SORT_OPTIONS = [
   { label: "En Yeni", value: "newest" },
   { label: "Fiyat: Düşükten Yükseğe", value: "price_asc" },
   { label: "Fiyat: Yüksekten Düşüğe", value: "price_desc" },
-  { label: "En Çok Satan", value: "bestseller" },
 ];
 
 export function SortDropdown() {

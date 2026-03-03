@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Facebook, Instagram, Twitter, Youtube, MapPin, Phone, Mail } from "lucide-react";
+import { Facebook, Instagram, MapPin, Phone, Mail } from "lucide-react";
 import { NewsletterForm } from "./NewsletterForm";
 
 const footerLinks = {
@@ -140,17 +140,11 @@ export function Footer() {
         <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row lg:px-8">
           {/* Social */}
           <div className="flex items-center gap-4">
-            <a href="#" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Facebook">
-              <Facebook className="h-5 w-5" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="X (Twitter)">
-              <Twitter className="h-5 w-5" />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Instagram">
+            <a href="https://www.instagram.com/vortetekstil" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Instagram">
               <Instagram className="h-5 w-5" />
             </a>
-            <a href="#" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="YouTube">
-              <Youtube className="h-5 w-5" />
+            <a href="https://www.facebook.com/vortetekstil" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Facebook">
+              <Facebook className="h-5 w-5" />
             </a>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { ShoppingBag, Heart, Barcode } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ColorSelector } from "@/components/product/ColorSelector";
@@ -27,16 +27,47 @@ interface ProductInfoProps {
     category: { name: string };
     variants: Variant[];
   };
+  selectedColor: string;
+  onColorChange: (color: string) => void;
 }
 
-export function ProductInfo({ product }: ProductInfoProps) {
-  const [selectedColor, setSelectedColor] = useState(
-    product.variants[0]?.color || ""
-  );
+export function ProductInfo({ product, selectedColor, onColorChange }: ProductInfoProps) {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const checkFavorite = useCallback(() => {
+    try {
+      const stored = localStorage.getItem("favorites");
+      const favs: string[] = stored ? JSON.parse(stored) : [];
+      setIsFavorite(favs.includes(product.id));
+    } catch { /* ignore */ }
+  }, [product.id]);
+
+  useEffect(() => {
+    checkFavorite();
+    const handler = () => checkFavorite();
+    window.addEventListener("favorites-updated", handler);
+    return () => window.removeEventListener("favorites-updated", handler);
+  }, [checkFavorite]);
+
+  const toggleFavorite = () => {
+    try {
+      const stored = localStorage.getItem("favorites");
+      let favs: string[] = stored ? JSON.parse(stored) : [];
+      if (favs.includes(product.id)) {
+        favs = favs.filter((id) => id !== product.id);
+      } else {
+        favs.push(product.id);
+      }
+      localStorage.setItem("favorites", JSON.stringify(favs));
+      setIsFavorite(!isFavorite);
+      window.dispatchEvent(new CustomEvent("favorites-updated"));
+    } catch { /* ignore */ }
+  };
 
   // Unique colors with availability
   const colors = useMemo(() => {
@@ -70,12 +101,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
     );
   }, [product.variants, selectedColor, selectedSize]);
 
-  const price = selectedVariant?.price || product.basePrice;
+  const price = selectedVariant?.price ?? product.basePrice;
   const isOutOfStock = selectedVariant ? selectedVariant.stock === 0 : false;
 
   const handleAddToCart = async () => {
     if (!selectedSize || !selectedVariant) return;
     setIsAdding(true);
+    setAddError("");
 
     try {
       const res = await fetch("/api/cart", {
@@ -91,9 +123,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
       if (res.ok) {
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } else {
+        const data = await res.json().catch(() => null);
+        setAddError(data?.error || "Ürün sepete eklenirken bir hata oluştu.");
       }
     } catch {
-      // Handle error silently
+      setAddError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
       setIsAdding(false);
     }
@@ -114,7 +150,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <span className="text-2xl font-bold text-gray-900">
           {formatPrice(price)}
         </span>
-        {selectedVariant?.price && selectedVariant.price < product.basePrice && (
+        {selectedVariant?.price != null && selectedVariant.price < product.basePrice && (
           <span className="text-lg text-gray-400 line-through">
             {formatPrice(product.basePrice)}
           </span>
@@ -139,8 +175,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
         colors={colors}
         selectedColor={selectedColor}
         onSelect={(color) => {
-          setSelectedColor(color);
+          onColorChange(color);
           setSelectedSize("");
+          setQuantity(1);
         }}
       />
 
@@ -168,7 +205,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
             <button
               onClick={() =>
                 setQuantity(
-                  Math.min(selectedVariant?.stock || 10, quantity + 1)
+                  Math.min(selectedVariant?.stock ?? 10, quantity + 1)
                 )
               }
               className="flex h-10 w-10 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -206,10 +243,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
             </>
           )}
         </Button>
-        <Button size="lg" variant="outline" className="px-4">
-          <Heart className="h-5 w-5" />
+        <Button size="lg" variant="outline" className="px-4" onClick={toggleFavorite}>
+          <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
         </Button>
       </div>
+
+      {/* Error message */}
+      {addError && (
+        <p className="rounded-md bg-red-50 p-2 text-sm text-red-600">{addError}</p>
+      )}
 
       {/* Social Share */}
       <SocialShare

@@ -1,4 +1,5 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { ContactForm } from "@/components/forms/ContactForm";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -38,13 +39,9 @@ export default function ContactPage() {
         </div>
         <div>
           <h2 className="text-lg font-bold text-gray-900">Mesaj Gönderin</h2>
-          <form className="mt-4 space-y-4">
-            <input type="text" placeholder="Ad Soyad" required className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]" />
-            <input type="email" placeholder="E-posta" required className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]" />
-            <input type="tel" placeholder="Telefon" className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]" />
-            <textarea rows={4} placeholder="Mesajınız" required className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]" />
-            <button type="submit" className="rounded-lg bg-[#1A1A1A] px-6 py-2.5 text-sm font-medium text-white hover:bg-black">Gönder</button>
-          </form>
+          <div className="mt-4">
+            <ContactForm />
+          </div>
         </div>
       </div>
 

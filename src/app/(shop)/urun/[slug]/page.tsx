@@ -3,9 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { ProductImages } from "@/components/product/ProductImages";
-import { ProductInfo } from "./ProductInfo";
-import { ProductAccordion } from "@/components/product/ProductAccordion";
+import { ProductDetailClient } from "./ProductDetailClient";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
@@ -123,18 +121,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       />
 
       {/* Product section */}
-      <div className="mt-6 grid gap-8 md:grid-cols-2 lg:gap-12">
-        {/* Images */}
-        <ProductImages images={product.images} productName={product.name} />
-
-        {/* Info */}
-        <div>
-          <ProductInfo product={product} />
-          <div className="mt-8">
-            <ProductAccordion description={product.description} />
-          </div>
-        </div>
-      </div>
+      <ProductDetailClient product={product} />
 
       {/* Related products */}
       {relatedProducts.length > 0 && (
