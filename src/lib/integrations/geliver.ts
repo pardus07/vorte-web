@@ -119,6 +119,7 @@ export interface GeLiverShipmentResponse {
   trackingNo: string;
   carrier: string;
   labelUrl: string;
+  trackingUrl: string;
   estimatedDelivery: string;
 }
 
@@ -147,6 +148,7 @@ class GeLiverService {
         trackingNo: `${Math.floor(Math.random() * 9000000000) + 1000000000}`,
         carrier: carriers[Math.floor(Math.random() * carriers.length)],
         labelUrl: "",
+        trackingUrl: "",
         estimatedDelivery: new Date(Date.now() + 3 * 86400000).toISOString(),
       };
     }
@@ -225,6 +227,7 @@ class GeLiverService {
       trackingNo: finalShipment.trackingNumber || finalShipment.barcode || "",
       carrier: formatCarrierName(carrier),
       labelUrl: finalShipment.labelURL || "",
+      trackingUrl: finalShipment.trackingUrl || "",
       estimatedDelivery: cheapestOffer.estimatedArrivalTime ||
         new Date(Date.now() + 3 * 86400000).toISOString(),
     };

@@ -297,8 +297,9 @@ model Order {
   addressSnapshot Json
   cargoTrackingNo String?
   cargoProvider   String?
-  cargoShipmentId String?
-  notes           String?
+  cargoShipmentId  String?
+  cargoTrackingUrl String?
+  notes            String?
   adminNotes      String?     @db.Text
   couponCode      String?
   createdAt       DateTime    @default(now())

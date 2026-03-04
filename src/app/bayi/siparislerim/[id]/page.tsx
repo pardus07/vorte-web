@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle,
   Copy,
+  ExternalLink,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string; step: number }> = {
@@ -210,6 +211,17 @@ export default async function DealerOrderDetailPage({ params }: { params: Promis
                     </button>
                   </div>
                 </div>
+                {order.cargoTrackingUrl && (
+                  <a
+                    href={order.cargoTrackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-[#7AC143] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#6aad38]"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Kargo Takip Sayfası
+                  </a>
+                )}
               </div>
             </div>
           )}

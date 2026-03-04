@@ -73,6 +73,7 @@ export async function POST(
         cargoTrackingNo: shipment.trackingNo,
         cargoProvider: shipment.carrier,
         cargoShipmentId: shipment.shipmentId,
+        cargoTrackingUrl: shipment.trackingUrl,
       },
     });
 

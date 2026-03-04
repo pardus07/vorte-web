@@ -402,6 +402,7 @@ async function createSchema() {
 
     // Order new columns (Faz 4)
     `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "cargoShipmentId" TEXT`,
+    `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "cargoTrackingUrl" TEXT`,
     `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "adminNotes" TEXT`,
     `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "couponCode" TEXT`,
 

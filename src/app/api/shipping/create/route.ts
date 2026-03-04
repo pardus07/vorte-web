@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
         cargoTrackingNo: shipment.trackingNo,
         cargoProvider: shipment.carrier,
         cargoShipmentId: shipment.shipmentId,
+        cargoTrackingUrl: shipment.trackingUrl,
       },
     });
 

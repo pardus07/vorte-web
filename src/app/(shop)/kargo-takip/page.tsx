@@ -14,6 +14,7 @@ import {
   RotateCcw,
   CreditCard,
   MapPin,
+  ExternalLink,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; icon: typeof Package; color: string }> = {
@@ -45,6 +46,7 @@ interface TrackingResult {
   status: string;
   cargoTrackingNo: string | null;
   cargoProvider: string | null;
+  cargoTrackingUrl: string | null;
   createdAt: string;
   updatedAt: string;
   statusHistory: StatusHistoryEntry[];
@@ -150,10 +152,23 @@ export default function CargoTrackingPage() {
             <p className="mt-1 text-gray-500">Sipariş #{result.orderNumber}</p>
 
             {result.cargoTrackingNo && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-2">
-                <Truck className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">{result.cargoProvider}</span>
-                <span className="font-mono font-medium text-gray-900">{result.cargoTrackingNo}</span>
+              <div className="mt-4 flex flex-col items-center gap-3">
+                <div className="inline-flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-2">
+                  <Truck className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">{result.cargoProvider}</span>
+                  <span className="font-mono font-medium text-gray-900">{result.cargoTrackingNo}</span>
+                </div>
+                {result.cargoTrackingUrl && (
+                  <a
+                    href={result.cargoTrackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#7AC143] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6aad38]"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Kargo Firmasında Takip Et
+                  </a>
+                )}
               </div>
             )}
           </div>

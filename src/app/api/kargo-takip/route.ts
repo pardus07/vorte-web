@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       cargoTrackingNo: true,
       cargoProvider: true,
       cargoShipmentId: true,
+      cargoTrackingUrl: true,
       createdAt: true,
       updatedAt: true,
       statusHistory: {
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest) {
     status: order.status,
     cargoTrackingNo: order.cargoTrackingNo,
     cargoProvider: order.cargoProvider,
+    cargoTrackingUrl: order.cargoTrackingUrl,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     statusHistory: order.statusHistory,
