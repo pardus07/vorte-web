@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       basketId: order.id,
       paymentChannel: "WEB",
       paymentGroup: "PRODUCT",
-      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/payment/callback`,
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/api/payment/callback`,
       buyer: {
         id: userId || sessionId || "guest",
         name: firstName,

@@ -1,6 +1,34 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
 
+// Retry mekanizması — DNS geçici hataları (EAI_AGAIN) için
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      const isLastAttempt = attempt === maxRetries;
+      const isRetryable =
+        err instanceof TypeError &&
+        (err.message.includes("fetch failed") ||
+          err.message.includes("EAI_AGAIN") ||
+          err.message.includes("ENOTFOUND") ||
+          err.message.includes("ETIMEDOUT"));
+
+      if (isLastAttempt || !isRetryable) throw err;
+
+      const delay = attempt * 1000; // 1s, 2s, 3s
+      console.log(`[iyzico] Fetch attempt ${attempt} failed, retrying in ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("fetchWithRetry: unreachable");
+}
+
 // iyzico config: önce env var, yoksa DB'den oku
 export interface IyzicoConfig {
   apiKey: string;
@@ -130,7 +158,7 @@ export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
     basketItemCount: data.basketItems.length,
   });
 
-  const response = await fetch(`${config.baseUrl}${uri}`, {
+  const response = await fetchWithRetry(`${config.baseUrl}${uri}`, {
     method: "POST",
     headers,
     body,
@@ -145,7 +173,7 @@ export async function retrievePaymentResult(token: string) {
   const body = JSON.stringify({ token });
   const headers = generateAuthorizationHeader(config, uri, body);
 
-  const response = await fetch(`${config.baseUrl}${uri}`, {
+  const response = await fetchWithRetry(`${config.baseUrl}${uri}`, {
     method: "POST",
     headers,
     body,
