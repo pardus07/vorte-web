@@ -100,11 +100,13 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  addresses     Address[]
-  orders        Order[]
-  favorites     Favorite[]
-  cartItems     CartItem[]
-  activityLogs  ActivityLog[]
+  addresses      Address[]
+  orders         Order[]
+  favorites      Favorite[]
+  cartItems      CartItem[]
+  activityLogs   ActivityLog[]
+  reviews        ProductReview[]
+  returnRequests ReturnRequest[]
 
   @@map("users")
 }
@@ -136,15 +138,35 @@ model Dealer {
   city         String
   district     String
   address      String
+
+  // Fiziki Dükkan Bilgileri
+  shopAddress  String?
+  shopCity     String?
+  shopDistrict String?
+
+  // Ticari Koşullar
+  discountRate     Float?          // Genel iskonto oranı %
+  creditLimit      Float?          // Cari limit (₺)
+  creditBalance    Float    @default(0) // Cari bakiye (₺, pozitif = borç)
+  minOrderAmount   Float?          // Min sipariş tutarı (₺)
+  minOrderQuantity Int?            // Min sipariş adedi
+  paymentTermDays  Int      @default(0) // Vade günü (0 = peşin)
+
+  // Bayi Seviye & Durum
+  dealerTier   String       @default("standard") // standard, silver, gold, platinum
   status       DealerStatus @default(PENDING)
   approvedAt   DateTime?
+  approvedBy   String?
+  notes        String?      @db.Text
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  addresses    Address[]
-  orders       Order[]
-  dealerPrices DealerPrice[]
-  cartItems    CartItem[]
+  addresses      Address[]
+  orders         Order[]
+  dealerPrices   DealerPrice[]
+  cartItems      CartItem[]
+  dealerPayments DealerPayment[]
 
   @@map("dealers")
 }
@@ -213,12 +235,15 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category     Category      @relation(fields: [categoryId], references: [id])
-  variants     Variant[]
-  dealerPrices DealerPrice[]
-  favorites    Favorite[]
-  orderItems   OrderItem[]
-  cartItems    CartItem[]
+  category         Category          @relation(fields: [categoryId], references: [id])
+  variants         Variant[]
+  dealerPrices     DealerPrice[]
+  favorites        Favorite[]
+  orderItems       OrderItem[]
+  cartItems        CartItem[]
+  productCosts     ProductCost[]
+  productionOrders ProductionOrder[]
+  reviews          ProductReview[]
 
   @@map("products")
 }
@@ -272,17 +297,36 @@ model Order {
   addressSnapshot Json
   cargoTrackingNo String?
   cargoProvider   String?
+  cargoShipmentId String?
   notes           String?
+  adminNotes      String?     @db.Text
+  couponCode      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  user     User?       @relation(fields: [userId], references: [id])
-  dealer   Dealer?     @relation(fields: [dealerId], references: [id])
-  items    OrderItem[]
-  payment  Payment?
-  invoice  Invoice?
+  user            User?                @relation(fields: [userId], references: [id])
+  dealer          Dealer?              @relation(fields: [dealerId], references: [id])
+  items           OrderItem[]
+  payment         Payment?
+  invoice         Invoice?
+  statusHistory   OrderStatusHistory[]
+  returnRequests  ReturnRequest[]
 
   @@map("orders")
+}
+
+model OrderStatusHistory {
+  id         String   @id @default(cuid())
+  orderId    String
+  fromStatus String?
+  toStatus   String
+  note       String?
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_history")
 }
 
 model OrderItem {
@@ -323,9 +367,13 @@ model Invoice {
   orderId      String        @unique
   diaInvoiceId String?
   invoiceNo    String?
+  invoiceSeries String       @default("VRT")
   invoiceType  InvoiceType?
   status       InvoiceStatus @default(PENDING)
+  totalAmount  Float?
+  taxAmount    Float?
   pdfUrl       String?
+  issuedAt     DateTime?
   sentAt       DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -336,15 +384,29 @@ model Invoice {
 }
 
 model Coupon {
-  id            String       @id @default(cuid())
-  code          String       @unique
-  discountType  DiscountType
-  discountValue Float
-  minAmount     Float?
-  maxUses       Int?
-  currentUses   Int          @default(0)
-  expiresAt     DateTime?
-  active        Boolean      @default(true)
+  id             String       @id @default(cuid())
+  code           String       @unique
+  name           String?
+  discountType   DiscountType
+  discountValue  Float
+  minAmount      Float?
+  maxUses        Int?
+  maxUsesPerUser Int?
+  currentUses    Int          @default(0)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  active         Boolean      @default(true)
+
+  // Kampanya türü & koşullar
+  campaignType         String  @default("general")
+  freeShipping         Boolean @default(false)
+  buyQuantity          Int?
+  getQuantity          Int?
+  orderScope           String  @default("all")
+  applicableProducts   String? @db.Text
+  applicableCategories String? @db.Text
+  description          String?
+
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -490,4 +552,264 @@ model Banner {
   updatedAt     DateTime  @updatedAt
 
   @@map("banners")
+}
+
+model DealerTierDiscount {
+  id              String @id @default(cuid())
+  tier            String @unique // standard, silver, gold, platinum
+  discountRate    Float          // Genel iskonto oranı %
+  minOrderAmount  Float  @default(0) // Min sipariş tutarı
+  paymentTermDays Int    @default(0)
+  description     String?
+
+  @@map("dealer_tier_discounts")
+}
+
+model DealerPayment {
+  id          String   @id @default(cuid())
+  dealerId    String
+  orderId     String?
+  amount      Float
+  type        String   // "payment" (ödeme), "debt" (borç/sipariş), "refund" (iade)
+  method      String?  // "havale", "nakit", "cek", "kredi_karti"
+  description String?
+  createdAt   DateTime @default(now())
+
+  dealer Dealer @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+
+  @@map("dealer_payments")
+}
+
+model ProductCost {
+  id            String   @id @default(cuid())
+  productId     String
+  materialCost  Float    @default(0)
+  laborCost     Float    @default(0)
+  overheadCost  Float    @default(0)
+  packagingCost Float    @default(0)
+  totalCost     Float    @default(0)
+  notes         String?
+  calculatedAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_costs")
+}
+
+model DailyReport {
+  id           String   @id @default(cuid())
+  date         DateTime @unique
+  totalOrders  Int      @default(0)
+  totalRevenue Float    @default(0)
+  totalCost    Float    @default(0)
+  totalProfit  Float    @default(0)
+  orderBreakdown Json?
+  createdAt    DateTime @default(now())
+
+  @@map("daily_reports")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique // "order-confirmation", "shipping-notification" vb.
+  subject   String
+  body      String   @db.Text // HTML template
+  variables String?  // JSON: ["customerName", "orderNumber", ...]
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id         String   @id @default(cuid())
+  to         String
+  subject    String
+  templateId String?
+  status     String   // "sent", "failed", "bounced"
+  error      String?
+  sentAt     DateTime @default(now())
+
+  @@map("email_logs")
+}
+
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String    @db.Text
+  read      Boolean   @default(false)
+  replied   Boolean   @default(false)
+  replyText String?   @db.Text
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("contact_messages")
+}
+
+model ProductionOrder {
+  id              String    @id @default(cuid())
+  orderNumber     String    @unique // ÜRT-2026-001
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id])
+  variants        Json      // [{ color: "Siyah", size: "M", quantity: 100 }, ...]
+  totalQuantity   Int
+  status          String    @default("planned") // planned, cutting, sewing, quality, packaging, completed
+  priority        String    @default("normal") // low, normal, high, urgent
+  startDate       DateTime?
+  targetDate      DateTime
+  completedDate   DateTime?
+  materialCost    Float?
+  laborCost       Float?
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  logs ProductionLog[]
+
+  @@map("production_orders")
+}
+
+model ProductionLog {
+  id                String          @id @default(cuid())
+  productionOrderId String
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+  fromStatus        String
+  toStatus          String
+  note              String?
+  changedBy         String?
+  createdAt         DateTime        @default(now())
+
+  @@map("production_logs")
+}
+
+model Page {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  content        String   @db.Text
+  seoTitle       String?
+  seoDescription String?
+  template       String   @default("default") // default, fullwidth, sidebar
+  published      Boolean  @default(false)
+  order          Int      @default(0)
+  showInMenu     Boolean  @default(false)
+  showInFooter   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model BlogPost {
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  excerpt        String?
+  content        String    @db.Text
+  coverImage     String?
+  seoTitle       String?
+  seoDescription String?
+  published      Boolean   @default(false)
+  publishedAt    DateTime?
+  authorName     String    @default("Vorte Tekstil")
+  tags           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("blog_posts")
+}
+
+model Redirect {
+  id        String   @id @default(cuid())
+  fromPath  String   @unique
+  toPath    String
+  permanent Boolean  @default(true)
+  hits      Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("redirects")
+}
+
+model NotFoundLog {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  referer   String?
+  userAgent String?
+  hits      Int      @default(1)
+  lastHitAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("not_found_logs")
+}
+
+model ChatSession {
+  id           String        @id @default(cuid())
+  sessionToken String        @unique
+  customerName String?
+  customerEmail String?
+  status       String        @default("active") // active, closed, admin_takeover
+  aiEnabled    Boolean       @default(true)
+  messageCount Int           @default(0)
+  lastMessageAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String      @id @default(cuid())
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role        String      // "user", "assistant", "admin"
+  content     String      @db.Text
+  createdAt   DateTime    @default(now())
+
+  @@map("chat_messages")
+}
+
+model ProductReview {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  orderId   String?
+  rating    Int      // 1-5
+  title     String?
+  comment   String?  @db.Text
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, orderId])
+  @@map("product_reviews")
+}
+
+model ReturnRequest {
+  id              String   @id @default(cuid())
+  userId          String
+  orderId         String
+  orderItemId     String?
+  reason          String   // "beden_uyumsuz", "kusurlu", "yanlis_urun", "diger"
+  description     String?  @db.Text
+  status          String   @default("pending") // pending, approved, rejected, shipped, completed, refunded
+  refundAmount    Float?
+  cargoTrackingNo String?
+  adminNote       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("return_requests")
 }

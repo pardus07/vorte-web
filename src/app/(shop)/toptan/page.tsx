@@ -3,6 +3,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/Button";
 import { Building2, Percent, Truck, Shield } from "lucide-react";
 import Link from "next/link";
+import DealerApplicationForm from "@/components/dealer/DealerApplicationForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -52,11 +53,20 @@ export default function WholesalePage() {
         </div>
 
         <div className="mt-10 rounded-lg bg-[#333333] p-8 text-center text-white">
-          <h2 className="text-2xl font-bold">Bayilik Başvurusu</h2>
-          <p className="mt-2 text-gray-300">Perakende satış noktaları için bayilik başvurunuzu hemen yapın.</p>
+          <h2 className="text-2xl font-bold">Mevcut Bayimiz misiniz?</h2>
+          <p className="mt-2 text-gray-300">Bayi panelinize giriş yaparak toptan sipariş verebilirsiniz.</p>
           <div className="mt-6 flex justify-center gap-4">
             <Link href="/bayi-girisi"><Button variant="primary" size="lg">Bayi Girişi</Button></Link>
-            <Link href="/iletisim"><Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">Başvuru İçin İletişim</Button></Link>
+            <Link href="/iletisim"><Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">İletişim</Button></Link>
+          </div>
+        </div>
+
+        {/* Başvuru Formu */}
+        <div className="mt-10" id="basvuru">
+          <h2 className="text-2xl font-bold text-gray-900 text-center">Bayilik Başvuru Formu</h2>
+          <p className="mt-2 text-center text-gray-600">Formu doldurarak bayilik başvurunuzu yapın. Başvurunuz en kısa sürede değerlendirilecektir.</p>
+          <div className="mt-6">
+            <DealerApplicationForm />
           </div>
         </div>
       </div>

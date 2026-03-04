@@ -12,6 +12,9 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Building2,
+  Trash2,
+  Plus,
 } from "lucide-react";
 
 type SiteSettings = {
@@ -57,6 +60,7 @@ const tabs = [
   { id: "ai", label: "AI Temsilci", icon: Bot },
   { id: "sosyal", label: "Sosyal Medya", icon: Share2 },
   { id: "email", label: "E-posta", icon: Mail },
+  { id: "bayiler", label: "Bayi Seviyeleri", icon: Building2 },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -169,6 +173,7 @@ export function SettingsForm({ initialData }: { initialData: SiteSettings }) {
         {activeTab === "ai" && <AiTab data={data} update={update} />}
         {activeTab === "sosyal" && <SosyalTab data={data} update={update} />}
         {activeTab === "email" && <EmailTab data={data} update={update} />}
+        {activeTab === "bayiler" && <BayiSeviyeTab />}
       </div>
     </div>
   );
@@ -728,6 +733,253 @@ function FormField({
       </div>
       {children}
       {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+// ============================================================
+// TAB 7: BAYİ SEVİYELERİ
+// ============================================================
+interface TierData {
+  id: string;
+  tier: string;
+  discountRate: number;
+  minOrderAmount: number;
+  paymentTermDays: number;
+  description: string | null;
+  dealerCount: number;
+}
+
+function BayiSeviyeTab() {
+  const [tiers, setTiers] = useState<TierData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editForm, setEditForm] = useState({
+    tier: "",
+    discountRate: "",
+    minOrderAmount: "",
+    paymentTermDays: "0",
+    description: "",
+  });
+  const [editingTier, setEditingTier] = useState<string | null>(null);
+  const [tierSaving, setTierSaving] = useState(false);
+
+  const fetchTiers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/dealers/tiers");
+      const data = await res.json();
+      setTiers(Array.isArray(data) ? data : []);
+    } catch { /* silent */ }
+    setLoading(false);
+  };
+
+  useState(() => { fetchTiers(); });
+
+  const handleSaveTier = async () => {
+    setTierSaving(true);
+    try {
+      const res = await fetch("/api/admin/dealers/tiers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: editForm.tier,
+          discountRate: parseFloat(editForm.discountRate) || 0,
+          minOrderAmount: parseFloat(editForm.minOrderAmount) || 0,
+          paymentTermDays: parseInt(editForm.paymentTermDays) || 0,
+          description: editForm.description || undefined,
+        }),
+      });
+      if (res.ok) {
+        await fetchTiers();
+        setShowForm(false);
+        setEditingTier(null);
+        setEditForm({ tier: "", discountRate: "", minOrderAmount: "", paymentTermDays: "0", description: "" });
+      }
+    } catch { /* silent */ }
+    setTierSaving(false);
+  };
+
+  const handleDeleteTier = async (tier: string) => {
+    if (!confirm(`"${tier}" seviyesini silmek istediğinizden emin misiniz?`)) return;
+    try {
+      const res = await fetch(`/api/admin/dealers/tiers?tier=${tier}`, { method: "DELETE" });
+      if (res.ok) {
+        await fetchTiers();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Silinemedi");
+      }
+    } catch { /* silent */ }
+  };
+
+  const startEdit = (tier: TierData) => {
+    setEditForm({
+      tier: tier.tier,
+      discountRate: String(tier.discountRate),
+      minOrderAmount: String(tier.minOrderAmount),
+      paymentTermDays: String(tier.paymentTermDays),
+      description: tier.description || "",
+    });
+    setEditingTier(tier.tier);
+    setShowForm(true);
+  };
+
+  const TIER_LABELS: Record<string, string> = {
+    standard: "Standard",
+    silver: "Silver",
+    gold: "Gold",
+    platinum: "Platinum",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-white p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Bayi Seviyeleri</h3>
+            <p className="text-sm text-gray-500 mt-1">Her seviye için varsayılan iskonto, minimum tutar ve vade günü tanımlayın.</p>
+          </div>
+          <button
+            onClick={() => {
+              setEditForm({ tier: "", discountRate: "", minOrderAmount: "", paymentTermDays: "0", description: "" });
+              setEditingTier(null);
+              setShowForm(!showForm);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            <Plus className="h-4 w-4" /> Yeni Seviye
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="mb-6 rounded-lg border border-[#7AC143]/30 bg-[#7AC143]/5 p-4">
+            <h4 className="font-medium text-gray-900 mb-3">
+              {editingTier ? `"${TIER_LABELS[editingTier] || editingTier}" Düzenle` : "Yeni Seviye Ekle"}
+            </h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm text-gray-600">Seviye Adı (key)</label>
+                <input
+                  type="text"
+                  value={editForm.tier}
+                  onChange={(e) => setEditForm({ ...editForm, tier: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                  placeholder="Örn: gold"
+                  disabled={!!editingTier}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-gray-600">İskonto Oranı (%)</label>
+                <input
+                  type="number"
+                  value={editForm.discountRate}
+                  onChange={(e) => setEditForm({ ...editForm, discountRate: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                  placeholder="Örn: 15"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-gray-600">Min Sipariş Tutarı (₺)</label>
+                <input
+                  type="number"
+                  value={editForm.minOrderAmount}
+                  onChange={(e) => setEditForm({ ...editForm, minOrderAmount: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                  placeholder="Örn: 5000"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-gray-600">Vade Günü</label>
+                <input
+                  type="number"
+                  value={editForm.paymentTermDays}
+                  onChange={(e) => setEditForm({ ...editForm, paymentTermDays: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                  placeholder="0 = Peşin"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm text-gray-600">Açıklama</label>
+                <input
+                  type="text"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                  placeholder="Bu seviye hakkında kısa açıklama"
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button onClick={() => { setShowForm(false); setEditingTier(null); }} className="rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">İptal</button>
+              <button
+                onClick={handleSaveTier}
+                disabled={tierSaving || !editForm.tier}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#7AC143] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#6AAF35] disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {tierSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        ) : tiers.length === 0 ? (
+          <div className="py-8 text-center text-gray-400">
+            <p>Henüz seviye tanımlanmamış.</p>
+            <p className="mt-1 text-xs">Varsayılan seviyeler: standard, silver, gold, platinum</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 font-medium text-gray-700">Seviye</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">İskonto (%)</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">Min Tutar (₺)</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">Vade (Gün)</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">Bayi Sayısı</th>
+                  <th className="px-4 py-3 font-medium text-gray-700">İşlem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {tiers.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-900 capitalize">{TIER_LABELS[t.tier] || t.tier}</td>
+                    <td className="px-4 py-3">%{t.discountRate}</td>
+                    <td className="px-4 py-3">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(t.minOrderAmount)}</td>
+                    <td className="px-4 py-3">{t.paymentTermDays === 0 ? "Peşin" : `${t.paymentTermDays} gün`}</td>
+                    <td className="px-4 py-3">{t.dealerCount}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEdit(t)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          title="Düzenle"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTier(t.tier)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          title="Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

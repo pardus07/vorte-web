@@ -38,5 +38,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unavailable during build — products will be added at runtime
   }
 
-  return [...staticPages, ...productPages];
+  // Blog pages
+  let blogPages: MetadataRoute.Sitemap = [];
+  try {
+    const posts = await db.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true, publishedAt: true },
+    });
+
+    blogPages = [
+      { url: `${baseUrl}/blog`, changeFrequency: "weekly" as const, priority: 0.6 },
+      ...posts.map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: post.updatedAt,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      })),
+    ];
+  } catch {
+    // DB unavailable during build
+  }
+
+  // Dynamic CMS pages
+  let cmsPages: MetadataRoute.Sitemap = [];
+  try {
+    const pages = await db.page.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+    });
+
+    cmsPages = pages.map((page) => ({
+      url: `${baseUrl}/${page.slug}`,
+      lastModified: page.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    }));
+  } catch {
+    // DB unavailable during build
+  }
+
+  return [...staticPages, ...productPages, ...blogPages, ...cmsPages];
 }

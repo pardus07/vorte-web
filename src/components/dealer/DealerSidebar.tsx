@@ -8,7 +8,9 @@ import {
   Package,
   ShoppingCart,
   ClipboardList,
+  Wallet,
   FileText,
+  Megaphone,
   User,
   LogOut,
 } from "lucide-react";
@@ -18,7 +20,9 @@ const menuItems = [
   { label: "Ürünler", href: "/bayi/urunler", icon: Package },
   { label: "Sepet", href: "/bayi/sepet", icon: ShoppingCart },
   { label: "Siparişlerim", href: "/bayi/siparislerim", icon: ClipboardList },
+  { label: "Cari Hesap", href: "/bayi/cari-hesap", icon: Wallet },
   { label: "Faturalarım", href: "/bayi/faturalarim", icon: FileText },
+  { label: "Duyurular", href: "/bayi/duyurular", icon: Megaphone },
   { label: "Profilim", href: "/bayi/profilim", icon: User },
 ];
 

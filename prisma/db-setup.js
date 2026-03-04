@@ -202,6 +202,19 @@ async function createSchema() {
       CONSTRAINT "coupons_pkey" PRIMARY KEY ("id")
     )`,
 
+    // Coupon new columns (Faz 12)
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "name" TEXT`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "maxUsesPerUser" INTEGER`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "startsAt" TIMESTAMP(3)`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "campaignType" TEXT NOT NULL DEFAULT 'general'`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "freeShipping" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "buyQuantity" INTEGER`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "getQuantity" INTEGER`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "orderScope" TEXT NOT NULL DEFAULT 'all'`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "applicableProducts" TEXT`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "applicableCategories" TEXT`,
+    `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "description" TEXT`,
+
     `CREATE TABLE IF NOT EXISTS "favorites" (
       "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
       "userId" TEXT NOT NULL,
@@ -383,6 +396,301 @@ async function createSchema() {
       CONSTRAINT "banners_pkey" PRIMARY KEY ("id")
     )`,
 
+    // Order new columns (Faz 4)
+    `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "cargoShipmentId" TEXT`,
+    `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "adminNotes" TEXT`,
+    `ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "couponCode" TEXT`,
+
+    // Order Status History table (Faz 4)
+    `CREATE TABLE IF NOT EXISTS "order_status_history" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "orderId" TEXT NOT NULL,
+      "fromStatus" TEXT,
+      "toStatus" TEXT NOT NULL,
+      "note" TEXT,
+      "changedBy" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "order_status_history_pkey" PRIMARY KEY ("id")
+    )`,
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_status_history_orderId_fkey') THEN ALTER TABLE "order_status_history" ADD CONSTRAINT "order_status_history_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
+
+    // Invoice new columns (Faz 5)
+    `ALTER TABLE "invoices" ADD COLUMN IF NOT EXISTS "invoiceSeries" TEXT NOT NULL DEFAULT 'VRT'`,
+    `ALTER TABLE "invoices" ADD COLUMN IF NOT EXISTS "totalAmount" DOUBLE PRECISION`,
+    `ALTER TABLE "invoices" ADD COLUMN IF NOT EXISTS "taxAmount" DOUBLE PRECISION`,
+    `ALTER TABLE "invoices" ADD COLUMN IF NOT EXISTS "issuedAt" TIMESTAMP(3)`,
+
+    // ProductCost table (Faz 5)
+    `CREATE TABLE IF NOT EXISTS "product_costs" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "productId" TEXT NOT NULL,
+      "materialCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "laborCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "overheadCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "packagingCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "totalCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "notes" TEXT,
+      "calculatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "product_costs_pkey" PRIMARY KEY ("id")
+    )`,
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'product_costs_productId_fkey') THEN ALTER TABLE "product_costs" ADD CONSTRAINT "product_costs_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
+
+    // DailyReport table (Faz 5)
+    `CREATE TABLE IF NOT EXISTS "daily_reports" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "date" TIMESTAMP(3) NOT NULL,
+      "totalOrders" INTEGER NOT NULL DEFAULT 0,
+      "totalRevenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "totalCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "totalProfit" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "orderBreakdown" JSONB,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "daily_reports_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "daily_reports_date_key" UNIQUE ("date")
+    )`,
+
+    // Dealer new columns (Faz 6)
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "shopAddress" TEXT`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "shopCity" TEXT`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "shopDistrict" TEXT`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "discountRate" DOUBLE PRECISION`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "creditLimit" DOUBLE PRECISION`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "creditBalance" DOUBLE PRECISION NOT NULL DEFAULT 0`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "minOrderAmount" DOUBLE PRECISION`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "minOrderQuantity" INTEGER`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "paymentTermDays" INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "dealerTier" TEXT NOT NULL DEFAULT 'standard'`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT`,
+    `ALTER TABLE "dealers" ADD COLUMN IF NOT EXISTS "notes" TEXT`,
+
+    // DealerTierDiscount table (Faz 6)
+    `CREATE TABLE IF NOT EXISTS "dealer_tier_discounts" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "tier" TEXT NOT NULL,
+      "discountRate" DOUBLE PRECISION NOT NULL,
+      "minOrderAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "paymentTermDays" INTEGER NOT NULL DEFAULT 0,
+      "description" TEXT,
+      CONSTRAINT "dealer_tier_discounts_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "dealer_tier_discounts_tier_key" UNIQUE ("tier")
+    )`,
+
+    // DealerPayment table (Faz 6)
+    `CREATE TABLE IF NOT EXISTS "dealer_payments" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "dealerId" TEXT NOT NULL,
+      "orderId" TEXT,
+      "amount" DOUBLE PRECISION NOT NULL,
+      "type" TEXT NOT NULL,
+      "method" TEXT,
+      "description" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "dealer_payments_pkey" PRIMARY KEY ("id")
+    )`,
+    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dealer_payments_dealerId_fkey') THEN ALTER TABLE "dealer_payments" ADD CONSTRAINT "dealer_payments_dealerId_fkey" FOREIGN KEY ("dealerId") REFERENCES "dealers"("id") ON DELETE CASCADE ON UPDATE CASCADE; END IF; END $$`,
+
+    // EmailTemplate table (Faz 8)
+    `CREATE TABLE IF NOT EXISTS "email_templates" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "name" TEXT NOT NULL,
+      "subject" TEXT NOT NULL,
+      "body" TEXT NOT NULL,
+      "variables" TEXT,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "email_templates_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "email_templates_name_key" UNIQUE ("name")
+    )`,
+
+    // EmailLog table (Faz 8)
+    `CREATE TABLE IF NOT EXISTS "email_logs" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "to" TEXT NOT NULL,
+      "subject" TEXT NOT NULL,
+      "templateId" TEXT,
+      "status" TEXT NOT NULL,
+      "error" TEXT,
+      "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "email_logs_pkey" PRIMARY KEY ("id")
+    )`,
+
+    // ContactMessage table (Faz 8)
+    `CREATE TABLE IF NOT EXISTS "contact_messages" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "name" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "phone" TEXT,
+      "subject" TEXT NOT NULL,
+      "message" TEXT NOT NULL,
+      "read" BOOLEAN NOT NULL DEFAULT false,
+      "replied" BOOLEAN NOT NULL DEFAULT false,
+      "replyText" TEXT,
+      "repliedAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "contact_messages_pkey" PRIMARY KEY ("id")
+    )`,
+
+    // Chat
+    `CREATE TABLE IF NOT EXISTS "chat_sessions" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "sessionToken" TEXT NOT NULL,
+      "customerName" TEXT,
+      "customerEmail" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'active',
+      "aiEnabled" BOOLEAN NOT NULL DEFAULT true,
+      "messageCount" INTEGER NOT NULL DEFAULT 0,
+      "lastMessageAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "chat_sessions_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "chat_sessions_sessionToken_key" UNIQUE ("sessionToken")
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS "chat_messages" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "sessionId" TEXT NOT NULL,
+      "role" TEXT NOT NULL,
+      "content" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "chat_messages_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "chat_messages_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "chat_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+
+    // CMS
+    `CREATE TABLE IF NOT EXISTS "pages" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "title" TEXT NOT NULL,
+      "slug" TEXT NOT NULL,
+      "content" TEXT NOT NULL,
+      "seoTitle" TEXT,
+      "seoDescription" TEXT,
+      "template" TEXT NOT NULL DEFAULT 'default',
+      "published" BOOLEAN NOT NULL DEFAULT false,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      "showInMenu" BOOLEAN NOT NULL DEFAULT false,
+      "showInFooter" BOOLEAN NOT NULL DEFAULT false,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "pages_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "pages_slug_key" UNIQUE ("slug")
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS "blog_posts" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "title" TEXT NOT NULL,
+      "slug" TEXT NOT NULL,
+      "excerpt" TEXT,
+      "content" TEXT NOT NULL,
+      "coverImage" TEXT,
+      "seoTitle" TEXT,
+      "seoDescription" TEXT,
+      "published" BOOLEAN NOT NULL DEFAULT false,
+      "publishedAt" TIMESTAMP(3),
+      "authorName" TEXT NOT NULL DEFAULT 'Vorte Tekstil',
+      "tags" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "blog_posts_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "blog_posts_slug_key" UNIQUE ("slug")
+    )`,
+
+    // Production
+    `CREATE TABLE IF NOT EXISTS "production_orders" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "orderNumber" TEXT NOT NULL,
+      "productId" TEXT NOT NULL,
+      "variants" JSONB NOT NULL,
+      "totalQuantity" INTEGER NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'planned',
+      "priority" TEXT NOT NULL DEFAULT 'normal',
+      "startDate" TIMESTAMP(3),
+      "targetDate" TIMESTAMP(3) NOT NULL,
+      "completedDate" TIMESTAMP(3),
+      "materialCost" DOUBLE PRECISION,
+      "laborCost" DOUBLE PRECISION,
+      "notes" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "production_orders_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "production_orders_orderNumber_key" UNIQUE ("orderNumber"),
+      CONSTRAINT "production_orders_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS "production_logs" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "productionOrderId" TEXT NOT NULL,
+      "fromStatus" TEXT NOT NULL,
+      "toStatus" TEXT NOT NULL,
+      "note" TEXT,
+      "changedBy" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "production_logs_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "production_logs_productionOrderId_fkey" FOREIGN KEY ("productionOrderId") REFERENCES "production_orders"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+
+    // Redirects & 404 Logs (Faz 14)
+    `CREATE TABLE IF NOT EXISTS "redirects" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "fromPath" TEXT NOT NULL,
+      "toPath" TEXT NOT NULL,
+      "permanent" BOOLEAN NOT NULL DEFAULT true,
+      "hits" INTEGER NOT NULL DEFAULT 0,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "redirects_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "redirects_fromPath_key" UNIQUE ("fromPath")
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS "not_found_logs" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "path" TEXT NOT NULL,
+      "referer" TEXT,
+      "userAgent" TEXT,
+      "hits" INTEGER NOT NULL DEFAULT 1,
+      "lastHitAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "not_found_logs_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "not_found_logs_path_key" UNIQUE ("path")
+    )`,
+
+    // Product Reviews (Faz 17)
+    `CREATE TABLE IF NOT EXISTS "product_reviews" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "userId" TEXT NOT NULL,
+      "productId" TEXT NOT NULL,
+      "orderId" TEXT,
+      "rating" INTEGER NOT NULL,
+      "title" TEXT,
+      "comment" TEXT,
+      "approved" BOOLEAN NOT NULL DEFAULT false,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "product_reviews_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "product_reviews_userId_productId_orderId_key" UNIQUE ("userId", "productId", "orderId"),
+      CONSTRAINT "product_reviews_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "product_reviews_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+
+    // Return Requests (Faz 17)
+    `CREATE TABLE IF NOT EXISTS "return_requests" (
+      "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
+      "userId" TEXT NOT NULL,
+      "orderId" TEXT NOT NULL,
+      "orderItemId" TEXT,
+      "reason" TEXT NOT NULL,
+      "description" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'pending',
+      "refundAmount" DOUBLE PRECISION,
+      "cargoTrackingNo" TEXT,
+      "adminNote" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "return_requests_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "return_requests_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "return_requests_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+
     // Prisma migrations table
     `CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
       "id" VARCHAR(36) NOT NULL,
@@ -413,10 +721,16 @@ async function seedData() {
 
   // Clean existing data (order matters for FK constraints)
   const tables = [
+    "return_requests", "product_reviews",
+    "not_found_logs", "redirects",
+    "chat_messages", "chat_sessions",
+    "blog_posts", "pages",
+    "production_logs", "production_orders",
+    "email_logs", "contact_messages", "email_templates",
     "notifications", "cart_items", "favorites", "order_items",
-    "payments", "invoices", "orders", "dealer_prices",
+    "payments", "invoices", "orders", "dealer_payments", "dealer_prices",
     "variants", "products", "categories", "coupons",
-    "addresses", "dealers", "users"
+    "addresses", "dealer_tier_discounts", "dealers", "users"
   ];
   for (const table of tables) {
     try {
@@ -449,6 +763,17 @@ async function seedData() {
   });
   console.log("  ✓ Users created");
 
+  // ===== DEALER TIER DISCOUNTS =====
+  await db.dealerTierDiscount.createMany({
+    data: [
+      { tier: "standard", discountRate: 10, minOrderAmount: 2000, paymentTermDays: 0, description: "Yeni bayiler için başlangıç seviyesi" },
+      { tier: "silver", discountRate: 15, minOrderAmount: 3000, paymentTermDays: 7, description: "Düzenli sipariş veren bayiler" },
+      { tier: "gold", discountRate: 20, minOrderAmount: 5000, paymentTermDays: 15, description: "Yüksek hacimli bayiler" },
+      { tier: "platinum", discountRate: 25, minOrderAmount: 10000, paymentTermDays: 30, description: "En üst düzey bayiler" },
+    ],
+  });
+  console.log("  ✓ Dealer tier discounts created");
+
   // ===== DEALERS =====
   const dealer = await db.dealer.create({
     data: {
@@ -463,8 +788,19 @@ async function seedData() {
       city: "Bursa",
       district: "Nilüfer",
       address: "Atatürk Mah. İstanbul Cad. No:123",
+      shopCity: "Bursa",
+      shopDistrict: "Nilüfer",
+      shopAddress: "Atatürk Mah. İstanbul Cad. Shell İstasyonu",
+      dealerTier: "gold",
+      discountRate: 20,
+      creditLimit: 50000,
+      creditBalance: 0,
+      paymentTermDays: 15,
+      minOrderAmount: 5000,
+      minOrderQuantity: 12,
       status: "ACTIVE",
       approvedAt: new Date(),
+      approvedBy: admin.id,
     },
   });
 
@@ -481,8 +817,14 @@ async function seedData() {
       city: "Bursa",
       district: "Osmangazi",
       address: "Cumhuriyet Cad. No:456",
+      dealerTier: "silver",
+      discountRate: 15,
+      creditLimit: 30000,
+      creditBalance: 0,
+      paymentTermDays: 7,
       status: "ACTIVE",
       approvedAt: new Date(),
+      approvedBy: admin.id,
     },
   });
   console.log("  ✓ Dealers created");

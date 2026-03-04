@@ -7,6 +7,7 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { CookieConsent } from "@/components/ui/CookieConsent";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AnalyticsScripts } from "@/components/seo/AnalyticsScripts";
+import ChatWidget from "@/components/chat/ChatWidget";
 import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
@@ -129,6 +130,7 @@ export default async function RootLayout({
             <Footer />
             <ScrollToTop />
             <CookieConsent />
+            <ChatWidget />
           </div>
         </Providers>
         <AnalyticsScripts />

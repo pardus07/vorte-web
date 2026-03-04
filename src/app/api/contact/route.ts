@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { db } from "@/lib/db";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -26,6 +27,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Save to DB
+    await db.contactMessage.create({
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        subject: `İletişim Formu - ${name}`,
+        message,
+      },
+    });
 
     await getResend().emails.send({
       from: "Vorte İletisim Formu <noreply@vorte.com.tr>",

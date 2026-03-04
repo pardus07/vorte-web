@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function AdminNewDealerPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     companyName: "",
     taxNumber: "",
@@ -20,19 +21,34 @@ export default function AdminNewDealerPage() {
     district: "",
     address: "",
     password: "",
+    dealerTier: "standard",
+    discountRate: "",
+    creditLimit: "",
+    paymentTermDays: "0",
+    notes: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setError("");
     try {
+      const payload = {
+        ...form,
+        discountRate: form.discountRate ? parseFloat(form.discountRate) : undefined,
+        creditLimit: form.creditLimit ? parseFloat(form.creditLimit) : undefined,
+        paymentTermDays: parseInt(form.paymentTermDays) || 0,
+      };
       const res = await fetch("/api/admin/dealers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         router.push("/admin/bayiler");
+      } else {
+        const data = await res.json();
+        setError(data.error || "Bir hata oluştu");
       }
     } finally {
       setSaving(false);
@@ -163,6 +179,72 @@ export default function AdminNewDealerPage() {
             </div>
           </div>
         </div>
+
+        <div className="rounded-lg border bg-white p-6">
+          <h2 className="mb-4 text-lg font-bold text-gray-900">Ticari Koşullar</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Seviye</label>
+              <select
+                value={form.dealerTier}
+                onChange={(e) => update("dealerTier", e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+              >
+                <option value="standard">Standard</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
+                <option value="platinum">Platinum</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">İskonto Oranı (%)</label>
+              <input
+                type="number"
+                value={form.discountRate}
+                onChange={(e) => update("discountRate", e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                placeholder="Örn: 15"
+                step="0.5"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Cari Limit (₺)</label>
+              <input
+                type="number"
+                value={form.creditLimit}
+                onChange={(e) => update("creditLimit", e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                placeholder="Örn: 50000"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Vade Günü</label>
+              <input
+                type="number"
+                value={form.paymentTermDays}
+                onChange={(e) => update("paymentTermDays", e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                placeholder="0 = Peşin"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700">Admin Notları</label>
+              <textarea
+                rows={2}
+                value={form.notes}
+                onChange={(e) => update("notes", e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                placeholder="İç notlar (bayiye gösterilmez)"
+              />
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <div className="flex justify-end gap-3">
           <Link href="/admin/bayiler">
