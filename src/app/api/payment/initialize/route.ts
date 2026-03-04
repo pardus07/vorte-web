@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     const paymentData = {
       locale: "tr",
       conversationId: order.payment!.id,
-      price: subtotal.toFixed(2),
+      price: totalAmount.toFixed(2),
       paidPrice: totalAmount.toFixed(2),
       currency: "TRY",
       basketId: order.id,
