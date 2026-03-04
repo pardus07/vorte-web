@@ -38,13 +38,18 @@ export interface IyzicoConfig {
 }
 
 export async function getIyzicoConfig(): Promise<IyzicoConfig> {
-  // Önce env var kontrol
-  if (process.env.IYZICO_API_KEY && process.env.IYZICO_SECRET_KEY) {
+  // Önce env var kontrol — trim ile whitespace temizle
+  const envApiKey = process.env.IYZICO_API_KEY?.trim();
+  const envSecretKey = process.env.IYZICO_SECRET_KEY?.trim();
+  const envBaseUrl = process.env.IYZICO_BASE_URL?.trim();
+
+  if (envApiKey && envSecretKey) {
+    console.log("[iyzico] Config source: ENV VAR, apiKey:", envApiKey.substring(0, 8) + "...");
     return {
-      apiKey: process.env.IYZICO_API_KEY,
-      secretKey: process.env.IYZICO_SECRET_KEY,
-      baseUrl: process.env.IYZICO_BASE_URL || "https://sandbox-api.iyzipay.com",
-      sandboxMode: process.env.IYZICO_BASE_URL?.includes("sandbox") !== false,
+      apiKey: envApiKey,
+      secretKey: envSecretKey,
+      baseUrl: envBaseUrl || "https://sandbox-api.iyzipay.com",
+      sandboxMode: envBaseUrl?.includes("sandbox") !== false,
     };
   }
 
@@ -60,9 +65,10 @@ export async function getIyzicoConfig(): Promise<IyzicoConfig> {
 
   if (settings?.iyzicoApiKey && settings?.iyzicoSecretKey) {
     const sandboxMode = settings.iyzicoSandboxMode ?? true;
+    console.log("[iyzico] Config source: DATABASE, apiKey:", settings.iyzicoApiKey.substring(0, 8) + "...");
     return {
-      apiKey: settings.iyzicoApiKey,
-      secretKey: settings.iyzicoSecretKey,
+      apiKey: settings.iyzicoApiKey.trim(),
+      secretKey: settings.iyzicoSecretKey.trim(),
       baseUrl: sandboxMode
         ? "https://sandbox-api.iyzipay.com"
         : "https://api.iyzipay.com",
@@ -71,6 +77,7 @@ export async function getIyzicoConfig(): Promise<IyzicoConfig> {
   }
 
   // Hiçbiri yoksa boş dön
+  console.warn("[iyzico] Config source: NONE — API keys not found!");
   return {
     apiKey: "",
     secretKey: "",
@@ -79,24 +86,37 @@ export async function getIyzicoConfig(): Promise<IyzicoConfig> {
   };
 }
 
+// iyzico IYZWSv2 authorization header — resmi SDK ile birebir uyumlu
+// Kaynak: github.com/iyzico/iyzipay-node/blob/master/lib/utils.js
 function generateAuthorizationHeader(
   config: IyzicoConfig,
   uri: string,
-  body: string = ""
+  requestBody: Record<string, unknown>
 ): Record<string, string> {
-  const randomString = crypto.randomBytes(8).toString("hex");
-  const payload = randomString + uri + body;
+  // Random string — SDK: process.hrtime()[0] + Math.random().toString(8).slice(2)
+  const randomString = String(Date.now()) + Math.random().toString(8).slice(2);
+
+  // HMAC-SHA256 imza: randomKey + uri + JSON.stringify(body)
+  // SDK'da body obje olarak gelir ve içeride JSON.stringify yapılır
+  const hashStr = randomString + uri + JSON.stringify(requestBody);
   const signature = crypto
     .createHmac("sha256", config.secretKey)
-    .update(payload)
+    .update(hashStr)
     .digest("hex");
-  const authorizationString = `apiKey:${config.apiKey}&randomKey:${randomString}&signature:${signature}`;
-  const base64Auth = Buffer.from(authorizationString).toString("base64");
+
+  // Authorization parametreleri: separator = ":"
+  const authorizationParams = [
+    "apiKey:" + config.apiKey,
+    "randomKey:" + randomString,
+    "signature:" + signature,
+  ];
+  const base64Auth = Buffer.from(authorizationParams.join("&")).toString("base64");
 
   return {
     Authorization: `IYZWSv2 ${base64Auth}`,
     "Content-Type": "application/json",
     "x-iyzi-rnd": randomString,
+    "x-iyzi-client-version": "iyzipay-node-2.0.65",
   };
 }
 
@@ -146,12 +166,16 @@ export interface IyzicoPaymentRequest {
 export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
   const config = await getIyzicoConfig();
   const uri = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
+
+  // Body'yi obje olarak header oluşturucuya gönder (SDK ile uyumlu)
+  const dataObj = data as unknown as Record<string, unknown>;
+  const headers = generateAuthorizationHeader(config, uri, dataObj);
   const body = JSON.stringify(data);
-  const headers = generateAuthorizationHeader(config, uri, body);
 
   console.log("[iyzico] Initialize request:", {
     baseUrl: config.baseUrl,
     uri,
+    apiKeyPrefix: config.apiKey ? config.apiKey.substring(0, 8) + "..." : "EMPTY",
     callbackUrl: data.callbackUrl,
     price: data.price,
     paidPrice: data.paidPrice,
@@ -164,14 +188,25 @@ export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
     body,
   });
 
-  return response.json();
+  const result = await response.json();
+
+  console.log("[iyzico] Initialize response:", {
+    status: result.status,
+    errorCode: result.errorCode,
+    errorMessage: result.errorMessage,
+    hasToken: !!result.token,
+    hasCheckoutForm: !!result.checkoutFormContent,
+  });
+
+  return result;
 }
 
 export async function retrievePaymentResult(token: string) {
   const config = await getIyzicoConfig();
   const uri = "/payment/iyzipos/checkoutform/auth/ecom/detail";
+  const requestObj = { locale: "tr", token } as Record<string, unknown>;
+  const headers = generateAuthorizationHeader(config, uri, requestObj);
   const body = JSON.stringify({ locale: "tr", token });
-  const headers = generateAuthorizationHeader(config, uri, body);
 
   const response = await fetchWithRetry(`${config.baseUrl}${uri}`, {
     method: "POST",
