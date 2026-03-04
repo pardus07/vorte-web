@@ -23,9 +23,11 @@ export async function POST(req: NextRequest) {
       // Continue anyway — Geliver may not have secret configured yet
     }
 
+    // Parse webhook payload — accept empty/test payloads with 200
     const event = parseWebhookEvent(rawBody);
     if (!event || !event.data) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      // Geliver test ping or empty payload — respond 200 OK
+      return NextResponse.json({ success: true, message: "Webhook received" });
     }
 
     const shipment = event.data;
@@ -34,7 +36,8 @@ export async function POST(req: NextRequest) {
     const statusCode = shipment.trackingStatus?.trackingStatusCode || shipment.statusCode;
 
     if (!shipmentId && !trackingNo) {
-      return NextResponse.json({ error: "No shipment identifier" }, { status: 400 });
+      // No identifier — still return 200 to not fail Geliver test
+      return NextResponse.json({ success: true, message: "No shipment identifier" });
     }
 
     // Find order by shipmentId or tracking number
@@ -52,8 +55,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (!order) {
+      // Order not found — still return 200 (test or unmatched shipment)
       console.warn("[Geliver webhook] Order not found for:", { shipmentId, trackingNo });
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json({ success: true, message: "Order not matched" });
     }
 
     // Map Geliver tracking status to our order status
