@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { generateOrderNumber } from "@/lib/utils";
-import { initializeCheckoutForm } from "@/lib/iyzico";
+import { initializeCheckoutForm, getIyzicoConfig } from "@/lib/iyzico";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -97,8 +97,12 @@ export async function POST(request: NextRequest) {
     include: { payment: true },
   });
 
-  // In development/sandbox mode, simulate payment success
-  if (process.env.NODE_ENV === "development" || !process.env.IYZICO_API_KEY) {
+  // iyzico config kontrolü — env var veya DB'den
+  const iyzicoConfig = await getIyzicoConfig();
+  const hasIyzicoKeys = !!iyzicoConfig.apiKey && !!iyzicoConfig.secretKey;
+
+  // Geliştirme ortamı veya iyzico anahtarları yoksa simüle et
+  if (process.env.NODE_ENV === "development" && !hasIyzicoKeys) {
     // Update payment and order status
     await db.payment.update({
       where: { id: order.payment!.id },

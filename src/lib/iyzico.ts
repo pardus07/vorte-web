@@ -1,17 +1,68 @@
 import crypto from "crypto";
+import { db } from "@/lib/db";
 
-const API_KEY = process.env.IYZICO_API_KEY || "";
-const SECRET_KEY = process.env.IYZICO_SECRET_KEY || "";
-const BASE_URL = process.env.IYZICO_BASE_URL || "https://sandbox-api.iyzipay.com";
+// iyzico config: önce env var, yoksa DB'den oku
+export interface IyzicoConfig {
+  apiKey: string;
+  secretKey: string;
+  baseUrl: string;
+  sandboxMode: boolean;
+}
 
-function generateAuthorizationHeader(uri: string, body: string = ""): Record<string, string> {
+export async function getIyzicoConfig(): Promise<IyzicoConfig> {
+  // Önce env var kontrol
+  if (process.env.IYZICO_API_KEY && process.env.IYZICO_SECRET_KEY) {
+    return {
+      apiKey: process.env.IYZICO_API_KEY,
+      secretKey: process.env.IYZICO_SECRET_KEY,
+      baseUrl: process.env.IYZICO_BASE_URL || "https://sandbox-api.iyzipay.com",
+      sandboxMode: process.env.IYZICO_BASE_URL?.includes("sandbox") !== false,
+    };
+  }
+
+  // Env var yoksa DB'den oku
+  const settings = await db.siteSettings.findUnique({
+    where: { id: "main" },
+    select: {
+      iyzicoApiKey: true,
+      iyzicoSecretKey: true,
+      iyzicoSandboxMode: true,
+    },
+  });
+
+  if (settings?.iyzicoApiKey && settings?.iyzicoSecretKey) {
+    const sandboxMode = settings.iyzicoSandboxMode ?? true;
+    return {
+      apiKey: settings.iyzicoApiKey,
+      secretKey: settings.iyzicoSecretKey,
+      baseUrl: sandboxMode
+        ? "https://sandbox-api.iyzipay.com"
+        : "https://api.iyzipay.com",
+      sandboxMode,
+    };
+  }
+
+  // Hiçbiri yoksa boş dön
+  return {
+    apiKey: "",
+    secretKey: "",
+    baseUrl: "https://sandbox-api.iyzipay.com",
+    sandboxMode: true,
+  };
+}
+
+function generateAuthorizationHeader(
+  config: IyzicoConfig,
+  uri: string,
+  body: string = ""
+): Record<string, string> {
   const randomString = crypto.randomBytes(8).toString("hex");
   const payload = randomString + uri + body;
   const signature = crypto
-    .createHmac("sha256", SECRET_KEY)
+    .createHmac("sha256", config.secretKey)
     .update(payload)
     .digest("hex");
-  const authorizationString = `apiKey:${API_KEY}&randomKey:${randomString}&signature:${signature}`;
+  const authorizationString = `apiKey:${config.apiKey}&randomKey:${randomString}&signature:${signature}`;
   const base64Auth = Buffer.from(authorizationString).toString("base64");
 
   return {
@@ -65,11 +116,12 @@ export interface IyzicoPaymentRequest {
 }
 
 export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
+  const config = await getIyzicoConfig();
   const uri = "/payment/iosInit/initialize/pay/3ds";
   const body = JSON.stringify(data);
-  const headers = generateAuthorizationHeader(uri, body);
+  const headers = generateAuthorizationHeader(config, uri, body);
 
-  const response = await fetch(`${BASE_URL}${uri}`, {
+  const response = await fetch(`${config.baseUrl}${uri}`, {
     method: "POST",
     headers,
     body,
@@ -79,11 +131,12 @@ export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
 }
 
 export async function retrievePaymentResult(token: string) {
+  const config = await getIyzicoConfig();
   const uri = "/payment/iosInit/3ds";
   const body = JSON.stringify({ token });
-  const headers = generateAuthorizationHeader(uri, body);
+  const headers = generateAuthorizationHeader(config, uri, body);
 
-  const response = await fetch(`${BASE_URL}${uri}`, {
+  const response = await fetch(`${config.baseUrl}${uri}`, {
     method: "POST",
     headers,
     body,
