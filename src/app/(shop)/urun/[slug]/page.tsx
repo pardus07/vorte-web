@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductDetailClient } from "./ProductDetailClient";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { ProductReviews } from "@/components/product/ProductReviews";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
@@ -122,6 +123,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       {/* Product section */}
       <ProductDetailClient product={product} />
+
+      {/* Reviews */}
+      <ProductReviews productId={product.id} />
 
       {/* Related products */}
       {relatedProducts.length > 0 && (

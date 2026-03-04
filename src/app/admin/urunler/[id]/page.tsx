@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Save, Plus, Trash2, Image as ImageIcon, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, Image as ImageIcon, AlertTriangle, Star, Check, X } from "lucide-react";
 import Link from "next/link";
 import { slugify } from "@/lib/utils";
 
@@ -56,7 +56,7 @@ export default function AdminProductEditPage() {
   const [product, setProduct] = useState<ProductData | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [activeTab, setActiveTab] = useState<"basic" | "seo" | "variants">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "seo" | "variants" | "reviews">("basic");
   const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
@@ -178,6 +178,7 @@ export default function AdminProductEditPage() {
     { id: "basic" as const, label: "Temel Bilgiler" },
     { id: "seo" as const, label: "SEO & Görsel" },
     { id: "variants" as const, label: "Varyantlar" },
+    { id: "reviews" as const, label: "Yorumlar" },
   ];
 
   return (
@@ -667,6 +668,10 @@ export default function AdminProductEditPage() {
         )}
 
         {/* Save */}
+        {activeTab === "reviews" && (
+          <AdminReviewsTab productId={product.id} />
+        )}
+
         <div className="flex justify-end gap-3">
           <Link href="/admin/urunler">
             <Button variant="outline">İptal</Button>
@@ -676,6 +681,211 @@ export default function AdminProductEditPage() {
             Kaydet
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ADMIN REVIEWS TAB
+// ============================================================
+interface AdminReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  approved: boolean;
+  createdAt: string;
+  user: { name: string | null; email: string };
+  product: { name: string };
+}
+
+function AdminReviewsTab({ productId }: { productId: string }) {
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const fetchReviews = () => {
+    setLoading(true);
+    fetch(`/api/admin/reviews?productId=${productId}`)
+      .then((r) => r.json())
+      .then((data) => setReviews(data.reviews || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
+
+  const handleApprove = async (id: string, approved: boolean) => {
+    setActionLoading(id);
+    try {
+      await fetch("/api/admin/reviews", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, approved }),
+      });
+      fetchReviews();
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
+    setActionLoading(id);
+    try {
+      await fetch(`/api/admin/reviews?id=${id}`, { method: "DELETE" });
+      fetchReviews();
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border bg-white p-6">
+        <div className="flex justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-[#7AC143]" />
+        </div>
+      </div>
+    );
+  }
+
+  const pending = reviews.filter((r) => !r.approved);
+  const approved = reviews.filter((r) => r.approved);
+
+  return (
+    <div className="space-y-6">
+      {/* Bekleyen Yorumlar */}
+      <div className="rounded-lg border bg-white p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+          <Star className="h-5 w-5 text-amber-500" />
+          Onay Bekleyen ({pending.length})
+        </h3>
+        {pending.length === 0 ? (
+          <p className="text-sm text-gray-500">Bekleyen yorum yok.</p>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((review) => (
+              <div
+                key={review.id}
+                className="flex items-start justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 p-4"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`h-4 w-4 ${s <= review.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {review.user.name || review.user.email}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(review.createdAt).toLocaleDateString("tr-TR")}
+                    </span>
+                  </div>
+                  {review.title && (
+                    <p className="mt-1 font-medium text-gray-900">{review.title}</p>
+                  )}
+                  {review.comment && (
+                    <p className="mt-1 text-sm text-gray-600">{review.comment}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApprove(review.id, true)}
+                    disabled={actionLoading === review.id}
+                    className="rounded-lg bg-green-600 p-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                    title="Onayla"
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(review.id)}
+                    disabled={actionLoading === review.id}
+                    className="rounded-lg bg-red-600 p-2 text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                    title="Sil"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Onaylı Yorumlar */}
+      <div className="rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-lg font-bold text-gray-900">
+          Onaylı Yorumlar ({approved.length})
+        </h3>
+        {approved.length === 0 ? (
+          <p className="text-sm text-gray-500">Onaylanmış yorum yok.</p>
+        ) : (
+          <div className="space-y-3">
+            {approved.map((review) => (
+              <div
+                key={review.id}
+                className="flex items-start justify-between gap-4 rounded-lg border p-4"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`h-4 w-4 ${s <= review.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {review.user.name || review.user.email}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(review.createdAt).toLocaleDateString("tr-TR")}
+                    </span>
+                  </div>
+                  {review.title && (
+                    <p className="mt-1 font-medium text-gray-900">{review.title}</p>
+                  )}
+                  {review.comment && (
+                    <p className="mt-1 text-sm text-gray-600">{review.comment}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApprove(review.id, false)}
+                    disabled={actionLoading === review.id}
+                    className="rounded-lg border p-2 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50"
+                    title="Onayı Kaldır"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(review.id)}
+                    disabled={actionLoading === review.id}
+                    className="rounded-lg border p-2 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50"
+                    title="Sil"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
