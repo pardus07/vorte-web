@@ -16,17 +16,6 @@ import { getPageContext } from "@/lib/ai-agent-context";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-/**
- * POST /api/admin/ai-assistant
- *
- * Body:
- * {
- *   messages: [{ role: "user"|"model", parts: [{ text: string }] }],
- *   currentPage?: string,
- *   action?: "chat" | "approve" | "reject",
- *   approveData?: { toolName: string, args: Record<string, unknown> }
- * }
- */
 export async function POST(req: NextRequest) {
   // Auth: sadece ADMIN
   const admin = await requireAdmin();
@@ -41,7 +30,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY tanımlanmamış. Ayarlar > Entegrasyonlar bölümünden ekleyin." },
+      { error: "GEMINI_API_KEY tanımlanmamış." },
       { status: 500 }
     );
   }
@@ -55,22 +44,18 @@ export async function POST(req: NextRequest) {
       approveData,
     } = body;
 
-    // Onay işlemi — tool çalıştır
+    // Onay işlemi
     if (action === "approve" && approveData) {
       return handleApproval(approveData, req);
     }
 
-    // Chat işlemi — Gemini'ye gönder
-    return handleChat(apiKey, messages, currentPage, req);
+    // Chat işlemi
+    return await handleChat(apiKey, messages, currentPage, req);
   } catch (error) {
-    console.error("[ai-assistant] Error:", error);
+    console.error("[ai-assistant] Top-level error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "AI asistan hatası oluştu.",
-      },
+      { error: `AI asistan hatası: ${msg}` },
       { status: 500 }
     );
   }
@@ -84,18 +69,23 @@ async function handleChat(
   currentPage: string,
   req: NextRequest
 ) {
-  // Dinamik context
-  const dynamicCtx = await fetchDynamicContext();
-  const pageCtx = getPageContext(currentPage);
+  // 1) Dinamik context
+  let dynamicCtx;
+  try {
+    dynamicCtx = await fetchDynamicContext();
+  } catch (err) {
+    console.error("[ai-assistant] fetchDynamicContext error:", err);
+    dynamicCtx = { productCount: 0, dealerCount: 0, pendingOrders: 0, categories: [] };
+  }
 
-  // System prompt
+  const pageCtx = getPageContext(currentPage);
   const systemPrompt = buildSystemPrompt({
     currentPage,
     pageTitle: pageCtx.pageTitle,
     ...dynamicCtx,
   });
 
-  // Gemini client
+  // 2) Gemini client
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL,
@@ -103,81 +93,99 @@ async function handleChat(
     tools: [{ functionDeclarations: agentFunctionDeclarations }],
   });
 
-  // Chat başlat
-  const chat = model.startChat({
-    history: messages.slice(0, -1), // Son mesaj hariç geçmiş
-  });
+  // 3) History hazırla — son mesaj hariç
+  const history = messages.length > 1 ? messages.slice(0, -1) : [];
+  const chat = model.startChat({ history });
 
-  // Son mesajı gönder
+  // 4) Son mesajı gönder
   const lastMessage = messages[messages.length - 1];
-  const lastText =
-    lastMessage?.parts?.[0]?.text || lastMessage?.parts?.[0] || "";
+  let lastText = "";
+  if (lastMessage?.parts) {
+    const firstPart = lastMessage.parts[0];
+    lastText = typeof firstPart === "string" ? firstPart : firstPart?.text || "";
+  }
 
-  const result = await chat.sendMessage(String(lastText));
+  if (!lastText) {
+    return NextResponse.json({ reply: "Mesaj boş geldi. Tekrar dener misin?" });
+  }
+
+  console.log("[ai-assistant] Sending to Gemini:", lastText.substring(0, 100));
+
+  const result = await chat.sendMessage(lastText);
   const response = result.response;
 
-  // Function call kontrolü
-  const functionCalls = response.functionCalls();
+  // 5) Function call kontrolü
+  let functionCalls;
+  try {
+    functionCalls = response.functionCalls();
+  } catch {
+    functionCalls = null;
+  }
+
+  console.log("[ai-assistant] Function calls:", functionCalls?.map(fc => fc.name) || "none");
 
   if (functionCalls && functionCalls.length > 0) {
-    const fc = functionCalls[0]; // Tek function call
+    const fc = functionCalls[0];
     const toolName = fc.name;
     const args = (fc.args || {}) as Record<string, unknown>;
 
-    // Base URL + cookies
+    console.log("[ai-assistant] Executing tool:", toolName, JSON.stringify(args).substring(0, 200));
+
     const baseUrl = getBaseUrl(req);
     const cookies = req.headers.get("cookie") || "";
 
-    // Tool'u resolve et (SEVİYE 1 direkt çalıştır, 2-3 onay beklet)
-    const toolResult = await resolveToolCall(
-      toolName,
-      args,
-      baseUrl,
-      cookies
-    );
+    const toolResult = await resolveToolCall(toolName, args, baseUrl, cookies);
 
-    if (toolResult.approvalLevel === 1 && toolResult.data) {
-      // SEVİYE 1 — sonucu Gemini'ye geri gönder
-      const toolResponseResult = await chat.sendMessage([
-        {
-          functionResponse: {
-            name: toolName,
-            response: toolResult.data as object,
+    if (toolResult.approvalLevel === 1) {
+      if (toolResult.error) {
+        return NextResponse.json({
+          reply: `❌ ${toolResult.description} başarısız: ${toolResult.error}`,
+          toolCall: { name: toolName, args, error: toolResult.error, approvalLevel: 1 },
+        });
+      }
+
+      // Sonucu Gemini'ye geri gönder → Türkçe özet al
+      try {
+        const toolResponseResult = await chat.sendMessage([
+          {
+            functionResponse: {
+              name: toolName,
+              response: { result: toolResult.data },
+            },
           },
-        },
-      ]);
+        ]);
 
-      const finalText =
-        toolResponseResult.response.text() || "İşlem tamamlandı.";
+        let finalText = "";
+        try {
+          finalText = toolResponseResult.response.text();
+        } catch {
+          finalText = "İşlem tamamlandı. Sonuç alındı.";
+        }
 
-      return NextResponse.json({
-        reply: finalText,
-        toolCall: {
-          name: toolName,
-          args,
-          result: toolResult.data,
-          approvalLevel: 1,
-        },
-      });
-    }
-
-    if (toolResult.approvalLevel === 1 && toolResult.error) {
-      // SEVİYE 1 hata
-      return NextResponse.json({
-        reply: `❌ İşlem başarısız: ${toolResult.error}`,
-        toolCall: {
-          name: toolName,
-          args,
-          error: toolResult.error,
-          approvalLevel: 1,
-        },
-      });
+        return NextResponse.json({
+          reply: finalText || "İşlem tamamlandı.",
+          toolCall: { name: toolName, args, result: toolResult.data, approvalLevel: 1 },
+        });
+      } catch (err) {
+        console.error("[ai-assistant] Tool response to Gemini error:", err);
+        // Gemini'ye geri gönderemesek bile sonucu direkt göster
+        return NextResponse.json({
+          reply: `✅ ${toolResult.description} tamamlandı.`,
+          toolCall: { name: toolName, args, result: toolResult.data, approvalLevel: 1 },
+        });
+      }
     }
 
     // SEVİYE 2-3 — onay bekle
-    const aiText = response.text() || "";
+    let aiText = "";
+    try {
+      aiText = response.text();
+    } catch {
+      aiText = "";
+    }
+
     return NextResponse.json({
-      reply: aiText,
+      reply: aiText || `${toolResult.description} için onayınız gerekiyor.`,
       pendingAction: {
         toolName,
         args: toolResult.pendingArgs,
@@ -189,8 +197,23 @@ async function handleChat(
     });
   }
 
-  // Düz metin yanıt (tool çağrısı yok)
-  const text = response.text() || "Bir şeyler ters gitti. Tekrar dener misin?";
+  // 6) Düz metin yanıt
+  let text = "";
+  try {
+    text = response.text();
+  } catch {
+    text = "";
+  }
+
+  if (!text) {
+    // Gemini boş döndü — candidates kontrolü
+    const candidates = response.candidates;
+    console.error("[ai-assistant] Empty response. Candidates:", JSON.stringify(candidates));
+    return NextResponse.json({
+      reply: "Yanıt alınamadı. Lütfen tekrar deneyin.",
+    });
+  }
+
   return NextResponse.json({ reply: text });
 }
 
