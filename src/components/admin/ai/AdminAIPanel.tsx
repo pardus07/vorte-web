@@ -66,11 +66,32 @@ export function AdminAIPanel() {
   }, [isOpen]);
 
   // Mesajları Gemini format'ına dönüştür
+  // Hata mesajlarını ve boş yanıtları filtrele — Gemini'nin kafasını karıştırır
   const toGeminiHistory = useCallback((): Content[] => {
+    const ERROR_PATTERNS = [
+      "Yanıt alınamadı",
+      "Bir şeyler ters gitti",
+      "Hata:",
+      "❌",
+      "tekrar dene",
+    ];
+
     return messages
-      .filter((m) => m.role !== "system")
+      .filter((m) => {
+        // Sistem mesajlarını çıkar
+        if (m.role === "system") return false;
+        // Boş mesajları çıkar
+        if (!m.text || !m.text.trim()) return false;
+        // Hata mesajlarını çıkar (Gemini'yi karıştırmasın)
+        if (
+          m.role === "model" &&
+          ERROR_PATTERNS.some((p) => m.text.includes(p))
+        )
+          return false;
+        return true;
+      })
       .map((m) => ({
-        role: m.role === "user" ? "user" : "model",
+        role: (m.role === "user" ? "user" : "model") as "user" | "model",
         parts: [{ text: m.text }],
       }));
   }, [messages]);

@@ -110,9 +110,36 @@ async function handleChat(
   }
 
   console.log("[ai-assistant] Sending to Gemini:", lastText.substring(0, 100));
+  console.log("[ai-assistant] History length:", history.length);
 
-  const result = await chat.sendMessage(lastText);
-  const response = result.response;
+  // Gemini'ye gönder — boş yanıt gelirse 1 kez retry
+  let response;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = await chat.sendMessage(lastText);
+    response = result.response;
+
+    // Yanıt boş mu kontrol et
+    let hasContent = false;
+    try {
+      const fc = response.functionCalls();
+      if (fc && fc.length > 0) hasContent = true;
+    } catch { /* no function calls */ }
+    if (!hasContent) {
+      try {
+        const t = response.text();
+        if (t && t.trim()) hasContent = true;
+      } catch { /* no text */ }
+    }
+
+    if (hasContent) break;
+    if (attempt === 0) {
+      console.log("[ai-assistant] Empty response, retrying...");
+    }
+  }
+
+  if (!response) {
+    return NextResponse.json({ reply: "Yanıt alınamadı. Lütfen tekrar deneyin." });
+  }
 
   // 5) Function call kontrolü
   let functionCalls;
