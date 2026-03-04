@@ -71,13 +71,26 @@ export default function CheckoutPage() {
 
       const data = await res.json();
 
-      if (data.checkoutFormContent) {
-        // Redirect to iyzico 3D Secure page
-        const div = document.createElement("div");
-        div.innerHTML = data.checkoutFormContent;
-        document.body.appendChild(div);
-        const form = div.querySelector("form");
-        if (form) form.submit();
+      if (data.paymentPageUrl) {
+        // iyzico hosted payment page — en güvenilir yöntem
+        window.location.href = data.paymentPageUrl;
+      } else if (data.checkoutFormContent) {
+        // iyzico checkout form script — script'leri manuel çalıştır
+        const container = document.createElement("div");
+        container.id = "iyzico-checkout-form";
+        document.body.appendChild(container);
+        container.innerHTML = data.checkoutFormContent;
+        // innerHTML ile eklenen script'ler çalışmaz, manuel oluştur
+        const scripts = container.querySelectorAll("script");
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) {
+            newScript.src = oldScript.src;
+          } else {
+            newScript.textContent = oldScript.textContent;
+          }
+          oldScript.parentNode?.replaceChild(newScript, oldScript);
+        });
       } else if (data.orderId) {
         // Direct payment success (for testing)
         router.push(`/odeme/basarili?order=${data.orderId}`);

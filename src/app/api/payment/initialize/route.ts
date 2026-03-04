@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
         orderId: order.id,
         orderNumber: order.orderNumber,
         checkoutFormContent: iyzicoResult.checkoutFormContent,
+        paymentPageUrl: iyzicoResult.paymentPageUrl,
         token: iyzicoResult.token,
       });
     } else {
