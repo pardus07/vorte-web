@@ -15,6 +15,9 @@ import {
   Building2,
   Trash2,
   Plus,
+  ChevronDown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 type SiteSettings = {
@@ -52,6 +55,17 @@ type SiteSettings = {
   smtpPassword: string | null;
   freeShippingThreshold: number | null;
   defaultShippingCost: number | null;
+  // Entegrasyon Ayarları
+  iyzicoApiKey: string | null;
+  iyzicoSecretKey: string | null;
+  iyzicoSandboxMode: boolean;
+  geliverApiKey: string | null;
+  geliverApiBaseUrl: string | null;
+  diaCrmUsername: string | null;
+  diaCrmPassword: string | null;
+  diaCrmCompanyCode: string | null;
+  resendApiKey: string | null;
+  resendFromEmail: string | null;
 };
 
 const tabs = [
@@ -494,36 +508,223 @@ function EntegrasyonTab({
         </FormField>
       </div>
 
-      {/* Mevcut Entegrasyon Durumları */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Sistem Entegrasyonları</h2>
-        <div className="space-y-3">
-          {[
-            { name: "iyzico", desc: "Ödeme altyapısı (3D Secure)", status: true },
-            { name: "Geliver", desc: "Kargo entegrasyonu", status: true },
-            { name: "DIA CRM", desc: "E-Fatura / E-Arşiv", status: true },
-            { name: "Resend", desc: "E-posta gönderimi", status: true },
-          ].map((item) => (
-            <div
-              key={item.name}
-              className="flex items-center justify-between rounded-lg border px-4 py-3"
+      {/* Sistem Entegrasyonları — Açılır/Kapanır Kartlar */}
+      <IntegrationCards data={data} update={update} />
+    </div>
+  );
+}
+
+// ============================================================
+// INTEGRATION CARDS (Expandable)
+// ============================================================
+function SecretField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <FormField label={label}>
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="form-input pr-10"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </FormField>
+  );
+}
+
+function IntegrationCards({
+  data,
+  update,
+}: {
+  data: SiteSettings;
+  update: (field: keyof SiteSettings, value: unknown) => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const integrations = [
+    {
+      key: "iyzico",
+      name: "iyzico",
+      desc: "Ödeme altyapısı (3D Secure)",
+      connected: !!(data.iyzicoApiKey && data.iyzicoSecretKey),
+    },
+    {
+      key: "geliver",
+      name: "Geliver",
+      desc: "Kargo entegrasyonu",
+      connected: !!data.geliverApiKey,
+    },
+    {
+      key: "dia",
+      name: "DIA CRM",
+      desc: "E-Fatura / E-Arşiv",
+      connected: !!(data.diaCrmUsername && data.diaCrmPassword),
+    },
+    {
+      key: "resend",
+      name: "Resend",
+      desc: "E-posta gönderimi",
+      connected: !!data.resendApiKey,
+    },
+  ];
+
+  return (
+    <div className="rounded-lg border bg-white p-6">
+      <h2 className="mb-4 text-lg font-bold text-gray-900">Sistem Entegrasyonları</h2>
+      <div className="space-y-3">
+        {integrations.map((item) => (
+          <div key={item.key} className="rounded-lg border">
+            {/* Card Header — tıklanabilir */}
+            <button
+              type="button"
+              onClick={() => setExpanded(expanded === item.key ? null : item.key)}
+              className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50"
             >
               <div>
                 <p className="font-medium text-gray-900">{item.name}</p>
                 <p className="text-xs text-gray-500">{item.desc}</p>
               </div>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  item.status
-                    ? "bg-green-100 text-green-700"
-                    : "bg-orange-100 text-orange-700"
-                }`}
-              >
-                {item.status ? "Bağlı" : "Yapılandırılacak"}
-              </span>
-            </div>
-          ))}
-        </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    item.connected
+                      ? "bg-green-100 text-green-700"
+                      : "bg-orange-100 text-orange-700"
+                  }`}
+                >
+                  {item.connected ? "Bağlı" : "Yapılandırılacak"}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 text-gray-400 transition-transform ${
+                    expanded === item.key ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Card Body — genişletildiğinde görünür */}
+            {expanded === item.key && (
+              <div className="border-t px-4 py-4 space-y-4">
+                {item.key === "iyzico" && (
+                  <>
+                    <SecretField
+                      label="API Key"
+                      value={data.iyzicoApiKey || ""}
+                      onChange={(v) => update("iyzicoApiKey", v)}
+                      placeholder="sandbox-..."
+                    />
+                    <SecretField
+                      label="Secret Key"
+                      value={data.iyzicoSecretKey || ""}
+                      onChange={(v) => update("iyzicoSecretKey", v)}
+                      placeholder="sandbox-..."
+                    />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Sandbox Modu</p>
+                        <p className="text-xs text-gray-500">Test ortamı için açık bırakın</p>
+                      </div>
+                      <label className="relative inline-flex cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          checked={data.iyzicoSandboxMode}
+                          onChange={(e) => update("iyzicoSandboxMode", e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#7AC143] peer-checked:after:translate-x-full peer-checked:after:border-white" />
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {item.key === "geliver" && (
+                  <>
+                    <SecretField
+                      label="API Key"
+                      value={data.geliverApiKey || ""}
+                      onChange={(v) => update("geliverApiKey", v)}
+                      placeholder="glvr_..."
+                    />
+                    <FormField label="API Base URL" hint="Varsayılan: https://api.geliver.io">
+                      <input
+                        value={data.geliverApiBaseUrl || ""}
+                        onChange={(e) => update("geliverApiBaseUrl", e.target.value)}
+                        className="form-input"
+                        placeholder="https://api.geliver.io"
+                      />
+                    </FormField>
+                  </>
+                )}
+
+                {item.key === "dia" && (
+                  <>
+                    <FormField label="Kullanıcı Adı">
+                      <input
+                        value={data.diaCrmUsername || ""}
+                        onChange={(e) => update("diaCrmUsername", e.target.value)}
+                        className="form-input"
+                        placeholder="DIA kullanıcı adı"
+                      />
+                    </FormField>
+                    <SecretField
+                      label="Şifre"
+                      value={data.diaCrmPassword || ""}
+                      onChange={(v) => update("diaCrmPassword", v)}
+                      placeholder="DIA şifresi"
+                    />
+                    <FormField label="Şirket Kodu">
+                      <input
+                        value={data.diaCrmCompanyCode || ""}
+                        onChange={(e) => update("diaCrmCompanyCode", e.target.value)}
+                        className="form-input"
+                        placeholder="Şirket kodu"
+                      />
+                    </FormField>
+                  </>
+                )}
+
+                {item.key === "resend" && (
+                  <>
+                    <SecretField
+                      label="API Key"
+                      value={data.resendApiKey || ""}
+                      onChange={(v) => update("resendApiKey", v)}
+                      placeholder="re_..."
+                    />
+                    <FormField label="Gönderen E-posta" hint="Domain doğrulaması gerekir">
+                      <input
+                        type="email"
+                        value={data.resendFromEmail || ""}
+                        onChange={(e) => update("resendFromEmail", e.target.value)}
+                        className="form-input"
+                        placeholder="noreply@vorte.com.tr"
+                      />
+                    </FormField>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

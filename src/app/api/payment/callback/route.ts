@@ -1,37 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
+
+import { NextRequest } from "next/server";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { retrievePaymentResult } from "@/lib/iyzico";
-import { resendClient } from "@/lib/integrations/resend";
 import { formatPrice } from "@/lib/utils";
+import { resendClient } from "@/lib/integrations/resend";
+import { cookies } from "next/headers";
 
+// iyzico 3D Secure sonrası kullanıcı buraya POST ile yönlendirilir
 export async function POST(req: NextRequest) {
+  let redirectUrl = "/odeme/basarisiz";
+
   try {
-    const body = await req.json();
-    const { token } = body;
+    const formData = await req.formData();
+    const token = formData.get("token") as string;
 
     if (!token) {
-      return NextResponse.json({ error: "Token missing" }, { status: 400 });
+      console.error("[iyzico callback] Token missing");
+      redirect("/odeme/basarisiz");
     }
 
     // iyzico'dan ödeme sonucunu sorgula
     const result = await retrievePaymentResult(token);
 
     if (!result.conversationId) {
-      console.error("[iyzico webhook] No conversationId in result:", result);
-      return NextResponse.json({ error: "Invalid payment result" }, { status: 400 });
+      console.error("[iyzico callback] No conversationId in result:", result);
+      redirect("/odeme/basarisiz");
     }
 
-    const conversationId = result.conversationId;
-    const paymentStatus = result.paymentStatus; // "SUCCESS" veya "FAILURE"
-    const paymentId = result.paymentId;
-
-    // Find the payment by conversation ID
+    // Payment kaydını bul
     const payment = await db.payment.findFirst({
-      where: { iyzicoConversationId: conversationId },
+      where: { iyzicoConversationId: result.conversationId },
       include: {
         order: {
           include: {
-            user: { select: { email: true, name: true } },
+            user: { select: { id: true, email: true, name: true } },
             items: { include: { variant: true } },
           },
         },
@@ -39,33 +43,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (!payment) {
-      console.error("[iyzico webhook] Payment not found:", conversationId);
-      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+      console.error("[iyzico callback] Payment not found for conversationId:", result.conversationId);
+      redirect("/odeme/basarisiz");
     }
 
-    // Zaten işlenmiş ödemeyi tekrar işleme
-    if (payment.status === "SUCCESS" || payment.status === "FAILED") {
-      return NextResponse.json({ success: true, message: "Already processed" });
-    }
-
-    if (result.status === "success" && paymentStatus === "SUCCESS") {
-      // Update payment
+    if (result.status === "success" && result.paymentStatus === "SUCCESS") {
+      // Ödeme başarılı
       await db.payment.update({
         where: { id: payment.id },
         data: {
           status: "SUCCESS",
-          iyzicoPaymentId: paymentId,
+          iyzicoPaymentId: result.paymentId,
           paidAt: new Date(),
         },
       });
 
-      // Update order status
       await db.order.update({
         where: { id: payment.orderId },
         data: { status: "PAID" },
       });
 
-      // Decrease stock
+      // Stok düş
       for (const item of payment.order.items) {
         await db.variant.update({
           where: { id: item.variantId },
@@ -73,7 +71,16 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Create notification
+      // Sepet temizle
+      const cookieStore = await cookies();
+      const sessionId = cookieStore.get("cart-session")?.value;
+      if (payment.order.user?.id) {
+        await db.cartItem.deleteMany({ where: { userId: payment.order.user.id } });
+      } else if (sessionId) {
+        await db.cartItem.deleteMany({ where: { sessionId } });
+      }
+
+      // Bildirim oluştur
       await db.notification.create({
         data: {
           type: "PAYMENT_SUCCESS",
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Send email
+      // E-posta gönder
       if (payment.order.user?.email) {
         try {
           await resendClient.sendPaymentSuccess(
@@ -92,11 +99,20 @@ export async function POST(req: NextRequest) {
             formatPrice(payment.amount)
           );
         } catch (emailErr) {
-          console.error("[iyzico webhook] Email error:", emailErr);
+          console.error("[iyzico callback] Email error:", emailErr);
         }
       }
+
+      redirectUrl = `/odeme/basarili?order=${payment.orderId}`;
     } else {
-      // Payment failed
+      // Ödeme başarısız
+      console.error("[iyzico callback] Payment failed:", {
+        status: result.status,
+        paymentStatus: result.paymentStatus,
+        errorCode: result.errorCode,
+        errorMessage: result.errorMessage,
+      });
+
       await db.payment.update({
         where: { id: payment.id },
         data: { status: "FAILED" },
@@ -115,11 +131,13 @@ export async function POST(req: NextRequest) {
           orderId: payment.orderId,
         },
       });
-    }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[iyzico webhook] Error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+      redirectUrl = "/odeme/basarisiz";
+    }
+  } catch (err) {
+    console.error("[iyzico callback] Error:", err);
+    redirectUrl = "/odeme/basarisiz";
   }
+
+  redirect(redirectUrl);
 }

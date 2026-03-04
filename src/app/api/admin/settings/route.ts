@@ -58,6 +58,24 @@ const settingsSchema = z.object({
   // Kargo
   freeShippingThreshold: z.coerce.number().min(0).nullable().optional(),
   defaultShippingCost: z.coerce.number().min(0).nullable().optional(),
+
+  // Entegrasyonlar
+  iyzicoApiKey: z.string().nullable().optional(),
+  iyzicoSecretKey: z.string().nullable().optional(),
+  iyzicoSandboxMode: z.boolean().optional(),
+
+  geliverApiKey: z.string().nullable().optional(),
+  geliverApiBaseUrl: z.string().url("Geçerli URL girin").nullable().optional().or(z.literal("")),
+
+  diaCrmUsername: z.string().nullable().optional(),
+  diaCrmPassword: z.string().nullable().optional(),
+  diaCrmCompanyCode: z.string().nullable().optional(),
+
+  resendApiKey: z.string().nullable().optional(),
+  resendFromEmail: z.string().email("Geçerli e-posta girin").nullable().optional().or(z.literal("")),
+
+  // AI — eksik olan alan
+  aiModel: z.string().nullable().optional(),
 });
 
 export async function GET() {

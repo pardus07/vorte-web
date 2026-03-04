@@ -510,6 +510,21 @@ model SiteSettings {
   freeShippingThreshold Float?
   defaultShippingCost   Float?
 
+  // Entegrasyon Ayarları
+  iyzicoApiKey          String?
+  iyzicoSecretKey       String?
+  iyzicoSandboxMode     Boolean  @default(true)
+
+  geliverApiKey         String?
+  geliverApiBaseUrl     String?
+
+  diaCrmUsername        String?
+  diaCrmPassword        String?
+  diaCrmCompanyCode     String?
+
+  resendApiKey          String?
+  resendFromEmail       String?  @default("noreply@vorte.com.tr")
+
   updatedAt             DateTime @updatedAt
 
   @@map("site_settings")

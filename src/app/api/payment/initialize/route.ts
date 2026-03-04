@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { generateOrderNumber } from "@/lib/utils";
+import { initializeCheckoutForm } from "@/lib/iyzico";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -138,11 +139,115 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // TODO: Initialize iyzico payment for production
-  return NextResponse.json({
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-  });
+  // Production: iyzico 3D Secure Checkout Form
+  try {
+    // Basket items — her item'ın price'ı satır toplamı olmalı
+    const basketItems: { id: string; name: string; category1: string; itemType: string; price: string }[] =
+      cartItems.map((item) => ({
+        id: item.variantId,
+        name: item.product.name,
+        category1: "İç Giyim",
+        itemType: "PHYSICAL",
+        price: ((item.variant.price || item.product.basePrice) * item.quantity).toFixed(2),
+      }));
+
+    // Kargo ücreti varsa ayrı basketItem olarak ekle
+    if (shippingCost > 0) {
+      basketItems.push({
+        id: "SHIPPING",
+        name: "Kargo Ücreti",
+        category1: "Kargo",
+        itemType: "VIRTUAL",
+        price: shippingCost.toFixed(2),
+      });
+    }
+
+    const nameParts = address.fullName.trim().split(" ");
+    const firstName = nameParts[0] || ".";
+    const lastName = nameParts.slice(1).join(" ") || ".";
+
+    const paymentData = {
+      conversationId: order.payment!.id,
+      price: subtotal.toFixed(2),
+      paidPrice: totalAmount.toFixed(2),
+      currency: "TRY",
+      installment: "1",
+      basketId: order.id,
+      paymentChannel: "WEB",
+      paymentGroup: "PRODUCT",
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/payment/callback`,
+      buyer: {
+        id: userId || sessionId || "guest",
+        name: firstName,
+        surname: lastName,
+        gsmNumber: address.phone.replace(/\s/g, ""),
+        email: session?.user?.email || "misafir@vorte.com.tr",
+        identityNumber: "11111111111",
+        registrationAddress: address.address,
+        ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1",
+        city: address.city,
+        country: "Turkey",
+      },
+      shippingAddress: {
+        contactName: address.fullName,
+        city: address.city,
+        country: "Turkey",
+        address: address.address,
+      },
+      billingAddress: {
+        contactName: address.fullName,
+        city: address.city,
+        country: "Turkey",
+        address: address.address,
+      },
+      basketItems,
+    };
+
+    // iyzico conversation ID'sini kaydet
+    await db.payment.update({
+      where: { id: order.payment!.id },
+      data: { iyzicoConversationId: order.payment!.id },
+    });
+
+    const iyzicoResult = await initializeCheckoutForm(paymentData);
+
+    if (iyzicoResult.status === "success") {
+      return NextResponse.json({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        checkoutFormContent: iyzicoResult.checkoutFormContent,
+        token: iyzicoResult.token,
+      });
+    } else {
+      console.error("[iyzico] Initialize failed:", iyzicoResult);
+      await db.payment.update({
+        where: { id: order.payment!.id },
+        data: { status: "FAILED" },
+      });
+      await db.order.update({
+        where: { id: order.id },
+        data: { status: "CANCELLED" },
+      });
+      return NextResponse.json(
+        { error: iyzicoResult.errorMessage || "Ödeme başlatılamadı" },
+        { status: 400 }
+      );
+    }
+  } catch (err) {
+    console.error("[iyzico] Initialize error:", err);
+    await db.payment.update({
+      where: { id: order.payment!.id },
+      data: { status: "FAILED" },
+    });
+    await db.order.update({
+      where: { id: order.id },
+      data: { status: "CANCELLED" },
+    });
+    return NextResponse.json(
+      { error: "Ödeme sistemi hatası. Lütfen daha sonra tekrar deneyin." },
+      { status: 500 }
+    );
+  }
 }
 
 function formatPrice(price: number): string {
