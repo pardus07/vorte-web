@@ -1,19 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resendClient } from "@/lib/integrations/resend";
+import { verifyGeliverWebhook, parseWebhookEvent } from "@/lib/integrations/geliver";
 
+/**
+ * Geliver Webhook — receives tracking status updates
+ * Event: TRACK_UPDATED
+ * Payload: WebhookUpdateTrackingRequest { event, data: Shipment }
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { trackingNo, status, carrier } = body;
+    const rawBody = await req.text();
+    const headers: Record<string, string> = {};
+    req.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
 
-    if (!trackingNo) {
-      return NextResponse.json({ error: "Missing tracking number" }, { status: 400 });
+    // Verify webhook signature (non-blocking if no secret configured)
+    const isValid = verifyGeliverWebhook(rawBody, headers);
+    if (!isValid) {
+      console.warn("[Geliver webhook] Signature verification failed");
+      // Continue anyway — Geliver may not have secret configured yet
     }
 
-    // Find order by tracking number
+    const event = parseWebhookEvent(rawBody);
+    if (!event || !event.data) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const shipment = event.data;
+    const trackingNo = shipment.trackingNumber || shipment.barcode;
+    const shipmentId = shipment.id;
+    const statusCode = shipment.trackingStatus?.trackingStatusCode || shipment.statusCode;
+
+    if (!shipmentId && !trackingNo) {
+      return NextResponse.json({ error: "No shipment identifier" }, { status: 400 });
+    }
+
+    // Find order by shipmentId or tracking number
     const order = await db.order.findFirst({
-      where: { cargoTrackingNo: trackingNo },
+      where: {
+        OR: [
+          ...(shipmentId ? [{ cargoShipmentId: shipmentId }] : []),
+          ...(trackingNo ? [{ cargoTrackingNo: trackingNo }] : []),
+        ],
+      },
       include: {
         user: { select: { email: true, name: true } },
         dealer: { select: { email: true, companyName: true } },
@@ -21,32 +52,66 @@ export async function POST(req: NextRequest) {
     });
 
     if (!order) {
-      console.error("[Geliver webhook] Order not found for tracking:", trackingNo);
+      console.warn("[Geliver webhook] Order not found for:", { shipmentId, trackingNo });
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Map Geliver status to our order status
+    // Map Geliver tracking status to our order status
     let newStatus: string | null = null;
-    if (status === "DELIVERED") {
-      newStatus = "DELIVERED";
-    } else if (status === "IN_TRANSIT" || status === "OUT_FOR_DELIVERY") {
-      newStatus = "SHIPPED";
+    if (statusCode) {
+      const code = statusCode.toUpperCase();
+      if (code === "DELIVERED" || code === "TESLIM_EDILDI") {
+        newStatus = "DELIVERED";
+      } else if (
+        ["IN_TRANSIT", "OUT_FOR_DELIVERY", "TRANSIT", "DAGITIMDA", "AKTARMADA"].includes(code)
+      ) {
+        newStatus = "SHIPPED";
+      } else if (["RETURNED", "IADE", "IADE_EDILDI"].includes(code)) {
+        newStatus = "REFUNDED";
+      } else if (["CANCELLED", "IPTAL", "IPTAL_EDILDI"].includes(code)) {
+        newStatus = "CANCELLED";
+      }
     }
 
     if (newStatus && newStatus !== order.status) {
       await db.order.update({
         where: { id: order.id },
-        data: { status: newStatus as "SHIPPED" | "DELIVERED" },
+        data: { status: newStatus as "SHIPPED" | "DELIVERED" | "REFUNDED" | "CANCELLED" },
       });
 
-      // Send notification email for delivery
-      if (newStatus === "DELIVERED") {
-        const email = order.user?.email || order.dealer?.email;
-        if (email) {
+      // Create status history entry
+      await db.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: order.status,
+          toStatus: newStatus,
+          note: `Geliver: ${shipment.trackingStatus?.statusDetails || statusCode || "Durum güncellendi"}`,
+        },
+      });
+
+      // Send notification emails
+      const email = order.user?.email || order.dealer?.email;
+      if (email) {
+        if (newStatus === "DELIVERED") {
           await resendClient.sendEmail({
             to: email,
-            subject: `Siparişiniz Teslim Edildi - #${order.orderNumber}`,
-            html: `<p>Siparişiniz başarıyla teslim edildi.</p>`,
+            subject: `Siparişiniz Teslim Edildi — #${order.orderNumber}`,
+            html: `
+              <h2>Siparişiniz teslim edildi!</h2>
+              <p>Sipariş numaraniz: <strong>#${order.orderNumber}</strong></p>
+              <p>Kargo takip no: <strong>${trackingNo || order.cargoTrackingNo}</strong></p>
+              <p>Urunlerimizi begeneceginizi umuyoruz. Iyi gunlerde kullanin!</p>
+              <p><a href="https://vorte.com.tr/hesabim/siparislerim">Siparislerime Git</a></p>
+            `,
+          });
+        } else if (newStatus === "REFUNDED") {
+          await resendClient.sendEmail({
+            to: email,
+            subject: `Kargo Iade Edildi — #${order.orderNumber}`,
+            html: `
+              <p>Siparis numaraniz <strong>#${order.orderNumber}</strong> icin kargo iade edildi.</p>
+              <p>Detaylar icin hesabinizi kontrol edebilirsiniz.</p>
+            `,
           });
         }
       }

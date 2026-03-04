@@ -16,14 +16,18 @@ export async function POST(req: NextRequest) {
   const order = await db.order.findUnique({
     where: { id: orderId },
     include: {
-      items: { include: { product: { select: { name: true } } } },
+      items: { include: { product: { select: { name: true, weight: true } } } },
       user: { select: { email: true, name: true } },
       dealer: { select: { email: true, companyName: true } },
     },
   });
 
   if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 });
+  }
+
+  if (order.cargoTrackingNo) {
+    return NextResponse.json({ error: "Bu sipariş için zaten kargo oluşturulmuş" }, { status: 400 });
   }
 
   const address = order.addressSnapshot as {
@@ -41,8 +45,8 @@ export async function POST(req: NextRequest) {
       orderNumber: order.orderNumber,
       sender: {
         fullName: "Vorte Tekstil",
-        phone: "+90 224 000 0000",
-        address: "Nilüfer, Bursa",
+        phone: "+905376220694",
+        address: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
         city: "Bursa",
         district: "Nilüfer",
       },
@@ -50,7 +54,9 @@ export async function POST(req: NextRequest) {
       items: order.items.map((item) => ({
         name: item.product.name,
         quantity: item.quantity,
+        weight: item.product.weight || undefined,
       })),
+      totalAmount: order.totalAmount,
     });
 
     // Update order with tracking info
@@ -60,6 +66,17 @@ export async function POST(req: NextRequest) {
         status: "SHIPPED",
         cargoTrackingNo: shipment.trackingNo,
         cargoProvider: shipment.carrier,
+        cargoShipmentId: shipment.shipmentId,
+      },
+    });
+
+    // Create status history
+    await db.orderStatusHistory.create({
+      data: {
+        orderId: orderId,
+        fromStatus: order.status,
+        toStatus: "SHIPPED",
+        note: `Kargo oluşturuldu: ${shipment.carrier} - ${shipment.trackingNo}`,
       },
     });
 
@@ -74,9 +91,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(shipment);
+    return NextResponse.json({
+      success: true,
+      trackingNo: shipment.trackingNo,
+      carrier: shipment.carrier,
+      shipmentId: shipment.shipmentId,
+      labelUrl: shipment.labelUrl,
+    });
   } catch (error) {
     console.error("[Shipping] Error:", error);
-    return NextResponse.json({ error: "Shipment creation failed" }, { status: 500 });
+    return NextResponse.json({ error: "Kargo oluşturulamadı" }, { status: 500 });
   }
 }

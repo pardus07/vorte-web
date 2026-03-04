@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       status: true,
       cargoTrackingNo: true,
       cargoProvider: true,
+      cargoShipmentId: true,
       createdAt: true,
       updatedAt: true,
       statusHistory: {
@@ -41,11 +42,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 });
   }
 
-  // If tracking number exists, try to get Geliver tracking events
+  // If shipment ID exists, try to get Geliver tracking events
   let trackingEvents: { status: string; description: string; location: string; timestamp: string }[] = [];
-  if (order.cargoTrackingNo) {
+  if (order.cargoShipmentId) {
     try {
-      trackingEvents = await geliverClient.getTracking(order.cargoTrackingNo);
+      trackingEvents = await geliverClient.getTracking(order.cargoShipmentId);
     } catch {
       // Geliver tracking may fail, continue without it
     }

@@ -62,6 +62,7 @@ export async function POST(
         quantity: item.quantity,
         weight: item.product.weight || undefined,
       })),
+      totalAmount: order.totalAmount,
     });
 
     // Update order
