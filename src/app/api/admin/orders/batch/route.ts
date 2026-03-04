@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const batchSchema = z.object({
   orderIds: z.array(z.string()).min(1, "En az bir sipariş seçin"),
-  action: z.enum(["status_update", "ship", "invoice"]),
+  action: z.enum(["status_update", "ship", "invoice", "delete"]),
   status: z.enum(["PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]).optional(),
 });
 
@@ -64,6 +64,43 @@ export async function POST(req: NextRequest) {
       } catch {
         errorCount++;
         errors.push(`Hata: ${orderId}`);
+      }
+    }
+  }
+
+  if (action === "delete") {
+    for (const orderId of orderIds) {
+      try {
+        const order = await db.order.findUnique({
+          where: { id: orderId },
+          include: { payment: { select: { status: true } } },
+        });
+
+        if (!order) {
+          errorCount++;
+          errors.push(`Sipariş bulunamadı: ${orderId}`);
+          continue;
+        }
+
+        const canDelete =
+          order.status === "CANCELLED" ||
+          order.status === "REFUNDED" ||
+          (order.status === "PENDING" &&
+            (!order.payment ||
+              order.payment.status === "PENDING" ||
+              order.payment.status === "FAILED"));
+
+        if (!canDelete) {
+          errorCount++;
+          errors.push(`#${order.orderNumber} silinemez (aktif sipariş)`);
+          continue;
+        }
+
+        await db.order.delete({ where: { id: orderId } });
+        successCount++;
+      } catch {
+        errorCount++;
+        errors.push(`Silme hatası: ${orderId}`);
       }
     }
   }

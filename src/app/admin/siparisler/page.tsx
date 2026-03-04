@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -19,6 +19,8 @@ import {
   MoreHorizontal,
   ArrowUpDown,
   Calendar,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -94,6 +96,12 @@ export default function AdminOrdersPage() {
   const [bulkStatus, setBulkStatus] = useState("PROCESSING");
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
+  // Dropdown & Delete
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; orderNumber: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   // Messages
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -131,6 +139,56 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openMenuId]);
+
+  const canDeleteOrder = (order: OrderData) => {
+    return (
+      order.status === "CANCELLED" ||
+      order.status === "REFUNDED" ||
+      (order.status === "PENDING" &&
+        (!order.payment ||
+          order.payment.status === "PENDING" ||
+          order.payment.status === "FAILED"))
+    );
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await fetch(`/api/admin/orders/${deleteConfirm.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setSuccess(`#${deleteConfirm.orderNumber} siparişi silindi`);
+        setDeleteConfirm(null);
+        fetchOrders();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Sipariş silinemedi");
+      }
+    } catch {
+      setError("Bir hata oluştu");
+    }
+    setDeleting(false);
+    setTimeout(() => { setSuccess(""); setError(""); }, 4000);
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,6 +404,7 @@ export default function AdminOrdersPage() {
           >
             <option value="">İşlem seçin</option>
             <option value="status_update">Durum Güncelle</option>
+            <option value="delete">Seçilenleri Sil</option>
           </select>
           {bulkAction === "status_update" && (
             <select
@@ -478,7 +537,7 @@ export default function AdminOrdersPage() {
                       {new Date(order.createdAt).toLocaleDateString("tr-TR")}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
+                      <div className="relative flex gap-1">
                         <Link
                           href={`/admin/siparisler/${order.id}`}
                           className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
@@ -486,9 +545,41 @@ export default function AdminOrdersPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
-                        <button className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600" title="Daha Fazla">
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
+                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          title="Daha Fazla"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </button>
+                        {/* Dropdown Menu */}
+                        {openMenuId === order.id && (
+                          <div
+                            ref={menuRef}
+                            className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border bg-white py-1 shadow-lg"
+                          >
+                            <Link
+                              href={`/admin/siparisler/${order.id}`}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => setOpenMenuId(null)}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Detay Görüntüle
+                            </Link>
+                            {canDeleteOrder(order) && (
+                              <button
+                                onClick={() => {
+                                  setDeleteConfirm({ id: order.id, orderNumber: order.orderNumber });
+                                  setOpenMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Siparişi Sil
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -507,6 +598,40 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Pagination */}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900">Siparişi Sil</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              <span className="font-medium text-gray-900">#{deleteConfirm.orderNumber}</span> numaralı siparişi silmek istediğinize emin misiniz?
+            </p>
+            <p className="mt-1 text-xs text-red-500">
+              Bu işlem geri alınamaz. Sipariş ve ilişkili tüm veriler (ödeme, kargo, fatura) silinecektir.
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+              >
+                İptal
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDeleteOrder}
+                loading={deleting}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Evet, Sil
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-gray-500">

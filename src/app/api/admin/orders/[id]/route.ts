@@ -116,3 +116,49 @@ export async function PATCH(
 
   return NextResponse.json(order);
 }
+
+// DELETE /api/admin/orders/[id] — Sipariş sil
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const admin = await requirePermission("orders", "w");
+  if (!admin) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  const order = await db.order.findUnique({
+    where: { id },
+    include: { payment: { select: { status: true } } },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 });
+  }
+
+  // Sadece iptal edilmiş veya başarısız ödeme olan siparişler silinebilir
+  const canDelete =
+    order.status === "CANCELLED" ||
+    order.status === "REFUNDED" ||
+    (order.status === "PENDING" &&
+      (!order.payment ||
+        order.payment.status === "PENDING" ||
+        order.payment.status === "FAILED"));
+
+  if (!canDelete) {
+    return NextResponse.json(
+      { error: "Sadece iptal edilmiş, iade edilmiş veya başarısız siparişler silinebilir" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await db.order.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[admin orders] DELETE error:", error);
+    return NextResponse.json({ error: "Sipariş silinemedi" }, { status: 500 });
+  }
+}
