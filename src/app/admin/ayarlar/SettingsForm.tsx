@@ -567,11 +567,11 @@ function AiTab({
         <div className="space-y-4">
           <FormField label="AI Modeli" hint="Chatbot'un kullandığı Claude modeli">
             <select
-              value={data.aiModel || "claude-haiku-4-5-20251001"}
+              value={data.aiModel || "claude-haiku-4-5"}
               onChange={(e) => update("aiModel", e.target.value)}
               className="form-input"
             >
-              <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Hızlı, ekonomik)</option>
+              <option value="claude-haiku-4-5">Claude Haiku 4.5 (Hızlı, ekonomik)</option>
               <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Dengeli)</option>
               <option value="claude-opus-4-6">Claude Opus 4.6 (En güçlü)</option>
             </select>

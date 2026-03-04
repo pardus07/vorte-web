@@ -64,11 +64,11 @@ export async function POST(req: NextRequest) {
 
   // Build AI context
   let systemPrompt = "";
-  let aiModel = "claude-haiku-4-5-20251001";
+  let aiModel = "claude-haiku-4-5";
   try {
     const settings = await db.siteSettings.findUnique({ where: { id: "main" } });
     systemPrompt = settings?.aiSystemPrompt || "";
-    aiModel = settings?.aiModel || "claude-haiku-4-5-20251001";
+    aiModel = settings?.aiModel || "claude-haiku-4-5";
   } catch {
     // Ignore
   }
@@ -133,12 +133,33 @@ ${productContext || "Ürün bilgisi yüklenemedi."}`;
       if (textBlock && textBlock.type === "text") {
         reply = textBlock.text;
       }
-    } catch (err) {
-      console.error("Anthropic API error:", err);
-      // Use fallback response
+    } catch (err: unknown) {
+      const error = err as { status?: number; message?: string; error?: { type?: string; message?: string } };
+      const statusCode = error.status || 0;
+      const errorType = error.error?.type || "unknown";
+      const errorMsg = error.error?.message || error.message || "Bilinmeyen hata";
+
+      console.error("Anthropic API error:", {
+        status: statusCode,
+        type: errorType,
+        message: errorMsg,
+        model: aiModel,
+        keyPrefix: process.env.ANTHROPIC_API_KEY?.slice(0, 10) + "...",
+      });
+
+      // Specific error messages for debugging
+      if (statusCode === 401) {
+        reply = "AI servisi yapılandırma hatası: API anahtarı geçersiz. Lütfen yöneticiyle iletişime geçin.";
+      } else if (statusCode === 404) {
+        reply = `AI servisi yapılandırma hatası: "${aiModel}" modeli bulunamadı. Lütfen yöneticiyle iletişime geçin.`;
+      } else if (statusCode === 429) {
+        reply = "AI servisinde yoğunluk var, lütfen birkaç saniye sonra tekrar deneyin.";
+      } else if (statusCode === 400) {
+        reply = `AI servisi hatası: ${errorMsg}. Lütfen yöneticiyle iletişime geçin.`;
+      }
     }
   } else {
-    // Dev mode — simulate response
+    console.warn("ANTHROPIC_API_KEY not set — using dev mode fallback");
     reply = `Merhaba! Ben Vorte Tekstil AI asistanıyım. "${message}" sorunuz hakkında size yardımcı olmak isterim. Detaylı bilgi için lütfen iletişim sayfamızı ziyaret edin: vorte.com.tr/iletisim`;
   }
 
