@@ -29,6 +29,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const [step, setStep] = useState<"address" | "payment">("address");
 
   const [address, setAddress] = useState({
@@ -60,6 +61,7 @@ export default function CheckoutPage() {
 
   const handlePaymentSubmit = async () => {
     setSubmitting(true);
+    setPaymentError("");
     try {
       const res = await fetch("/api/payment/initialize", {
         method: "POST",
@@ -80,10 +82,10 @@ export default function CheckoutPage() {
         // Direct payment success (for testing)
         router.push(`/odeme/basarili?order=${data.orderId}`);
       } else {
-        router.push("/odeme/basarisiz");
+        setPaymentError(data.error || "Ödeme başlatılamadı. Lütfen tekrar deneyin.");
       }
     } catch {
-      router.push("/odeme/basarisiz");
+      setPaymentError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
       setSubmitting(false);
     }
@@ -287,6 +289,12 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               </div>
+
+              {paymentError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                  <p className="text-sm font-medium text-red-700">{paymentError}</p>
+                </div>
+              )}
 
               <Button
                 size="lg"

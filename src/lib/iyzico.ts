@@ -117,9 +117,18 @@ export interface IyzicoPaymentRequest {
 
 export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
   const config = await getIyzicoConfig();
-  const uri = "/payment/iosInit/initialize/pay/3ds";
+  const uri = "/payment/pay/checkout-form/initialize/auth/ecom";
   const body = JSON.stringify(data);
   const headers = generateAuthorizationHeader(config, uri, body);
+
+  console.log("[iyzico] Initialize request:", {
+    baseUrl: config.baseUrl,
+    uri,
+    callbackUrl: data.callbackUrl,
+    price: data.price,
+    paidPrice: data.paidPrice,
+    basketItemCount: data.basketItems.length,
+  });
 
   const response = await fetch(`${config.baseUrl}${uri}`, {
     method: "POST",
@@ -132,7 +141,7 @@ export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
 
 export async function retrievePaymentResult(token: string) {
   const config = await getIyzicoConfig();
-  const uri = "/payment/iosInit/3ds";
+  const uri = "/payment/pay/checkout-form/auth/ecom/detail";
   const body = JSON.stringify({ token });
   const headers = generateAuthorizationHeader(config, uri, body);
 
