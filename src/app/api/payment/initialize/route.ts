@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     };
   });
 
-  const shippingCost = subtotal >= 200 ? 0 : 29.9;
+  const shippingCost = subtotal >= 300 ? 0 : 90;
   const totalAmount = subtotal + shippingCost;
 
   // Verify stock

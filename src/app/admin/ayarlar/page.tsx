@@ -16,8 +16,8 @@ export default async function AdminSettingsPage() {
         contactEmail: "info@vorte.com.tr",
         contactPhone: "+90 537 622 0694",
         contactAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG, Nilüfer/Bursa",
-        freeShippingThreshold: 200,
-        defaultShippingCost: 39.90,
+        freeShippingThreshold: 300,
+        defaultShippingCost: 90,
       },
     });
   }

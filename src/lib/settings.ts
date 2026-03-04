@@ -92,7 +92,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
     twitterUrl: null,
     tiktokUrl: null,
     youtubeUrl: null,
-    freeShippingThreshold: 200,
-    defaultShippingCost: 39.90,
+    freeShippingThreshold: 300,
+    defaultShippingCost: 90,
   };
 });

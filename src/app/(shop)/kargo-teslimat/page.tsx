@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Kargo ve Teslimat",
   description:
-    "Vorte Tekstil kargo ve teslimat bilgileri. Türkiye geneli 1-3 iş günü teslimat. 200 TL üzeri ücretsiz kargo.",
+    "Vorte Tekstil kargo ve teslimat bilgileri. Türkiye geneli 1-3 iş günü teslimat. 300 TL üzeri ücretsiz kargo.",
   alternates: { canonical: "/kargo-teslimat" },
 };
 
@@ -18,7 +18,7 @@ const highlights = [
   {
     icon: CreditCard,
     title: "Ücretsiz Kargo",
-    desc: "200 TL ve üzeri siparişlerde kargo ücretsiz.",
+    desc: "300 TL ve üzeri siparişlerde kargo ücretsiz.",
   },
   {
     icon: MapPin,
@@ -138,12 +138,12 @@ export default function ShippingDeliveryPage() {
           </h2>
           <div className="mt-3 rounded-lg bg-[#7AC143]/5 p-4">
             <p className="font-medium text-[#1A1A1A]">
-              200 TL ve üzeri siparişlerde kargo tamamen ücretsizdir!
+              300 TL ve üzeri siparişlerde kargo tamamen ücretsizdir!
             </p>
           </div>
           <p className="mt-3">
-            200 TL altındaki siparişlerde standart kargo ücreti{" "}
-            <strong>29,90 TL</strong>&apos;dir. Kargo ücreti, sipariş özeti
+            300 TL altındaki siparişlerde standart kargo ücreti{" "}
+            <strong>90 TL</strong>&apos;dir. Kargo ücreti, sipariş özeti
             ekranında toplam tutarınıza eklenerek gösterilir.
           </p>
         </section>

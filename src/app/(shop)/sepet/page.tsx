@@ -40,7 +40,7 @@ interface CartData {
   itemCount: number;
 }
 
-const FREE_SHIPPING_THRESHOLD = 200;
+const FREE_SHIPPING_THRESHOLD = 300;
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartData | null>(null);
@@ -136,7 +136,7 @@ export default function CartPage() {
   }
 
   const subtotalAfterCoupon = Math.max(0, cart.total - couponDiscount);
-  const shippingCost = subtotalAfterCoupon >= FREE_SHIPPING_THRESHOLD ? 0 : 29.90;
+  const shippingCost = subtotalAfterCoupon >= FREE_SHIPPING_THRESHOLD ? 0 : 90;
   const grandTotal = subtotalAfterCoupon + shippingCost;
   const remainingForFreeShipping = FREE_SHIPPING_THRESHOLD - subtotalAfterCoupon;
 

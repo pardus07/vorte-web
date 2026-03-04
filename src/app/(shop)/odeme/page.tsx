@@ -22,7 +22,7 @@ interface CartData {
   itemCount: number;
 }
 
-const FREE_SHIPPING_THRESHOLD = 200;
+const FREE_SHIPPING_THRESHOLD = 300;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -99,7 +99,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const shippingCost = cart.total >= FREE_SHIPPING_THRESHOLD ? 0 : 29.9;
+  const shippingCost = cart.total >= FREE_SHIPPING_THRESHOLD ? 0 : 90;
   const grandTotal = cart.total + shippingCost;
 
   return (

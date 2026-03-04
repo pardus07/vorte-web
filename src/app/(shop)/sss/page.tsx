@@ -52,7 +52,7 @@ const faqData: FAQSection[] = [
       {
         question: "Kargo ücreti ne kadar?",
         answer:
-          "200 TL ve üzeri siparişlerde kargo tamamen ücretsizdir. 200 TL altındaki siparişlerde standart kargo ücreti 29,90 TL'dir.",
+          "300 TL ve üzeri siparişlerde kargo tamamen ücretsizdir. 300 TL altındaki siparişlerde standart kargo ücreti 90 TL'dir.",
       },
       {
         question: "Siparişim ne zaman teslim edilir?",
