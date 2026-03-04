@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminAIPanel } from "@/components/admin/ai/AdminAIPanel";
 
 export default async function AdminLayout({
   children,
@@ -25,6 +26,7 @@ export default async function AdminLayout({
         <AdminHeader user={session.user} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      {role === "ADMIN" && <AdminAIPanel />}
     </div>
   );
 }

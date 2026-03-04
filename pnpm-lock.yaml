@@ -17,6 +17,9 @@ importers:
       '@geliver/sdk':
         specifier: ^1.2.0
         version: 1.2.0
+      '@google/generative-ai':
+        specifier: ^0.24.1
+        version: 0.24.1
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.2(react@19.2.3))
@@ -470,6 +473,10 @@ packages:
   '@geliver/sdk@1.2.0':
     resolution: {integrity: sha512-9FDwsICit3eAdHuGtcF/MMSGAtnInqTnY9FuDyBtWKW2r4vpQYByyr+zk+1l3Zlv0ashdj5i7JP4I3/EmeY9pA==}
     engines: {node: '>=18'}
+
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
 
   '@hookform/resolvers@5.2.2':
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
@@ -3411,6 +3418,8 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@geliver/sdk@1.2.0': {}
+
+  '@google/generative-ai@0.24.1': {}
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@19.2.3))':
     dependencies:

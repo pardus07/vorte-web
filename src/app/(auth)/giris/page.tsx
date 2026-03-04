@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -31,7 +31,15 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email veya şifre hatalı");
       } else {
-        router.push("/hesabim");
+        // Role bazlı yönlendirme
+        const session = await getSession();
+        const role = (session?.user as unknown as { role?: string })?.role;
+
+        if (role === "ADMIN" || role === "EDITOR" || role === "VIEWER") {
+          router.push("/admin");
+        } else {
+          router.push("/hesabim");
+        }
         router.refresh();
       }
     } catch {
