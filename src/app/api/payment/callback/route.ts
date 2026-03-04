@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { NextRequest } from "next/server";
-import { redirect } from "next/navigation";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { retrievePaymentResult } from "@/lib/iyzico";
 import { formatPrice } from "@/lib/utils";
@@ -9,29 +8,51 @@ import { resendClient } from "@/lib/integrations/resend";
 import { cookies } from "next/headers";
 
 // iyzico 3D Secure sonrası kullanıcı buraya POST ile yönlendirilir
+// ÖNEMLİ: redirect() yerine NextResponse.redirect() + 303 kullanılmalı
+//   1) redirect() try/catch içinde NEXT_REDIRECT hatası fırlatır → catch yakalar
+//   2) POST handler'da redirect() 307 döner → tarayıcı hedef sayfaya POST yapar → çalışmaz
+//   3) 303 (See Other) kullanarak tarayıcıya "GET ile yönlen" deriz
 export async function POST(req: NextRequest) {
-  let redirectUrl = "/odeme/basarisiz";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
 
   try {
     const formData = await req.formData();
     const token = formData.get("token") as string;
 
+    console.log("[iyzico callback] Received callback, token:", token ? token.substring(0, 20) + "..." : "MISSING");
+
     if (!token) {
-      console.error("[iyzico callback] Token missing");
-      redirect("/odeme/basarisiz");
+      console.error("[iyzico callback] Token missing from form data");
+      return NextResponse.redirect(new URL("/odeme/basarisiz", baseUrl), 303);
     }
 
     // iyzico'dan ödeme sonucunu sorgula
     const result = await retrievePaymentResult(token);
 
-    if (!result.conversationId) {
-      console.error("[iyzico callback] No conversationId in result:", result);
-      redirect("/odeme/basarisiz");
+    console.log("[iyzico callback] Retrieve result:", {
+      status: result.status,
+      paymentStatus: result.paymentStatus,
+      paymentId: result.paymentId,
+      basketId: result.basketId,
+      errorCode: result.errorCode,
+      errorMessage: result.errorMessage,
+      fraudStatus: result.fraudStatus,
+      mdStatus: result.mdStatus,
+      token: result.token,
+    });
+
+    // iyzico checkout form retrieve yanıtında conversationId YOK
+    // basketId = order ID — bunu kullanarak payment'ı buluyoruz
+    const orderId = result.basketId;
+
+    if (!orderId) {
+      console.error("[iyzico callback] No basketId in result:", JSON.stringify(result).substring(0, 500));
+      return NextResponse.redirect(new URL("/odeme/basarisiz", baseUrl), 303);
     }
 
-    // Payment kaydını bul
-    const payment = await db.payment.findFirst({
-      where: { iyzicoConversationId: result.conversationId },
+    // Payment kaydını basketId (= orderId) üzerinden bul
+    const payment = await db.payment.findUnique({
+      where: { orderId },
       include: {
         order: {
           include: {
@@ -43,12 +64,17 @@ export async function POST(req: NextRequest) {
     });
 
     if (!payment) {
-      console.error("[iyzico callback] Payment not found for conversationId:", result.conversationId);
-      redirect("/odeme/basarisiz");
+      console.error("[iyzico callback] Payment not found for orderId (basketId):", orderId);
+      return NextResponse.redirect(new URL("/odeme/basarisiz", baseUrl), 303);
     }
 
+    console.log("[iyzico callback] Found payment:", payment.id, "for order:", payment.order.orderNumber);
+
     if (result.status === "success" && result.paymentStatus === "SUCCESS") {
-      // Ödeme başarılı
+      // ===== ÖDEME BAŞARILI =====
+      console.log("[iyzico callback] Payment SUCCESS for order:", payment.order.orderNumber);
+
+      // Kritik DB güncellemeleri
       await db.payment.update({
         where: { id: payment.id },
         data: {
@@ -71,26 +97,34 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Sepet temizle
-      const cookieStore = await cookies();
-      const sessionId = cookieStore.get("cart-session")?.value;
-      if (payment.order.user?.id) {
-        await db.cartItem.deleteMany({ where: { userId: payment.order.user.id } });
-      } else if (sessionId) {
-        await db.cartItem.deleteMany({ where: { sessionId } });
+      // Sepet temizle (non-critical — başarısız olursa ödeme yine başarılı)
+      try {
+        const cookieStore = await cookies();
+        const sessionId = cookieStore.get("cart-session")?.value;
+        if (payment.order.user?.id) {
+          await db.cartItem.deleteMany({ where: { userId: payment.order.user.id } });
+        } else if (sessionId) {
+          await db.cartItem.deleteMany({ where: { sessionId } });
+        }
+      } catch (cartErr) {
+        console.error("[iyzico callback] Cart clear error (non-critical):", cartErr);
       }
 
-      // Bildirim oluştur
-      await db.notification.create({
-        data: {
-          type: "PAYMENT_SUCCESS",
-          title: "Ödeme Alındı",
-          message: `#${payment.order.orderNumber} - ${formatPrice(payment.amount)}`,
-          orderId: payment.orderId,
-        },
-      });
+      // Bildirim oluştur (non-critical)
+      try {
+        await db.notification.create({
+          data: {
+            type: "PAYMENT_SUCCESS",
+            title: "Ödeme Alındı",
+            message: `#${payment.order.orderNumber} - ${formatPrice(payment.amount)}`,
+            orderId: payment.orderId,
+          },
+        });
+      } catch (notifErr) {
+        console.error("[iyzico callback] Notification error (non-critical):", notifErr);
+      }
 
-      // E-posta gönder
+      // E-posta gönder (non-critical)
       if (payment.order.user?.email) {
         try {
           await resendClient.sendPaymentSuccess(
@@ -99,14 +133,18 @@ export async function POST(req: NextRequest) {
             formatPrice(payment.amount)
           );
         } catch (emailErr) {
-          console.error("[iyzico callback] Email error:", emailErr);
+          console.error("[iyzico callback] Email error (non-critical):", emailErr);
         }
       }
 
-      redirectUrl = `/odeme/basarili?order=${payment.orderId}`;
+      console.log("[iyzico callback] Redirecting to success page for order:", payment.orderId);
+      return NextResponse.redirect(
+        new URL(`/odeme/basarili?order=${payment.orderId}`, baseUrl),
+        303
+      );
     } else {
-      // Ödeme başarısız
-      console.error("[iyzico callback] Payment failed:", {
+      // ===== ÖDEME BAŞARISIZ =====
+      console.error("[iyzico callback] Payment FAILED:", {
         status: result.status,
         paymentStatus: result.paymentStatus,
         errorCode: result.errorCode,
@@ -123,21 +161,24 @@ export async function POST(req: NextRequest) {
         data: { status: "CANCELLED" },
       });
 
-      await db.notification.create({
-        data: {
-          type: "PAYMENT_FAILED",
-          title: "Ödeme Başarısız",
-          message: `#${payment.order.orderNumber} - Ödeme reddedildi`,
-          orderId: payment.orderId,
-        },
-      });
+      // Bildirim (non-critical)
+      try {
+        await db.notification.create({
+          data: {
+            type: "PAYMENT_FAILED",
+            title: "Ödeme Başarısız",
+            message: `#${payment.order.orderNumber} - Ödeme reddedildi`,
+            orderId: payment.orderId,
+          },
+        });
+      } catch (notifErr) {
+        console.error("[iyzico callback] Notification error:", notifErr);
+      }
 
-      redirectUrl = "/odeme/basarisiz";
+      return NextResponse.redirect(new URL("/odeme/basarisiz", baseUrl), 303);
     }
   } catch (err) {
-    console.error("[iyzico callback] Error:", err);
-    redirectUrl = "/odeme/basarisiz";
+    console.error("[iyzico callback] Unhandled error:", err);
+    return NextResponse.redirect(new URL("/odeme/basarisiz", baseUrl), 303);
   }
-
-  redirect(redirectUrl);
 }

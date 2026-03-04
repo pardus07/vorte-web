@@ -16,18 +16,18 @@ export async function POST(req: NextRequest) {
     // iyzico'dan ödeme sonucunu sorgula
     const result = await retrievePaymentResult(token);
 
-    if (!result.conversationId) {
-      console.error("[iyzico webhook] No conversationId in result:", result);
+    const paymentStatus = result.paymentStatus; // "SUCCESS" veya "FAILURE"
+    const paymentId = result.paymentId;
+    const orderId = result.basketId; // basketId = order ID
+
+    if (!orderId) {
+      console.error("[iyzico webhook] No basketId in result:", result);
       return NextResponse.json({ error: "Invalid payment result" }, { status: 400 });
     }
 
-    const conversationId = result.conversationId;
-    const paymentStatus = result.paymentStatus; // "SUCCESS" veya "FAILURE"
-    const paymentId = result.paymentId;
-
-    // Find the payment by conversation ID
-    const payment = await db.payment.findFirst({
-      where: { iyzicoConversationId: conversationId },
+    // Find the payment by orderId (basketId)
+    const payment = await db.payment.findUnique({
+      where: { orderId },
       include: {
         order: {
           include: {
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!payment) {
-      console.error("[iyzico webhook] Payment not found:", conversationId);
+      console.error("[iyzico webhook] Payment not found for orderId:", orderId);
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
