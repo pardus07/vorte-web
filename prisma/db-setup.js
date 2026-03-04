@@ -202,6 +202,9 @@ async function createSchema() {
       CONSTRAINT "coupons_pkey" PRIMARY KEY ("id")
     )`,
 
+    // AI Model column (Faz 17)
+    `ALTER TABLE "site_settings" ADD COLUMN IF NOT EXISTS "aiModel" TEXT NOT NULL DEFAULT 'claude-haiku-4-5-20251001'`,
+
     // Coupon new columns (Faz 12)
     `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "name" TEXT`,
     `ALTER TABLE "coupons" ADD COLUMN IF NOT EXISTS "maxUsesPerUser" INTEGER`,
@@ -309,6 +312,7 @@ async function createSchema() {
       "aiSystemPrompt" TEXT,
       "aiEnabled" BOOLEAN NOT NULL DEFAULT false,
       "aiRules" TEXT,
+      "aiModel" TEXT NOT NULL DEFAULT 'claude-haiku-4-5-20251001',
       "instagramUrl" TEXT,
       "facebookUrl" TEXT,
       "twitterUrl" TEXT,

@@ -64,9 +64,11 @@ export async function POST(req: NextRequest) {
 
   // Build AI context
   let systemPrompt = "";
+  let aiModel = "claude-haiku-4-5-20251001";
   try {
     const settings = await db.siteSettings.findUnique({ where: { id: "main" } });
     systemPrompt = settings?.aiSystemPrompt || "";
+    aiModel = settings?.aiModel || "claude-haiku-4-5-20251001";
   } catch {
     // Ignore
   }
@@ -121,7 +123,7 @@ ${productContext || "Ürün bilgisi yüklenemedi."}`;
   if (anthropic) {
     try {
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: aiModel,
         max_tokens: 500,
         system: defaultSystemPrompt,
         messages: conversationMessages,
