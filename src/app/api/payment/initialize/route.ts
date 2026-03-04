@@ -171,15 +171,15 @@ export async function POST(request: NextRequest) {
     const lastName = nameParts.slice(1).join(" ") || ".";
 
     const paymentData = {
+      locale: "tr",
       conversationId: order.payment!.id,
       price: subtotal.toFixed(2),
       paidPrice: totalAmount.toFixed(2),
       currency: "TRY",
-      installment: "1",
       basketId: order.id,
-      paymentChannel: "WEB",
       paymentGroup: "PRODUCT",
       callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/api/payment/callback`,
+      enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
         id: userId || sessionId || "guest",
         name: firstName,

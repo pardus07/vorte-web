@@ -101,15 +101,15 @@ function generateAuthorizationHeader(
 }
 
 export interface IyzicoPaymentRequest {
+  locale?: string;
   conversationId: string;
   price: string;
   paidPrice: string;
   currency: string;
-  installment: string;
   basketId: string;
-  paymentChannel: string;
   paymentGroup: string;
   callbackUrl: string;
+  enabledInstallments?: number[];
   buyer: {
     id: string;
     name: string;
@@ -145,7 +145,7 @@ export interface IyzicoPaymentRequest {
 
 export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
   const config = await getIyzicoConfig();
-  const uri = "/payment/pay/checkout-form/initialize/auth/ecom";
+  const uri = "/payment/iyzipos/checkoutform/initialize/auth/ecom";
   const body = JSON.stringify(data);
   const headers = generateAuthorizationHeader(config, uri, body);
 
@@ -169,8 +169,8 @@ export async function initializeCheckoutForm(data: IyzicoPaymentRequest) {
 
 export async function retrievePaymentResult(token: string) {
   const config = await getIyzicoConfig();
-  const uri = "/payment/pay/checkout-form/auth/ecom/detail";
-  const body = JSON.stringify({ token });
+  const uri = "/payment/iyzipos/checkoutform/auth/ecom/detail";
+  const body = JSON.stringify({ locale: "tr", token });
   const headers = generateAuthorizationHeader(config, uri, body);
 
   const response = await fetchWithRetry(`${config.baseUrl}${uri}`, {
