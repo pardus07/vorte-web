@@ -15,7 +15,16 @@ async function getSessionId(): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
   const session = await auth();
-  const userId = session?.user?.id;
+  let userId = session?.user?.id;
+
+  // Kullanıcı DB'de var mı kontrol et (eski session cookie sorunu)
+  if (userId) {
+    const userExists = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!userExists) {
+      userId = undefined;
+    }
+  }
+
   const sessionId = !userId ? await getSessionId() : undefined;
 
   const where = userId ? { userId } : { sessionId };
@@ -129,7 +138,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const userId = session?.user?.id;
+    let userId = session?.user?.id;
+
+    // Kullanıcı DB'de var mı kontrol et (eski session cookie sorunu)
+    if (userId) {
+      const userExists = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+      if (!userExists) {
+        userId = undefined; // Geçersiz session — anonim olarak devam et
+      }
+    }
+
     const sessionId = !userId ? await getSessionId() : undefined;
 
     const body = await request.json();
