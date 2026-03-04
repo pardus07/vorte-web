@@ -13,6 +13,7 @@ async function getSessionId(): Promise<string> {
 }
 
 export async function GET(request: NextRequest) {
+  try {
   const session = await auth();
   const userId = session?.user?.id;
   const sessionId = !userId ? await getSessionId() : undefined;
@@ -116,84 +117,99 @@ export async function GET(request: NextRequest) {
   }
 
   return response;
+  } catch (err) {
+    console.error("[cart GET] Error:", err);
+    return NextResponse.json(
+      { items: [], total: 0, itemCount: 0, error: "Sepet yüklenemedi" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  const sessionId = !userId ? await getSessionId() : undefined;
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    const sessionId = !userId ? await getSessionId() : undefined;
 
-  const body = await request.json();
-  const { productId, variantId, quantity = 1 } = body;
+    const body = await request.json();
+    const { productId, variantId, quantity = 1 } = body;
 
-  if (!productId || !variantId) {
-    return NextResponse.json(
-      { error: "productId ve variantId gereklidir" },
-      { status: 400 }
-    );
-  }
-
-  // Verify variant exists and has stock
-  const variant = await db.variant.findUnique({
-    where: { id: variantId },
-    include: { product: true },
-  });
-
-  if (!variant || !variant.active || variant.productId !== productId) {
-    return NextResponse.json({ error: "Geçersiz ürün varyantı" }, { status: 400 });
-  }
-
-  if (variant.stock < quantity) {
-    return NextResponse.json(
-      { error: "Yetersiz stok" },
-      { status: 400 }
-    );
-  }
-
-  // Check if item already in cart
-  const existingItem = await db.cartItem.findFirst({
-    where: {
-      ...(userId ? { userId } : { sessionId }),
-      productId,
-      variantId,
-    },
-  });
-
-  let cartItem;
-  if (existingItem) {
-    const newQuantity = existingItem.quantity + quantity;
-    if (newQuantity > variant.stock) {
+    if (!productId || !variantId) {
       return NextResponse.json(
-        { error: "Stok miktarını aşamazsınız" },
+        { error: "productId ve variantId gereklidir" },
         { status: 400 }
       );
     }
-    cartItem = await db.cartItem.update({
-      where: { id: existingItem.id },
-      data: { quantity: newQuantity },
+
+    // Verify variant exists and has stock
+    const variant = await db.variant.findUnique({
+      where: { id: variantId },
+      include: { product: true },
     });
-  } else {
-    cartItem = await db.cartItem.create({
-      data: {
+
+    if (!variant || !variant.active || variant.productId !== productId) {
+      return NextResponse.json({ error: "Geçersiz ürün varyantı" }, { status: 400 });
+    }
+
+    if (variant.stock < quantity) {
+      return NextResponse.json(
+        { error: "Yetersiz stok" },
+        { status: 400 }
+      );
+    }
+
+    // Check if item already in cart
+    const existingItem = await db.cartItem.findFirst({
+      where: {
         ...(userId ? { userId } : { sessionId }),
         productId,
         variantId,
-        quantity,
       },
     });
+
+    let cartItem;
+    if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      if (newQuantity > variant.stock) {
+        return NextResponse.json(
+          { error: "Stok miktarını aşamazsınız" },
+          { status: 400 }
+        );
+      }
+      cartItem = await db.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: newQuantity },
+      });
+    } else {
+      cartItem = await db.cartItem.create({
+        data: {
+          ...(userId ? { userId } : { sessionId }),
+          productId,
+          variantId,
+          quantity,
+        },
+      });
+    }
+
+    const response = NextResponse.json(cartItem, { status: existingItem ? 200 : 201 });
+
+    if (!userId && sessionId) {
+      response.cookies.set("cart-session", sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      });
+    }
+
+    return response;
+  } catch (err) {
+    console.error("[cart POST] Error:", err);
+    return NextResponse.json(
+      { error: "Sepete ekleme hatası. Lütfen tekrar deneyin." },
+      { status: 500 }
+    );
   }
-
-  const response = NextResponse.json(cartItem, { status: existingItem ? 200 : 201 });
-
-  if (!userId && sessionId) {
-    response.cookies.set("cart-session", sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-    });
-  }
-
-  return response;
 }
