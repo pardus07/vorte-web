@@ -314,6 +314,8 @@ async function executeToolCall(
     }
   }
 
+  console.log(`[ai-agent-executor] ${method} ${url}`);
+
   const response = await fetch(url, fetchOptions);
 
   if (!response.ok) {
@@ -321,10 +323,24 @@ async function executeToolCall(
     let errorMsg: string;
     try {
       const parsed = JSON.parse(errorBody);
-      errorMsg = parsed.error || parsed.message || errorBody;
+      // Detaylı hata bilgisi (zod validation details dahil)
+      if (parsed.details) {
+        const fieldErrors = parsed.details.fieldErrors;
+        if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+          const fields = Object.entries(fieldErrors)
+            .map(([key, errs]) => `${key}: ${(errs as string[]).join(", ")}`)
+            .join("; ");
+          errorMsg = `${parsed.error || "Geçersiz veri"} — ${fields}`;
+        } else {
+          errorMsg = parsed.error || parsed.message || errorBody;
+        }
+      } else {
+        errorMsg = parsed.error || parsed.message || errorBody;
+      }
     } catch {
       errorMsg = errorBody;
     }
+    console.error(`[ai-agent-executor] Error ${response.status}:`, errorMsg);
     throw new Error(`API hatası (${response.status}): ${errorMsg}`);
   }
 

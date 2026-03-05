@@ -4,10 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { slugify } from "@/lib/utils";
 
 const blogSchema = z.object({
   title: z.string().min(1),
-  slug: z.string().min(1),
+  slug: z.string().optional().nullable(),
   excerpt: z.string().optional().nullable(),
   content: z.string(),
   coverImage: z.string().optional().nullable(),
@@ -64,15 +65,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz veri", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const existing = await db.blogPost.findUnique({ where: { slug: parsed.data.slug } });
-  if (existing) {
-    return NextResponse.json({ error: "Bu slug zaten kullanılıyor" }, { status: 400 });
+  // Slug yoksa title'dan otomatik oluştur
+  let slug = parsed.data.slug?.trim();
+  if (!slug) {
+    slug = slugify(parsed.data.title);
   }
 
-  const { publishedAt, ...rest } = parsed.data;
+  // Slug benzersizliğini kontrol et, varsa sonuna sayı ekle
+  let finalSlug = slug;
+  let counter = 1;
+  while (await db.blogPost.findUnique({ where: { slug: finalSlug } })) {
+    finalSlug = `${slug}-${counter}`;
+    counter++;
+  }
+
+  const { publishedAt, slug: _slug, ...rest } = parsed.data;
   const post = await db.blogPost.create({
     data: {
       ...rest,
+      slug: finalSlug,
       publishedAt: publishedAt ? new Date(publishedAt) : rest.published ? new Date() : null,
     },
   });
