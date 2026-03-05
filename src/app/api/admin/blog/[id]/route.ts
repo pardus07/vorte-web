@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const updateBlogSchema = z.object({
   title: z.string().min(1).optional(),
@@ -71,6 +72,12 @@ export async function PUT(
   }
 
   const post = await db.blogPost.update({ where: { id }, data: updateData });
+
+  // Cache temizle — anasayfa blog bölümü + blog listesi + yazı sayfası
+  revalidatePath("/");
+  revalidatePath("/blog");
+  if (post.slug) revalidatePath(`/blog/${post.slug}`);
+
   return NextResponse.json(post);
 }
 
@@ -83,6 +90,13 @@ export async function DELETE(
   if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
   const { id } = await params;
+  const post = await db.blogPost.findUnique({ where: { id }, select: { slug: true } });
   await db.blogPost.delete({ where: { id } });
+
+  // Cache temizle
+  revalidatePath("/");
+  revalidatePath("/blog");
+  if (post?.slug) revalidatePath(`/blog/${post.slug}`);
+
   return NextResponse.json({ success: true });
 }

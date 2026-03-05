@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/utils";
 
 const blogSchema = z.object({
@@ -87,5 +88,11 @@ export async function POST(req: NextRequest) {
       publishedAt: publishedAt ? new Date(publishedAt) : rest.published ? new Date() : null,
     },
   });
+
+  // Cache temizle — anasayfa blog bölümü + blog listesi + yeni yazı sayfası
+  revalidatePath("/");
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${finalSlug}`);
+
   return NextResponse.json(post, { status: 201 });
 }
