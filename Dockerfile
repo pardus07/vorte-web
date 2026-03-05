@@ -40,6 +40,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
 
+# AI görsel üretimi için uploads dizini (yazılabilir olmalı)
+RUN mkdir -p /app/public/uploads/blog && chown -R nextjs:nodejs /app/public/uploads
+
 USER nextjs
 
 EXPOSE 3000
