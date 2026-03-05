@@ -1375,33 +1375,44 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "update_pricing_matrix",
     description:
-      "Bayi fiyat matrisini güncelle. Ürün bazlı veya kategori bazlı toptan fiyatları ayarla.",
+      "Bayi fiyat matrisini güncelle. TEKİL veya TOPLU fiyat ayarla. Birden fazla ürün/bayi fiyatı ayarlarken 'prices' dizisini kullan — her seferinde tek çağrı yeterli!",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
+        prices: {
+          type: SchemaType.ARRAY,
+          description:
+            "TOPLU fiyat güncelleme: birden fazla ürün/bayi fiyatını tek seferde ayarla. Her eleman { productId, dealerId?, wholesalePrice } içermeli.",
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              productId: {
+                type: SchemaType.STRING,
+                description: "Ürün ID'si",
+              },
+              dealerId: {
+                type: SchemaType.STRING,
+                description: "Bayi ID'si (bayiye özel fiyat için, genel toptan için gönderme)",
+              },
+              wholesalePrice: {
+                type: SchemaType.NUMBER,
+                description: "Toptan fiyat (TL)",
+              },
+            },
+            required: ["productId", "wholesalePrice"],
+          },
+        },
         productId: {
           type: SchemaType.STRING,
-          description: "Ürün ID'si (ürün bazlı fiyatlandırma için)",
-        },
-        categoryId: {
-          type: SchemaType.STRING,
-          description: "Kategori ID'si (kategori bazlı fiyatlandırma için)",
+          description: "TEKİL mod: Ürün ID'si (tek fiyat güncellemesi için)",
         },
         dealerId: {
           type: SchemaType.STRING,
           description: "Bayi ID'si (bayiye özel fiyat için)",
         },
-        tierId: {
-          type: SchemaType.STRING,
-          description: "Seviye ID'si (seviye bazlı fiyat için)",
-        },
         wholesalePrice: {
           type: SchemaType.NUMBER,
           description: "Toptan fiyat (TL)",
-        },
-        discountRate: {
-          type: SchemaType.NUMBER,
-          description: "İskonto oranı (%)",
         },
       },
     },

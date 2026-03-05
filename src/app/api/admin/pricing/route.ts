@@ -47,43 +47,69 @@ export async function PUT(req: NextRequest) {
 }
 
 /**
- * PATCH: Tekil ürün/bayi fiyat güncelleme (upsert)
+ * PATCH: Tekil veya toplu ürün/bayi fiyat güncelleme (upsert)
  * AI asistan ve tekil güncellemeler için — diğer fiyatları silmez
+ *
+ * Tekil:  { productId, dealerId?, wholesalePrice, minQuantity? }
+ * Toplu:  { prices: [{ productId, dealerId?, wholesalePrice, minQuantity? }, ...] }
  */
 export async function PATCH(req: NextRequest) {
   if (!(await checkAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { productId, dealerId, wholesalePrice, minQuantity } = await req.json();
+  const body = await req.json();
 
-  if (!productId || wholesalePrice === undefined) {
+  // Toplu veya tekil güncelleme listesi oluştur
+  const items: { productId: string; dealerId: string | null; wholesalePrice: number; minQuantity: number }[] = [];
+
+  if (Array.isArray(body.prices) && body.prices.length > 0) {
+    // Toplu mod
+    for (const p of body.prices) {
+      if (!p.productId || p.wholesalePrice === undefined) continue;
+      items.push({
+        productId: p.productId,
+        dealerId: p.dealerId || null,
+        wholesalePrice: p.wholesalePrice,
+        minQuantity: p.minQuantity || 1,
+      });
+    }
+  } else if (body.productId && body.wholesalePrice !== undefined) {
+    // Tekil mod
+    items.push({
+      productId: body.productId,
+      dealerId: body.dealerId || null,
+      wholesalePrice: body.wholesalePrice,
+      minQuantity: body.minQuantity || 1,
+    });
+  }
+
+  if (items.length === 0) {
     return NextResponse.json(
-      { error: "productId ve wholesalePrice gerekli" },
+      { error: "productId ve wholesalePrice gerekli (tekil veya prices[] dizisi)" },
       { status: 400 }
     );
   }
 
-  // Upsert: varsa güncelle, yoksa oluştur
-  const existing = await db.dealerPrice.findFirst({
-    where: { productId, dealerId: dealerId || null },
-  });
+  // Her biri için upsert
+  const results = [];
+  for (const item of items) {
+    const existing = await db.dealerPrice.findFirst({
+      where: { productId: item.productId, dealerId: item.dealerId },
+    });
 
-  if (existing) {
-    await db.dealerPrice.update({
-      where: { id: existing.id },
-      data: { wholesalePrice, minQuantity: minQuantity || 1 },
-    });
-  } else {
-    await db.dealerPrice.create({
-      data: {
-        productId,
-        dealerId: dealerId || null,
-        wholesalePrice,
-        minQuantity: minQuantity || 1,
-      },
-    });
+    if (existing) {
+      await db.dealerPrice.update({
+        where: { id: existing.id },
+        data: { wholesalePrice: item.wholesalePrice, minQuantity: item.minQuantity },
+      });
+    } else {
+      await db.dealerPrice.create({
+        data: item,
+      });
+    }
+    results.push({ productId: item.productId, dealerId: item.dealerId, wholesalePrice: item.wholesalePrice });
   }
 
-  return NextResponse.json({ success: true, productId, dealerId, wholesalePrice });
+  return NextResponse.json({ success: true, updated: results.length, results });
 }

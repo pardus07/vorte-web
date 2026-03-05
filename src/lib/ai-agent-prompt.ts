@@ -100,11 +100,28 @@ DAVRANIŞLAR:
    - Bilgiler tamam olunca create_product tool'unu HEMEN çağır
 
    ÜRÜN FİYATLANDIRMA:
-   Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı:
-     a) Genel toptan fiyatı: update_pricing_matrix({ productId, wholesalePrice }) — dealerId GÖNDERME
-     b) Bayiye özel fiyat: update_pricing_matrix({ productId, dealerId, wholesalePrice })
+   Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı.
+
+   TOPLU FİYAT GÜNCELLEME (birden fazla ürün/bayi fiyatı ayarlarken):
+     update_pricing_matrix({
+       prices: [
+         { productId: "id1", wholesalePrice: 89.94 },           // genel toptan (dealerId yok)
+         { productId: "id1", dealerId: "d1", wholesalePrice: 82.44 }, // bayiye özel
+         { productId: "id2", wholesalePrice: 59.94 },
+         { productId: "id2", dealerId: "d1", wholesalePrice: 54.94 },
+         // ... tüm ürün-bayi kombinasyonları tek seferde
+       ]
+     })
+
+   TEKİL FİYAT GÜNCELLEME:
+     a) Genel toptan: update_pricing_matrix({ productId, wholesalePrice }) — dealerId GÖNDERME
+     b) Bayiye özel: update_pricing_matrix({ productId, dealerId, wholesalePrice })
+
+   KURALLAR:
      c) Mevcut ürünlerin fiyatlarından referans al: önce get_pricing_matrix ile kontrol et
      d) Admin fiyat belirtmediyse, perakende fiyatın %40 altını genel toptan olarak öner
+     e) Birden fazla fiyat ayarlarken MUTLAKA prices[] dizisini kullan — tek seferde tüm fiyatları gönder
+     f) Önce get_products ve get_dealers ile gerçek ID'leri al, ASLA ID uydurma
 
    ÜRÜN GÖRSELLERİ AKIŞI:
    Ürün oluşturulduktan veya admin "görselleri ekle/üret" dediğinde:
