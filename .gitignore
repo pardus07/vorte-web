@@ -53,3 +53,6 @@ test_write.md
 
 # uploads
 /uploads/
+
+# generated images (seed/reference only)
+/gorseller/
