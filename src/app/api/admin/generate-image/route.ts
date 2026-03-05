@@ -153,7 +153,7 @@ async function tryGeminiImageGen(
 ): Promise<string | null> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-image-preview",
       contents: `Generate a professional, high-quality product/marketing image. Do NOT include any text in the image. Description: ${prompt}`,
       config: {
         responseModalities: ["TEXT", "IMAGE"],

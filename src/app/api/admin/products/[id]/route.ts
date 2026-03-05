@@ -46,35 +46,40 @@ export async function PUT(
     googleCategory, variants,
   } = body;
 
-  let slug = slugify(name);
-  const existingSlug = await db.product.findFirst({
-    where: { slug, id: { not: id } },
-  });
-  if (existingSlug) slug = `${slug}-${Date.now()}`;
+  // Partial update desteği: sadece gönderilen alanları güncelle
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: Record<string, any> = {};
+
+  if (name !== undefined) {
+    let slug = slugify(name);
+    const existingSlug = await db.product.findFirst({
+      where: { slug, id: { not: id } },
+    });
+    if (existingSlug) slug = `${slug}-${Date.now()}`;
+    data.name = name;
+    data.slug = slug;
+  }
+  if (description !== undefined) data.description = description || null;
+  if (categoryId !== undefined) data.categoryId = categoryId;
+  if (gender !== undefined) data.gender = gender;
+  if (basePrice !== undefined) data.basePrice = Number(basePrice);
+  if (costPrice !== undefined) data.costPrice = costPrice ? Number(costPrice) : null;
+  if (weight !== undefined) data.weight = weight ? Number(weight) : null;
+  if (active !== undefined) data.active = active;
+  if (featured !== undefined) data.featured = featured;
+  if (images !== undefined) data.images = images;
+  if (seoTitle !== undefined) data.seoTitle = seoTitle || null;
+  if (seoDescription !== undefined) data.seoDescription = seoDescription || null;
+  if (googleCategory !== undefined) data.googleCategory = googleCategory || null;
 
   const product = await db.product.update({
     where: { id },
-    data: {
-      name,
-      slug,
-      description: description || null,
-      categoryId,
-      gender,
-      basePrice: Number(basePrice),
-      costPrice: costPrice ? Number(costPrice) : null,
-      weight: weight ? Number(weight) : null,
-      active,
-      featured,
-      images: images || [],
-      seoTitle: seoTitle || null,
-      seoDescription: seoDescription || null,
-      googleCategory: googleCategory || null,
-    },
+    data,
   });
 
-  // Delete old variants and recreate
-  await db.variant.deleteMany({ where: { productId: id } });
-  if (variants?.length > 0) {
+  // Varyant güncelleme: sadece variants gönderilmişse
+  if (variants !== undefined && variants?.length > 0) {
+    await db.variant.deleteMany({ where: { productId: id } });
     await db.variant.createMany({
       data: variants.map(
         (v: {
