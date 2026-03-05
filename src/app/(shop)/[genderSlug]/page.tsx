@@ -10,6 +10,8 @@ import { ProductGrid } from "@/components/product/ProductGrid";
 import { SortDropdown } from "@/components/product/SortDropdown";
 import { FilterToggle } from "./FilterToggle";
 import { DesktopFilter } from "./DesktopFilter";
+import { PromoBanner } from "@/components/home/PromoBanner";
+import { getBannersByPosition } from "@/lib/banners";
 import type { Metadata } from "next";
 
 const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; description: string }> = {
@@ -109,6 +111,8 @@ export default async function ProductListingPage({ params, searchParams }: PageP
   else if (sort === "price_desc") orderBy = { basePrice: "desc" };
   else if (sort === "newest") orderBy = { createdAt: "desc" };
 
+  const categoryBannersPromise = getBannersByPosition("category-top");
+
   const [products, totalCount, categories, availableColorRows] = await Promise.all([
     db.product.findMany({
       where,
@@ -142,6 +146,7 @@ export default async function ProductListingPage({ params, searchParams }: PageP
     }),
   ]);
 
+  const categoryBanners = await categoryBannersPromise;
   const availableColors = availableColorRows.map((v) => v.color);
 
   const totalPages = Math.ceil(totalCount / perPage);
@@ -168,6 +173,11 @@ export default async function ProductListingPage({ params, searchParams }: PageP
           </div>
         </div>
       </div>
+
+      {/* Category Top Banners */}
+      {categoryBanners.length > 0 && (
+        <PromoBanner banners={categoryBanners} />
+      )}
 
       <div className="mx-auto max-w-7xl px-4 py-6">
       {/* Breadcrumb */}

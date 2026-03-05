@@ -6,6 +6,8 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductDetailClient } from "./ProductDetailClient";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { ProductReviews } from "@/components/product/ProductReviews";
+import { PromoBanner } from "@/components/home/PromoBanner";
+import { getBannersByPosition } from "@/lib/banners";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
@@ -78,6 +80,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     take: 4,
   });
 
+  const productBanners = await getBannersByPosition("product-sidebar");
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
   const variantPrices = product.variants.filter(v => v.price).map(v => v.price!);
   const allPrices = [product.basePrice, ...variantPrices];
@@ -126,6 +129,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       {/* Reviews */}
       <ProductReviews productId={product.id} />
+
+      {/* Product Sidebar Banners */}
+      {productBanners.length > 0 && (
+        <div className="mt-8">
+          <PromoBanner banners={productBanners} />
+        </div>
+      )}
 
       {/* Related products */}
       {relatedProducts.length > 0 && (

@@ -4,6 +4,8 @@ import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones, BookOpen, Calen
 import { Button } from "@/components/ui/Button";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import type { SlideData } from "@/components/home/HeroSlider";
+import { PromoBanner } from "@/components/home/PromoBanner";
+import type { BannerData } from "@/components/home/PromoBanner";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { db } from "@/lib/db";
@@ -98,6 +100,39 @@ export default async function HomePage() {
     // DB unavailable during build
   }
 
+  // Fetch active banners by position
+  const bannersByPosition: Record<string, BannerData[]> = {};
+  try {
+    const now = new Date();
+    const dbBanners = await db.banner.findMany({
+      where: {
+        active: true,
+        OR: [
+          { startDate: null },
+          { startDate: { lte: now } },
+        ],
+      },
+      orderBy: { sortOrder: "asc" },
+    });
+    const activeBanners = dbBanners.filter(
+      (b) => !b.endDate || new Date(b.endDate) >= now
+    );
+    for (const b of activeBanners) {
+      if (!bannersByPosition[b.position]) bannersByPosition[b.position] = [];
+      bannersByPosition[b.position].push({
+        id: b.id,
+        name: b.name,
+        position: b.position,
+        imageDesktop: b.imageDesktop,
+        imageMobile: b.imageMobile,
+        link: b.link,
+        altText: b.altText,
+      });
+    }
+  } catch {
+    // DB unavailable during build
+  }
+
   return (
     <>
       <JsonLd
@@ -111,6 +146,11 @@ export default async function HomePage() {
 
       {/* Hero Slider */}
       <HeroSlider slides={sliderData} />
+
+      {/* Homepage Top Banners */}
+      {bannersByPosition["homepage-top"] && (
+        <PromoBanner banners={bannersByPosition["homepage-top"]} />
+      )}
 
       {/* Trust Bar */}
       <section className="border-b border-gray-200 bg-[#FAFAFA]">
@@ -206,6 +246,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Homepage Mid Banners */}
+      {bannersByPosition["homepage-mid"] && (
+        <PromoBanner banners={bannersByPosition["homepage-mid"]} />
+      )}
+
       {/* Featured Products */}
       {products.length > 0 && (
         <section className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
@@ -226,6 +271,11 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+      )}
+
+      {/* Homepage Bottom Banners */}
+      {bannersByPosition["homepage-bottom"] && (
+        <PromoBanner banners={bannersByPosition["homepage-bottom"]} />
       )}
 
       {/* Latest Blog Posts */}

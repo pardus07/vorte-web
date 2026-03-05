@@ -2,10 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import { MapPin, CreditCard, ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatPrice } from "@/lib/utils";
+
+interface BannerItem {
+  id: string;
+  name: string;
+  imageDesktop: string;
+  imageMobile?: string | null;
+  link?: string | null;
+  altText?: string | null;
+}
 
 interface CartItem {
   id: string;
@@ -31,6 +42,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [step, setStep] = useState<"address" | "payment">("address");
+  const [checkoutBanners, setCheckoutBanners] = useState<BannerItem[]>([]);
 
   const [address, setAddress] = useState({
     fullName: "",
@@ -52,6 +64,10 @@ export default function CheckoutPage() {
         }
       })
       .finally(() => setLoading(false));
+    fetch("/api/banners?position=checkout")
+      .then((r) => r.json())
+      .then((data) => setCheckoutBanners(data.banners || []))
+      .catch(() => {});
   }, [router]);
 
   const handleAddressSubmit = (e: React.FormEvent) => {
@@ -152,6 +168,43 @@ export default function CheckoutPage() {
           2. Ödeme
         </button>
       </div>
+
+      {/* Checkout Banners */}
+      {checkoutBanners.length > 0 && (
+        <div className="mt-6 flex flex-col gap-3">
+          {checkoutBanners.map((banner) => {
+            const img = (
+              <div className="relative w-full overflow-hidden rounded-lg">
+                <div className="hidden md:block">
+                  <Image
+                    src={banner.imageDesktop}
+                    alt={banner.altText || banner.name}
+                    width={900}
+                    height={200}
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+                <div className="block md:hidden">
+                  <Image
+                    src={banner.imageMobile || banner.imageDesktop}
+                    alt={banner.altText || banner.name}
+                    width={768}
+                    height={200}
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              </div>
+            );
+            return banner.link ? (
+              <Link key={banner.id} href={banner.link} className="block hover:opacity-95 transition-opacity">
+                {img}
+              </Link>
+            ) : (
+              <div key={banner.id}>{img}</div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         {/* Form */}
