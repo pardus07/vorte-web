@@ -229,7 +229,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
     approvalLevel: 2,
     endpoint: "/api/admin/pricing",
     method: "PATCH",
-    description: "Tekil ürün/bayi fiyat güncelle (upsert — diğer fiyatları silmez)",
+    description: "Toplu/tekil ürün-bayi fiyat güncelle (prices[] dizisi veya tekil upsert)",
   },
 
   // ── Genel: AI Görsel Üretim ──

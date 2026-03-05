@@ -58,58 +58,80 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  // Toplu veya tekil güncelleme listesi oluştur
-  const items: { productId: string; dealerId: string | null; wholesalePrice: number; minQuantity: number }[] = [];
+    // Toplu veya tekil güncelleme listesi oluştur
+    const items: { productId: string; dealerId: string | null; wholesalePrice: number; minQuantity: number }[] = [];
 
-  if (Array.isArray(body.prices) && body.prices.length > 0) {
-    // Toplu mod
-    for (const p of body.prices) {
-      if (!p.productId || p.wholesalePrice === undefined) continue;
+    if (Array.isArray(body.prices) && body.prices.length > 0) {
+      // Toplu mod
+      for (const p of body.prices) {
+        if (!p.productId || p.wholesalePrice === undefined) continue;
+        items.push({
+          productId: p.productId,
+          dealerId: p.dealerId && p.dealerId !== "" ? p.dealerId : null,
+          wholesalePrice: Number(p.wholesalePrice),
+          minQuantity: Number(p.minQuantity) || 1,
+        });
+      }
+    } else if (body.productId && body.wholesalePrice !== undefined) {
+      // Tekil mod
       items.push({
-        productId: p.productId,
-        dealerId: p.dealerId || null,
-        wholesalePrice: p.wholesalePrice,
-        minQuantity: p.minQuantity || 1,
+        productId: body.productId,
+        dealerId: body.dealerId && body.dealerId !== "" ? body.dealerId : null,
+        wholesalePrice: Number(body.wholesalePrice),
+        minQuantity: Number(body.minQuantity) || 1,
       });
     }
-  } else if (body.productId && body.wholesalePrice !== undefined) {
-    // Tekil mod
-    items.push({
-      productId: body.productId,
-      dealerId: body.dealerId || null,
-      wholesalePrice: body.wholesalePrice,
-      minQuantity: body.minQuantity || 1,
-    });
-  }
 
-  if (items.length === 0) {
+    if (items.length === 0) {
+      return NextResponse.json(
+        { error: "productId ve wholesalePrice gerekli (tekil veya prices[] dizisi)" },
+        { status: 400 }
+      );
+    }
+
+    // Her biri için upsert (findFirst + update/create)
+    const results = [];
+    for (const item of items) {
+      try {
+        // dealerId null ise özel where kullan (NULL = NULL karşılaştırması)
+        const whereClause = item.dealerId
+          ? { productId: item.productId, dealerId: item.dealerId }
+          : { productId: item.productId, dealerId: null };
+
+        const existing = await db.dealerPrice.findFirst({ where: whereClause });
+
+        if (existing) {
+          await db.dealerPrice.update({
+            where: { id: existing.id },
+            data: { wholesalePrice: item.wholesalePrice, minQuantity: item.minQuantity },
+          });
+        } else {
+          await db.dealerPrice.create({
+            data: {
+              productId: item.productId,
+              dealerId: item.dealerId,
+              wholesalePrice: item.wholesalePrice,
+              minQuantity: item.minQuantity,
+            },
+          });
+        }
+        results.push({ productId: item.productId, dealerId: item.dealerId, wholesalePrice: item.wholesalePrice, status: "ok" });
+      } catch (itemErr) {
+        console.error(`[pricing PATCH] Fiyat upsert hatası:`, item, itemErr);
+        results.push({ productId: item.productId, dealerId: item.dealerId, wholesalePrice: item.wholesalePrice, status: "error", error: String(itemErr) });
+      }
+    }
+
+    const successCount = results.filter(r => r.status === "ok").length;
+    return NextResponse.json({ success: successCount > 0, updated: successCount, total: items.length, results });
+  } catch (err) {
+    console.error("[pricing PATCH] Genel hata:", err);
     return NextResponse.json(
-      { error: "productId ve wholesalePrice gerekli (tekil veya prices[] dizisi)" },
-      { status: 400 }
+      { error: `Fiyat güncelleme hatası: ${err instanceof Error ? err.message : String(err)}` },
+      { status: 500 }
     );
   }
-
-  // Her biri için upsert
-  const results = [];
-  for (const item of items) {
-    const existing = await db.dealerPrice.findFirst({
-      where: { productId: item.productId, dealerId: item.dealerId },
-    });
-
-    if (existing) {
-      await db.dealerPrice.update({
-        where: { id: existing.id },
-        data: { wholesalePrice: item.wholesalePrice, minQuantity: item.minQuantity },
-      });
-    } else {
-      await db.dealerPrice.create({
-        data: item,
-      });
-    }
-    results.push({ productId: item.productId, dealerId: item.dealerId, wholesalePrice: item.wholesalePrice });
-  }
-
-  return NextResponse.json({ success: true, updated: results.length, results });
 }
