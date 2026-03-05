@@ -194,21 +194,36 @@ export default function AdminSliderPage() {
     newSliders[index].sortOrder = newSliders[swapIndex].sortOrder;
     newSliders[swapIndex].sortOrder = tempOrder;
 
-    // Update both
-    await Promise.all([
-      fetch(`/api/admin/sliders/${newSliders[index].id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newSliders[index]),
-      }),
-      fetch(`/api/admin/sliders/${newSliders[swapIndex].id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newSliders[swapIndex]),
-      }),
-    ]);
+    // Optimistik UI güncelle
+    const sorted = [...newSliders].sort((a, b) => a.sortOrder - b.sortOrder);
+    setSliders(sorted);
 
-    fetchSliders();
+    try {
+      const [res1, res2] = await Promise.all([
+        fetch(`/api/admin/sliders/${newSliders[index].id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sortOrder: newSliders[index].sortOrder }),
+        }),
+        fetch(`/api/admin/sliders/${newSliders[swapIndex].id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sortOrder: newSliders[swapIndex].sortOrder }),
+        }),
+      ]);
+
+      if (!res1.ok || !res2.ok) {
+        setError("Sıralama güncellenemedi");
+        fetchSliders();
+        return;
+      }
+
+      setSuccess("Sıralama güncellendi");
+      setTimeout(() => setSuccess(""), 2000);
+    } catch {
+      setError("Sıralama güncellenirken hata oluştu");
+      fetchSliders();
+    }
   };
 
   if (loading) {

@@ -35,32 +35,28 @@ export async function PUT(
 
   const { id } = await params;
   const body = await req.json();
-  const {
-    title, subtitle, highlight, description,
-    buttonText, buttonLink, secondaryButtonText, secondaryButtonLink,
-    imageDesktop, imageMobile, altText,
-    sortOrder, active, startDate, endDate,
-  } = body;
+
+  // Partial update: sadece gönderilen alanları güncelle
+  const data: Record<string, unknown> = {};
+  if ("title" in body) data.title = body.title || null;
+  if ("subtitle" in body) data.subtitle = body.subtitle || null;
+  if ("highlight" in body) data.highlight = body.highlight || null;
+  if ("description" in body) data.description = body.description || null;
+  if ("buttonText" in body) data.buttonText = body.buttonText || null;
+  if ("buttonLink" in body) data.buttonLink = body.buttonLink || null;
+  if ("secondaryButtonText" in body) data.secondaryButtonText = body.secondaryButtonText || null;
+  if ("secondaryButtonLink" in body) data.secondaryButtonLink = body.secondaryButtonLink || null;
+  if ("imageDesktop" in body) data.imageDesktop = body.imageDesktop;
+  if ("imageMobile" in body) data.imageMobile = body.imageMobile;
+  if ("altText" in body) data.altText = body.altText || null;
+  if ("sortOrder" in body) data.sortOrder = body.sortOrder ?? 0;
+  if ("active" in body) data.active = body.active ?? true;
+  if ("startDate" in body) data.startDate = body.startDate ? new Date(body.startDate) : null;
+  if ("endDate" in body) data.endDate = body.endDate ? new Date(body.endDate) : null;
 
   const slider = await db.slider.update({
     where: { id },
-    data: {
-      title: title || null,
-      subtitle: subtitle || null,
-      highlight: highlight || null,
-      description: description || null,
-      buttonText: buttonText || null,
-      buttonLink: buttonLink || null,
-      secondaryButtonText: secondaryButtonText || null,
-      secondaryButtonLink: secondaryButtonLink || null,
-      imageDesktop,
-      imageMobile,
-      altText: altText || null,
-      sortOrder: sortOrder ?? 0,
-      active: active ?? true,
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-    },
+    data,
   });
 
   return NextResponse.json(slider);

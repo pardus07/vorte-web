@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -320,6 +320,16 @@ export default function AdminBannerPage() {
           </div>
         </div>
       )}
+
+      {/* İpucu */}
+      <div className="mt-4 flex items-start gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          <strong>İpucu:</strong> Banner görselleri için önerilen boyutlar: Desktop: 1200×400px, Mobil: 768×400px.
+          Format: JPG, PNG veya WebP, maks 5MB. Pozisyona göre farklı boyutlar kullanılabilir.
+          AI asistana &ldquo;banner görseli üret ve ekle&rdquo; diyerek otomatik banner oluşturabilirsiniz.
+        </span>
+      </div>
 
       {/* Banner List */}
       <div className="mt-4 overflow-x-auto rounded-lg border bg-white">

@@ -1430,7 +1430,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         directory: {
           type: SchemaType.STRING,
           description:
-            "Kayıt dizini: 'products' (ürün görselleri), 'blog' (blog kapak görselleri) veya 'sliders' (slider görselleri). Varsayılan: 'blog'",
+            "Kayıt dizini: 'products' (ürün görselleri), 'blog' (blog kapak görselleri), 'sliders' (slider görselleri) veya 'banners' (banner görselleri). Varsayılan: 'blog'",
         },
       },
       required: ["prompt", "filename"],
@@ -1675,7 +1675,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "manage_banners",
     description:
-      "Banner CRUD işlemleri. Promosyon banner'larını listele, oluştur, güncelle veya sil.",
+      "Banner CRUD işlemleri. Promosyon banner'larını listele, oluştur, güncelle veya sil. Görselleri generate_image tool'u ile directory='banners' olarak üretip URL'leri image (desktop) ve mobileImage (mobil) alanlarına ekle.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -1688,16 +1688,18 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
           type: SchemaType.STRING,
           description: "Banner ID'si (update/delete için)",
         },
-        title: { type: SchemaType.STRING, description: "Banner başlığı" },
-        subtitle: { type: SchemaType.STRING, description: "Alt başlık" },
-        image: { type: SchemaType.STRING, description: "Görsel URL'si" },
+        title: { type: SchemaType.STRING, description: "Banner adı (name)" },
+        image: { type: SchemaType.STRING, description: "Desktop görsel URL'si (1200×400)" },
+        mobileImage: { type: SchemaType.STRING, description: "Mobil görsel URL'si (768×400)" },
         link: { type: SchemaType.STRING, description: "Tıklama linki" },
+        altText: { type: SchemaType.STRING, description: "Görsel alt metni (erişilebilirlik)" },
         position: {
           type: SchemaType.STRING,
-          description: "Pozisyon: homepage_top, homepage_middle, category_top, product_sidebar",
+          description: "Pozisyon: homepage-top, homepage-mid, homepage-bottom, category-top, product-sidebar, checkout",
         },
-        startDate: { type: SchemaType.STRING, description: "Başlangıç tarihi" },
-        endDate: { type: SchemaType.STRING, description: "Bitiş tarihi" },
+        sortOrder: { type: SchemaType.NUMBER, description: "Sıralama (0'dan başlar)" },
+        startDate: { type: SchemaType.STRING, description: "Başlangıç tarihi (ISO)" },
+        endDate: { type: SchemaType.STRING, description: "Bitiş tarihi (ISO)" },
         active: { type: SchemaType.BOOLEAN, description: "Aktif durumu" },
       },
       required: ["action"],

@@ -325,6 +325,21 @@ async function executeToolCall(
       }
     }
 
+    // manage_banners: AI tool param adlarını API field adlarına dönüştür
+    if (toolName === "manage_banners") {
+      const bannerFieldMap: Record<string, string> = {
+        title: "name",
+        image: "imageDesktop",
+        mobileImage: "imageMobile",
+      };
+      for (const [from, to] of Object.entries(bannerFieldMap)) {
+        if (from in bodyArgs) {
+          bodyArgs[to] = bodyArgs[from];
+          delete bodyArgs[from];
+        }
+      }
+    }
+
     // Boş body gönderme
     if (Object.keys(bodyArgs).length > 0) {
       fetchOptions.body = JSON.stringify(bodyArgs);
