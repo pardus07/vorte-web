@@ -95,8 +95,12 @@ async function handleChat(
     tools: [{ functionDeclarations: agentFunctionDeclarations }],
   });
 
-  // 3) History hazırla — son mesaj hariç
-  const history = messages.length > 1 ? messages.slice(0, -1) : [];
+  // 3) History hazırla — son mesaj hariç, ilk mesaj "user" olmalı
+  let history = messages.length > 1 ? messages.slice(0, -1) : [];
+  // Gemini API: ilk mesaj "user" rolünde olmalı
+  while (history.length > 0 && history[0].role !== "user") {
+    history = history.slice(1);
+  }
   const chat = model.startChat({ history });
 
   // 4) Son mesajı gönder

@@ -110,7 +110,7 @@ export function AdminAIPanel() {
       "tekrar dene",
     ];
 
-    return messages
+    const filtered = messages
       .filter((m) => {
         // Sistem mesajlarını çıkar
         if (m.role === "system") return false;
@@ -128,6 +128,13 @@ export function AdminAIPanel() {
         role: (m.role === "user" ? "user" : "model") as "user" | "model",
         parts: [{ text: m.text }],
       }));
+
+    // Gemini API: ilk mesaj "user" rolünde olmalı
+    while (filtered.length > 0 && filtered[0].role !== "user") {
+      filtered.shift();
+    }
+
+    return filtered;
   }, [messages]);
 
   // Mesaj gönder
