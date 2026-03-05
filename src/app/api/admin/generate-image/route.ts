@@ -120,6 +120,7 @@ async function tryImagen4(
       prompt,
       config: {
         numberOfImages: 1,
+        personGeneration: "ALLOW_ADULT",
       },
     });
 
@@ -133,7 +134,12 @@ async function tryImagen4(
 
     return null;
   } catch (err) {
-    console.error("[generate-image] Imagen 4 hatası:", err instanceof Error ? err.message : err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("[generate-image] Imagen 4 hatası:", errMsg);
+    // Detaylı hata bilgisi
+    if (err instanceof Error && 'status' in err) {
+      console.error("[generate-image] Imagen 4 status:", (err as unknown as Record<string, unknown>).status);
+    }
     return null;
   }
 }
@@ -147,7 +153,7 @@ async function tryGeminiImageGen(
 ): Promise<string | null> {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash-image",
       contents: `Generate a professional, high-quality product/marketing image. Do NOT include any text in the image. Description: ${prompt}`,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
@@ -166,7 +172,8 @@ async function tryGeminiImageGen(
 
     return null;
   } catch (err) {
-    console.error("[generate-image] Gemini image gen hatası:", err instanceof Error ? err.message : err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("[generate-image] Gemini image gen hatası:", errMsg);
     return null;
   }
 }
