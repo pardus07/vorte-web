@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Save, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -49,6 +49,77 @@ export default function AdminSliderPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  const FALLBACK_SLIDES = [
+    {
+      title: "Kaliteli İç Giyim,",
+      subtitle: "Yeni Sezon 2026",
+      highlight: "Uygun Fiyat",
+      description: "Vorte Tekstil - Erkek boxer ve kadın iç giyim koleksiyonu. Premium kumaş kalitesi ile konfor ve şıklık bir arada.",
+      buttonText: "Erkek Koleksiyonu",
+      buttonLink: "/erkek-ic-giyim",
+      secondaryButtonText: "Kadın Koleksiyonu",
+      secondaryButtonLink: "/kadin-ic-giyim",
+      imageDesktop: "/images/hero-1.png",
+      imageMobile: "/images/hero-mobile-1.png",
+      sortOrder: 0,
+      active: true,
+    },
+    {
+      title: "Zarif Tasarım,",
+      subtitle: "Kadın Koleksiyonu",
+      highlight: "Üstün Konfor",
+      description: "Premium modal kumaş ile üretilen kadın iç giyim koleksiyonumuz. Günlük konfor ve şıklığı bir arada sunuyor.",
+      buttonText: "Kadın Koleksiyonu",
+      buttonLink: "/kadin-ic-giyim",
+      secondaryButtonText: "Erkek Koleksiyonu",
+      secondaryButtonLink: "/erkek-ic-giyim",
+      imageDesktop: "/images/hero-2.png",
+      imageMobile: "/images/hero-mobile-2.png",
+      sortOrder: 1,
+      active: true,
+    },
+    {
+      title: "Bayilik Fırsatı,",
+      subtitle: "Toptan Satış",
+      highlight: "%45'e Varan İndirim",
+      description: "Perakende satış noktaları için özel toptan fiyatlardan yararlanın.",
+      buttonText: "Toptan Satış",
+      buttonLink: "/toptan",
+      secondaryButtonText: "Bayi Girişi",
+      secondaryButtonLink: "/bayi-girisi",
+      imageDesktop: "/images/hero-3.png",
+      imageMobile: "/images/hero-mobile-1.png",
+      sortOrder: 2,
+      active: true,
+    },
+  ];
+
+  const handleImportFallbacks = async () => {
+    setImporting(true);
+    setError("");
+    try {
+      for (const slide of FALLBACK_SLIDES) {
+        const res = await fetch("/api/admin/sliders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(slide),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "İçe aktarma başarısız");
+        }
+      }
+      setSuccess("3 slider başarıyla içe aktarıldı");
+      setTimeout(() => setSuccess(""), 3000);
+      fetchSliders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "İçe aktarma hatası");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const fetchSliders = async () => {
     const res = await fetch("/api/admin/sliders");
@@ -409,8 +480,20 @@ export default function AdminSliderPage() {
       {/* Slider List */}
       <div className="mt-6 space-y-3">
         {sliders.length === 0 ? (
-          <div className="rounded-lg border bg-white py-12 text-center text-gray-400">
-            Henüz slider eklenmemiş
+          <div className="rounded-lg border bg-white py-12 text-center">
+            <p className="text-gray-400">Henüz slider eklenmemiş</p>
+            <p className="mt-2 text-sm text-gray-400">
+              Anasayfadaki mevcut slider görselleri veritabanına aktarılmamış.
+            </p>
+            <Button
+              onClick={handleImportFallbacks}
+              loading={importing}
+              className="mt-4"
+              variant="outline"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Mevcut Sliderları İçe Aktar
+            </Button>
           </div>
         ) : (
           sliders.map((slider, index) => (
@@ -508,7 +591,7 @@ export default function AdminSliderPage() {
       {/* Info */}
       <div className="mt-6 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
         <strong>İpucu:</strong> Slider görselleri için önerilen boyutlar:
-        Desktop: 1920×800px, Mobil: 768×600px. Format: JPG veya WebP, maks 500KB.
+        Desktop: 1920×800px, Mobil: 768×600px. Format: JPG, PNG veya WebP, maks 5MB.
       </div>
     </div>
   );

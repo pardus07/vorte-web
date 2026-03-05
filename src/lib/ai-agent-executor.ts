@@ -308,6 +308,23 @@ async function executeToolCall(
     // manage_* tool'larında action da çıkar
     if (toolName.startsWith("manage_")) delete bodyArgs.action;
 
+    // manage_sliders: AI tool param adlarını API field adlarına dönüştür
+    if (toolName === "manage_sliders") {
+      const sliderFieldMap: Record<string, string> = {
+        desktopImage: "imageDesktop",
+        mobileImage: "imageMobile",
+        highlightText: "highlight",
+        primaryButtonText: "buttonText",
+        primaryButtonLink: "buttonLink",
+      };
+      for (const [from, to] of Object.entries(sliderFieldMap)) {
+        if (from in bodyArgs) {
+          bodyArgs[to] = bodyArgs[from];
+          delete bodyArgs[from];
+        }
+      }
+    }
+
     // Boş body gönderme
     if (Object.keys(bodyArgs).length > 0) {
       fetchOptions.body = JSON.stringify(bodyArgs);

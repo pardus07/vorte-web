@@ -1430,7 +1430,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         directory: {
           type: SchemaType.STRING,
           description:
-            "Kayıt dizini: 'products' (ürün görselleri) veya 'blog' (blog kapak görselleri). Varsayılan: 'blog'",
+            "Kayıt dizini: 'products' (ürün görselleri), 'blog' (blog kapak görselleri) veya 'sliders' (slider görselleri). Varsayılan: 'blog'",
         },
       },
       required: ["prompt", "filename"],
@@ -1636,7 +1636,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "manage_sliders",
     description:
-      "Slider CRUD işlemleri. Ana sayfa slider'larını listele, oluştur, güncelle veya sil. Masaüstü (1920×800) ve mobil (768×600) görselleri ayrı ayarlanır.",
+      "Slider CRUD işlemleri. Ana sayfa slider'larını listele, oluştur, güncelle veya sil. Masaüstü (1920×800) ve mobil (768×600) görselleri ayrı ayarlanır. Görselleri generate_image tool'u ile directory='sliders' olarak üretip URL'leri desktopImage/mobileImage alanlarına ekle.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
