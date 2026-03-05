@@ -248,13 +248,12 @@ export default async function HomePage() {
                   className="group overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md"
                 >
                   {post.coverImage ? (
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
+                    <div className="h-48 overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={post.coverImage}
                         alt={post.title}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
                       />
                     </div>
                   ) : (

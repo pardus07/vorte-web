@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import Image from "next/image";
 import { ArrowLeft, Calendar, User, Tag, AlertTriangle, BookOpen } from "lucide-react";
 
 interface Props {
@@ -114,16 +113,14 @@ export default async function BlogDetailPage({ params, searchParams }: Props) {
           <ArrowLeft className="h-4 w-4" /> Blog&apos;a Dön
         </Link>
 
-        {/* Cover image */}
+        {/* Cover image — runtime uploads use rewrite → API route, not next/image */}
         {post.coverImage ? (
-          <div className="relative mb-8 h-64 overflow-hidden rounded-lg md:h-96">
-            <Image
+          <div className="mb-8 h-64 overflow-hidden rounded-lg md:h-96">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={post.coverImage}
               alt={post.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 800px"
-              priority
+              className="h-full w-full object-cover"
             />
           </div>
         ) : (
