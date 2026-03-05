@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20");
   const search = searchParams.get("search");
   const status = searchParams.get("status"); // "published" | "draft"
+  const publishedParam = searchParams.get("published"); // "true" | "false" (AI agent uyumu)
 
   const where: Record<string, unknown> = {};
   if (search) {
@@ -39,8 +40,8 @@ export async function GET(req: NextRequest) {
       { tags: { contains: search, mode: "insensitive" } },
     ];
   }
-  if (status === "published") where.published = true;
-  if (status === "draft") where.published = false;
+  if (status === "published" || publishedParam === "true") where.published = true;
+  if (status === "draft" || publishedParam === "false") where.published = false;
 
   const [posts, total] = await Promise.all([
     db.blogPost.findMany({
