@@ -1,16 +1,12 @@
 /**
- * AI görsel üretim endpoint'i (blog + ürün)
+ * AI görsel üretim endpoint'i
  * POST /api/admin/generate-image
  *
  * @google/genai SDK ile görsel üretir.
- * Öncelik: Imagen 4 → Gemini native image generation (fallback)
+ * Öncelik: Nano Banana 2 (Gemini 3.1 Flash Image) → Nano Banana Pro (Gemini 3 Pro Image) → Imagen 4
  *
  * Body: { prompt, filename, directory? }
- * - directory: "blog" (default) veya "products"
- *
- * Dokümantasyon:
- * - Imagen: https://ai.google.dev/gemini-api/docs/imagen
- * - Gemini image gen: https://ai.google.dev/gemini-api/docs/image-generation
+ * - directory: "blog" (default), "products", "sliders", "banners"
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -22,7 +18,7 @@ import path from "path";
 
 const ALLOWED_DIRS = ["blog", "products", "sliders", "banners"];
 
-export const maxDuration = 60; // Image generation can take 30-60s
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
@@ -48,10 +44,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Güvenlik: sadece izin verilen dizinler
     const dir = ALLOWED_DIRS.includes(directory) ? directory : "blog";
 
-    // Güvenli dosya adı
     const safeFilename = filename
       .replace(/[^a-z0-9-]/gi, "-")
       .replace(/-+/g, "-")
@@ -59,14 +53,21 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // Önce Imagen 4 dene, başarısız olursa Gemini native image generation
     let imageBase64: string | null = null;
 
-    imageBase64 = await tryImagen4(ai, prompt);
+    // 1. Nano Banana 2 (Gemini 3.1 Flash Image)
+    imageBase64 = await tryGeminiImageGen(ai, "gemini-3.1-flash-image-preview", prompt);
 
+    // 2. Nano Banana Pro (Gemini 3 Pro Image) fallback
     if (!imageBase64) {
-      console.log("[generate-image] Imagen 4 başarısız, Gemini fallback deneniyor...");
-      imageBase64 = await tryGeminiImageGen(ai, prompt);
+      console.log("[generate-image] Nano Banana 2 başarısız, Nano Banana Pro deneniyor...");
+      imageBase64 = await tryGeminiImageGen(ai, "gemini-3-pro-image-preview", prompt);
+    }
+
+    // 3. Imagen 4 fallback
+    if (!imageBase64) {
+      console.log("[generate-image] Gemini modelleri başarısız, Imagen 4 deneniyor...");
+      imageBase64 = await tryImagen4(ai, prompt);
     }
 
     if (!imageBase64) {
@@ -108,7 +109,44 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Imagen 4 ile görsel üret
+ * Gemini native image generation (Nano Banana 2 / Nano Banana Pro)
+ */
+async function tryGeminiImageGen(
+  ai: GoogleGenAI,
+  model: string,
+  prompt: string
+): Promise<string | null> {
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: `Generate a professional, high-quality product/marketing image. Do NOT include any text in the image. Description: ${prompt}`,
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData?.mimeType?.startsWith("image/")) {
+          const modelName = model.includes("3.1-flash") ? "Nano Banana 2" : "Nano Banana Pro";
+          console.log(`[generate-image] ${modelName} başarılı`);
+          return part.inlineData.data ?? null;
+        }
+      }
+    }
+
+    return null;
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const modelName = model.includes("3.1-flash") ? "Nano Banana 2" : "Nano Banana Pro";
+    console.error(`[generate-image] ${modelName} hatası:`, errMsg);
+    return null;
+  }
+}
+
+/**
+ * Imagen 4 ile görsel üret (son fallback)
  */
 async function tryImagen4(
   ai: GoogleGenAI,
@@ -136,44 +174,6 @@ async function tryImagen4(
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error("[generate-image] Imagen 4 hatası:", errMsg);
-    // Detaylı hata bilgisi
-    if (err instanceof Error && 'status' in err) {
-      console.error("[generate-image] Imagen 4 status:", (err as unknown as Record<string, unknown>).status);
-    }
-    return null;
-  }
-}
-
-/**
- * Gemini native image generation (fallback)
- */
-async function tryGeminiImageGen(
-  ai: GoogleGenAI,
-  prompt: string
-): Promise<string | null> {
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-image-preview",
-      contents: `Generate a professional, high-quality product/marketing image. Do NOT include any text in the image. Description: ${prompt}`,
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-      },
-    });
-
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (parts) {
-      for (const part of parts) {
-        if (part.inlineData?.mimeType?.startsWith("image/")) {
-          console.log("[generate-image] Gemini native image gen başarılı");
-          return part.inlineData.data ?? null;
-        }
-      }
-    }
-
-    return null;
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.error("[generate-image] Gemini image gen hatası:", errMsg);
     return null;
   }
 }
