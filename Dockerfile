@@ -13,13 +13,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Build Next.js
+# Generate Prisma Client + Build Next.js in one layer
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-RUN corepack enable pnpm && pnpm build
+RUN corepack enable pnpm && \
+    npx prisma generate && \
+    pnpm build
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
