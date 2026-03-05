@@ -2,17 +2,19 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { ArrowLeft, Calendar, User, Tag, AlertTriangle } from "lucide-react";
 
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preview?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await db.blogPost.findUnique({
-    where: { slug, published: true },
-    select: { title: true, seoTitle: true, seoDescription: true, excerpt: true, coverImage: true },
+    where: { slug },
+    select: { title: true, seoTitle: true, seoDescription: true, excerpt: true, coverImage: true, published: true },
   });
 
   if (!post) return { title: "Yazı Bulunamadı" };
@@ -26,48 +28,83 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: post.coverImage ? [post.coverImage] : undefined,
     },
     alternates: { canonical: `/blog/${slug}` },
+    // Taslak yazıları indexleme
+    ...(post.published ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
-export default async function BlogDetailPage({ params }: Props) {
+export default async function BlogDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { preview } = await searchParams;
+  const isPreview = preview === "1";
 
-  const post = await db.blogPost.findUnique({
-    where: { slug, published: true },
-  });
+  let post;
+
+  if (isPreview) {
+    // Admin preview modu: auth kontrol et
+    const session = await auth();
+    const role = (session?.user as unknown as { role?: string })?.role;
+    const isAdmin = role === "ADMIN" || role === "EDITOR";
+
+    if (isAdmin) {
+      // Admin/Editor ise yayınlanmamış yazıyı da göster
+      post = await db.blogPost.findUnique({ where: { slug } });
+    } else {
+      // Admin değilse sadece yayınlanmış
+      post = await db.blogPost.findUnique({ where: { slug, published: true } });
+    }
+  } else {
+    // Normal mod: sadece yayınlanmış
+    post = await db.blogPost.findUnique({ where: { slug, published: true } });
+  }
 
   if (!post) notFound();
 
-  // JSON-LD
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.excerpt || post.seoDescription || "",
-    image: post.coverImage || undefined,
-    datePublished: post.publishedAt?.toISOString(),
-    dateModified: post.updatedAt.toISOString(),
-    author: {
-      "@type": "Person",
-      name: post.authorName,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Vorte Tekstil",
-      logo: {
-        "@type": "ImageObject",
-        url: "https://www.vorte.com.tr/logo.png",
-      },
-    },
-  };
+  // JSON-LD (sadece yayınlanmış yazılar için)
+  const jsonLd = post.published
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.excerpt || post.seoDescription || "",
+        image: post.coverImage || undefined,
+        datePublished: post.publishedAt?.toISOString(),
+        dateModified: post.updatedAt.toISOString(),
+        author: {
+          "@type": "Person",
+          name: post.authorName,
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Vorte Tekstil",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://www.vorte.com.tr/logo.png",
+          },
+        },
+      }
+    : null;
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <article className="mx-auto max-w-3xl px-4 py-12">
+        {/* Preview Banner */}
+        {isPreview && !post.published && (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>
+              <strong>Önizleme Modu</strong> — Bu yazı henüz yayınlanmamış.
+              Sadece admin kullanıcılar görebilir.
+            </span>
+          </div>
+        )}
+
         {/* Back link */}
         <Link
           href="/blog"

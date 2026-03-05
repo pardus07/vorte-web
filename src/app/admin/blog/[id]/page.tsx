@@ -134,8 +134,8 @@ export default function BlogDuzenle() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNew && form.published && (
-            <a href={`/blog/${form.slug}`} target="_blank" className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
+          {!isNew && form.slug && (
+            <a href={`/blog/${form.slug}?preview=1`} target="_blank" className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
               <Eye className="h-4 w-4" /> Önizle
             </a>
           )}
@@ -234,7 +234,17 @@ export default function BlogDuzenle() {
               <input
                 type="checkbox"
                 checked={form.published}
-                onChange={(e) => setForm({ ...form, published: e.target.checked })}
+                onChange={(e) => {
+                  const published = e.target.checked;
+                  setForm((f) => ({
+                    ...f,
+                    published,
+                    // Yayınla işaretlendiğinde tarih boşsa bugünü ata
+                    publishedAt: published && !f.publishedAt
+                      ? new Date().toISOString().split("T")[0]
+                      : f.publishedAt,
+                  }));
+                }}
                 className="h-4 w-4 rounded border-gray-300 text-[#7AC143]"
               />
               <span className="text-sm text-gray-700">Yayınla</span>
