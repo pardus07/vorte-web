@@ -39,8 +39,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
 
-# AI görsel üretimi için uploads dizini (yazılabilir olmalı)
-RUN mkdir -p /app/public/uploads/blog && chown -R nextjs:nodejs /app/public/uploads
+# Seed görselleri ayrı dizine kopyala (entrypoint volume'a taşıyacak)
+COPY --from=builder /app/public/images ./seed-images
+
+# AI görsel üretimi + seed migration için uploads dizini
+RUN mkdir -p /app/public/uploads/blog /app/public/uploads/images && \
+    chown -R nextjs:nodejs /app/public/uploads /app/seed-images
+
+# Entrypoint: seed görselleri volume'a kopyalar, sonra node başlatır
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN sed -i 's/\r$//' docker-entrypoint.sh
 
 USER nextjs
 
@@ -48,4 +56,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "docker-entrypoint.sh"]

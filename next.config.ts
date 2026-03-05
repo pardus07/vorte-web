@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         source: "/uploads/:path*",
         destination: "/api/uploads/:path*",
       },
+      {
+        // Seed görselleri de volume'dan serve et
+        source: "/images/:path*",
+        destination: "/api/uploads/images/:path*",
+      },
     ];
   },
 };
