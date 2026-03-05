@@ -172,8 +172,9 @@ async function handleChat(
       }
 
       // Sonucu Gemini'ye geri gönder → Türkçe özet al
+      // Multi-step: Gemini sonuç aldıktan sonra 2. tool çağırabilir (max 3 adım)
       try {
-        const toolResponseResult = await chat.sendMessage([
+        let currentResponse = await chat.sendMessage([
           {
             functionResponse: {
               name: toolName,
@@ -182,9 +183,63 @@ async function handleChat(
           },
         ]);
 
+        // Multi-step tool calling loop (max 3 ek adım)
+        for (let step = 0; step < 3; step++) {
+          let chainedCalls;
+          try {
+            chainedCalls = currentResponse.response.functionCalls();
+          } catch {
+            chainedCalls = null;
+          }
+
+          if (!chainedCalls || chainedCalls.length === 0) break;
+
+          const chainedFc = chainedCalls[0];
+          const chainedName = chainedFc.name;
+          const chainedArgs = (chainedFc.args || {}) as Record<string, unknown>;
+
+          console.log(`[ai-assistant] Chain step ${step + 1}:`, chainedName, JSON.stringify(chainedArgs).substring(0, 200));
+
+          const chainedResult = await resolveToolCall(chainedName, chainedArgs, baseUrl, cookies);
+
+          // Zincirlenen tool SEVİYE 2-3 ise → onay kartı döndür
+          if (chainedResult.approvalLevel >= 2) {
+            let chainText = "";
+            try { chainText = currentResponse.response.text(); } catch { /* */ }
+
+            return NextResponse.json({
+              reply: chainText || `${chainedResult.description} için onayınız gerekiyor.`,
+              pendingAction: {
+                toolName: chainedName,
+                args: chainedResult.pendingArgs,
+                approvalLevel: chainedResult.approvalLevel,
+                description: chainedResult.description,
+                apiUrl: chainedResult.apiUrl,
+                method: chainedResult.method,
+              },
+            });
+          }
+
+          if (chainedResult.error) {
+            return NextResponse.json({
+              reply: `❌ ${chainedResult.description} başarısız: ${chainedResult.error}`,
+            });
+          }
+
+          // Sonucu Gemini'ye geri gönder
+          currentResponse = await chat.sendMessage([
+            {
+              functionResponse: {
+                name: chainedName,
+                response: { result: chainedResult.data },
+              },
+            },
+          ]);
+        }
+
         let finalText = "";
         try {
-          finalText = toolResponseResult.response.text();
+          finalText = currentResponse.response.text();
         } catch {
           finalText = "İşlem tamamlandı. Sonuç alındı.";
         }
@@ -195,7 +250,6 @@ async function handleChat(
         });
       } catch (err) {
         console.error("[ai-assistant] Tool response to Gemini error:", err);
-        // Gemini'ye geri gönderemesek bile sonucu direkt göster
         return NextResponse.json({
           reply: `✅ ${toolResult.description} tamamlandı.`,
           toolCall: { name: toolName, args, result: toolResult.data, approvalLevel: 1 },

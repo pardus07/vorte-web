@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones, BookOpen, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import type { SlideData } from "@/components/home/HeroSlider";
@@ -66,6 +66,38 @@ export default async function HomePage() {
   } catch {
     // DB unavailable during build
   }
+
+  // Fetch latest blog posts
+  let blogPosts: {
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    coverImage: string | null;
+    publishedAt: Date | null;
+    authorName: string;
+    tags: string | null;
+  }[] = [];
+  try {
+    blogPosts = await db.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
+        authorName: true,
+        tags: true,
+      },
+    });
+  } catch {
+    // DB unavailable during build
+  }
+
   return (
     <>
       <JsonLd
@@ -192,6 +224,83 @@ export default async function HomePage() {
                 Kadın Koleksiyonu <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Latest Blog Posts */}
+      {blogPosts.length > 0 && (
+        <section className="border-t border-gray-100 bg-white">
+          <div className="mx-auto max-w-[1440px] px-4 py-16 lg:px-8">
+            <div className="mb-10 text-center">
+              <h2 className="text-2xl font-bold tracking-wide text-[#1A1A1A]">
+                BLOG
+              </h2>
+              <p className="mt-2 text-sm text-gray-500">
+                İç giyim trendleri, bakım önerileri ve haberler
+              </p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {blogPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/blog/${post.slug}`}
+                  className="group overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md"
+                >
+                  {post.coverImage ? (
+                    <div
+                      className="h-48 bg-cover bg-center transition-transform group-hover:scale-105"
+                      style={{ backgroundImage: `url(${post.coverImage})` }}
+                    />
+                  ) : (
+                    <div className="flex h-48 items-center justify-center bg-gray-50">
+                      <BookOpen className="h-10 w-10 text-gray-200" />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#7AC143] transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <div className="mt-4 flex items-center gap-3 text-xs text-gray-400">
+                      {post.publishedAt && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(post.publishedAt).toLocaleDateString("tr-TR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                    {post.tags && (
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {post.tags.split(",").slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-0.5 rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500"
+                          >
+                            <Tag className="h-2.5 w-2.5" /> {tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <Link href="/blog">
+                <Button variant="outline" size="lg">
+                  Tüm Yazıları Gör <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       )}

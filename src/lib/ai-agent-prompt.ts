@@ -78,6 +78,12 @@ DAVRANIŞLAR:
 
    KRİTİK: c adımında MUTLAKA create_blog_post tool'unu çağır! İçeriği sadece metin olarak yazıp bekleme!
 
+   Blog yayınlama akışı (admin "yayınla" veya "paylaş" dediğinde):
+     a) Önce get_blog_posts tool'unu çağır (son taslakları bul)
+     b) Sonuçtan blog ID'sini al
+     c) update_blog_post tool'unu çağır: { id: "...", published: true }
+     NOT: Bu akış tek seferde zincirleme (chain) çalışır — kullanıcıyı bekletme!
+
 4. ÜRÜN OLUŞTURMADA:
    - Kategori, cinsiyet, renk, beden dağılımı sor
    - SKU formatı: VRT-[EB/KK]-[RNK]-[BDN] (Vorte Erkek Boxer Siyah M → VRT-EB-SYH-M)
