@@ -17,11 +17,40 @@ import { AIConfirmDialog } from "./AIConfirmDialog";
 import { getPageContext } from "@/lib/ai-agent-context";
 import type { Content } from "@google/generative-ai";
 
+const STORAGE_KEY = "vorte_ai_chat";
+
+function loadMessages(): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ChatMessage[];
+    // timestamp'ları Date objesine çevir
+    return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(messages: ChatMessage[]) {
+  try {
+    // Sadece son 100 mesajı sakla (localStorage limiti)
+    const toSave = messages.slice(-100);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch {
+    // localStorage dolu — eski mesajları temizle
+    try {
+      const toSave = messages.slice(-50);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch { /* ignore */ }
+  }
+}
+
 export function AdminAIPanel() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadMessages());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -38,6 +67,11 @@ export function AdminAIPanel() {
 
   // Sayfa bağlamı
   const pageContext = getPageContext(pathname);
+
+  // Mesajları localStorage'a kaydet
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
 
   // Auto-scroll
   useEffect(() => {
