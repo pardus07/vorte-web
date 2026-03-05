@@ -248,10 +248,15 @@ export default async function HomePage() {
                   className="group overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md"
                 >
                   {post.coverImage ? (
-                    <div
-                      className="h-48 bg-cover bg-center transition-transform group-hover:scale-105"
-                      style={{ backgroundImage: `url(${post.coverImage})` }}
-                    />
+                    <div className="relative h-48 overflow-hidden">
+                      <Image
+                        src={post.coverImage}
+                        alt={post.title}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
                   ) : (
                     <div className="flex h-48 items-center justify-center bg-gray-50">
                       <BookOpen className="h-10 w-10 text-gray-200" />

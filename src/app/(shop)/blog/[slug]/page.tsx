@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { ArrowLeft, Calendar, User, Tag, AlertTriangle } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, Calendar, User, Tag, AlertTriangle, BookOpen } from "lucide-react";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -114,11 +115,21 @@ export default async function BlogDetailPage({ params, searchParams }: Props) {
         </Link>
 
         {/* Cover image */}
-        {post.coverImage && (
-          <div
-            className="mb-8 h-64 rounded-lg bg-cover bg-center md:h-96"
-            style={{ backgroundImage: `url(${post.coverImage})` }}
-          />
+        {post.coverImage ? (
+          <div className="relative mb-8 h-64 overflow-hidden rounded-lg md:h-96">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 800px"
+              priority
+            />
+          </div>
+        ) : (
+          <div className="mb-8 flex h-64 items-center justify-center rounded-lg bg-gray-50 md:h-96">
+            <BookOpen className="h-16 w-16 text-gray-300" />
+          </div>
         )}
 
         {/* Title */}
