@@ -16,6 +16,8 @@ import { getPageContext } from "@/lib/ai-agent-context";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
+export const maxDuration = 120; // Image generation chain can take 60s+
+
 export async function POST(req: NextRequest) {
   // Auth: sadece ADMIN
   const admin = await requireAdmin();

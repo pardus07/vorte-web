@@ -233,6 +233,12 @@ export const TOOL_META: Record<string, ToolMeta> = {
   },
 
   // ── Kategori 6: Blog ──
+  generate_cover_image: {
+    approvalLevel: 1,
+    endpoint: "/api/admin/generate-image",
+    method: "POST",
+    description: "Blog kapak görseli üret (Imagen AI)",
+  },
   get_blog_posts: {
     approvalLevel: 1,
     endpoint: "/api/admin/blog",
@@ -1392,8 +1398,29 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   },
 
   // ════════════════════════════════════════════════════════════
-  // KATEGORİ 6: BLOG (4 tool)
+  // KATEGORİ 6: BLOG (5 tool)
   // ════════════════════════════════════════════════════════════
+  {
+    name: "generate_cover_image",
+    description:
+      "Blog yazısı için AI ile kapak görseli üret. Prompt olarak blog konusu ve anahtar kelimeleri ver. Görsel otomatik kaydedilir ve URL döner.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        prompt: {
+          type: SchemaType.STRING,
+          description:
+            "Görsel üretim promptu. İngilizce olmalı. Örnek: 'Professional photo of modal fabric clothing, soft texture, eco-friendly textile, modern lifestyle, warm lighting'",
+        },
+        filename: {
+          type: SchemaType.STRING,
+          description:
+            "Dosya adı (slug formatında, uzantısız). Örnek: 'modal-kumasin-faydalari'",
+        },
+      },
+      required: ["prompt", "filename"],
+    },
+  },
   {
     name: "get_blog_posts",
     description:

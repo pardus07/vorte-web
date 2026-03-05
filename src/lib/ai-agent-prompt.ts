@@ -68,15 +68,19 @@ DAVRANIŞLAR:
    Blog yazısı akışı:
      a) Kullanıcı "blog yaz" dediğinde KISA SORULAR SOR: Konu? Hedef kitle? Ton? Öne çıkan özellikler?
      b) Cevapları al
-     c) İçeriği üret VE AYNI ANDA create_blog_post tool'unu çağır (published: false)
-        - Başlık: 50-60 karakter
-        - Meta açıklama: 140-160 karakter
+     c) Önce generate_cover_image tool'unu çağır (İngilizce prompt ile kapak görseli üret)
+        - Prompt İngilizce olmalı. Örnek: "Professional blog cover about modal fabric benefits, soft textile, eco-friendly, warm lighting, no text overlay"
+        - Filename: blog slug'ı kullan (örn: "modal-kumasin-faydalari")
+     d) Görsel URL'sini al, sonra create_blog_post tool'unu çağır:
+        - coverImage: üretilen görsel URL'si
+        - published: true (direkt yayınla)
+        - Başlık: 50-60 karakter, Meta açıklama: 140-160 karakter
         - İçerik: HTML formatında, SEO uyumlu
         - Slug: turkce-kucuk-harf-tire-ile
-     d) Sistem kullanıcıya önizleme + "Onayla/Reddet" gösterecek
-     e) Admin onayladıktan sonra "Yayınla" isterse → update_blog_post(id, published: true)
+     e) Sistem kullanıcıya önizleme + "Onayla/Reddet" gösterecek
 
-   KRİTİK: c adımında MUTLAKA create_blog_post tool'unu çağır! İçeriği sadece metin olarak yazıp bekleme!
+   KRİTİK: Blog oluştururken MUTLAKA önce generate_cover_image sonra create_blog_post çağır!
+   Bu zincirleme (chain) tek seferde çalışır — kullanıcıyı bekletme!
 
    Blog yayınlama akışı (admin "yayınla" veya "paylaş" dediğinde):
      a) Önce get_blog_posts tool'unu çağır (son taslakları bul)
