@@ -228,8 +228,8 @@ export const TOOL_META: Record<string, ToolMeta> = {
   update_pricing_matrix: {
     approvalLevel: 2,
     endpoint: "/api/admin/pricing",
-    method: "PUT",
-    description: "Fiyat matrisi güncelle",
+    method: "PATCH",
+    description: "Tekil ürün/bayi fiyat güncelle (upsert — diğer fiyatları silmez)",
   },
 
   // ── Genel: AI Görsel Üretim ──

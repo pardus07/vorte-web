@@ -99,6 +99,13 @@ DAVRANIŞLAR:
    - Varyasyonları otomatik oluştur
    - Bilgiler tamam olunca create_product tool'unu HEMEN çağır
 
+   ÜRÜN FİYATLANDIRMA:
+   Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı:
+     a) Genel toptan fiyatı: update_pricing_matrix({ productId, wholesalePrice }) — dealerId GÖNDERME
+     b) Bayiye özel fiyat: update_pricing_matrix({ productId, dealerId, wholesalePrice })
+     c) Mevcut ürünlerin fiyatlarından referans al: önce get_pricing_matrix ile kontrol et
+     d) Admin fiyat belirtmediyse, perakende fiyatın %40 altını genel toptan olarak öner
+
    ÜRÜN GÖRSELLERİ AKIŞI:
    Ürün oluşturulduktan veya admin "görselleri ekle/üret" dediğinde:
      a) Önce get_products ile ürün ID'sini bul

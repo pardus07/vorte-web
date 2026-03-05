@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest) {
 
   const { prices } = await req.json();
 
-  // Delete all existing and recreate
+  // Delete all existing and recreate (admin panel full-matrix save)
   await db.dealerPrice.deleteMany();
 
   if (prices?.length > 0) {
@@ -44,4 +44,46 @@ export async function PUT(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true });
+}
+
+/**
+ * PATCH: Tekil ürün/bayi fiyat güncelleme (upsert)
+ * AI asistan ve tekil güncellemeler için — diğer fiyatları silmez
+ */
+export async function PATCH(req: NextRequest) {
+  if (!(await checkAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { productId, dealerId, wholesalePrice, minQuantity } = await req.json();
+
+  if (!productId || wholesalePrice === undefined) {
+    return NextResponse.json(
+      { error: "productId ve wholesalePrice gerekli" },
+      { status: 400 }
+    );
+  }
+
+  // Upsert: varsa güncelle, yoksa oluştur
+  const existing = await db.dealerPrice.findFirst({
+    where: { productId, dealerId: dealerId || null },
+  });
+
+  if (existing) {
+    await db.dealerPrice.update({
+      where: { id: existing.id },
+      data: { wholesalePrice, minQuantity: minQuantity || 1 },
+    });
+  } else {
+    await db.dealerPrice.create({
+      data: {
+        productId,
+        dealerId: dealerId || null,
+        wholesalePrice,
+        minQuantity: minQuantity || 1,
+      },
+    });
+  }
+
+  return NextResponse.json({ success: true, productId, dealerId, wholesalePrice });
 }
