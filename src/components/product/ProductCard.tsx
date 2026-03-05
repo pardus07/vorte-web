@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Heart } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
@@ -68,13 +67,12 @@ export function ProductCard({ product }: ProductCardProps) {
       <Link href={`/urun/${product.slug}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-gray-100">
           {product.images[0] && !imageError ? (
-            <Image
+            <img
               src={product.images[0]}
               alt={product.name}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => setImageError(true)}
+              loading="lazy"
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-gray-200">

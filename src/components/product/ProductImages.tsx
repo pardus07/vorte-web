@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -41,13 +40,12 @@ export function ProductImages({ images, productName }: ProductImagesProps) {
               }`}
             >
               {!imageErrors.has(i) ? (
-                <Image
+                <img
                   src={img}
                   alt={`${productName} - ${i + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
+                  className="absolute inset-0 h-full w-full object-cover"
                   onError={() => handleError(i)}
+                  loading="lazy"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gray-200 text-gray-400 text-xs">
@@ -63,13 +61,10 @@ export function ProductImages({ images, productName }: ProductImagesProps) {
       <div className="relative flex-1">
         <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-gray-100">
           {!imageErrors.has(selectedIndex) ? (
-            <Image
+            <img
               src={images[selectedIndex]}
               alt={`${productName} - ${selectedIndex + 1}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
+              className="absolute inset-0 h-full w-full object-cover"
               onError={() => handleError(selectedIndex)}
             />
           ) : (
