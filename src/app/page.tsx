@@ -83,7 +83,7 @@ export default async function HomePage() {
   try {
     blogPosts = await db.blogPost.findMany({
       where: { published: true },
-      orderBy: { publishedAt: "desc" },
+      orderBy: { publishedAt: "asc" },
       take: 3,
       select: {
         id: true,
