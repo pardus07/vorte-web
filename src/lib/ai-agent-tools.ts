@@ -232,13 +232,15 @@ export const TOOL_META: Record<string, ToolMeta> = {
     description: "Fiyat matrisi güncelle",
   },
 
-  // ── Kategori 6: Blog ──
-  generate_cover_image: {
+  // ── Genel: AI Görsel Üretim ──
+  generate_image: {
     approvalLevel: 1,
     endpoint: "/api/admin/generate-image",
     method: "POST",
-    description: "Blog kapak görseli üret (Imagen AI)",
+    description: "AI ile görsel üret (blog, ürün, banner vb.)",
   },
+
+  // ── Kategori 6: Blog ──
   get_blog_posts: {
     approvalLevel: 1,
     endpoint: "/api/admin/blog",
@@ -829,6 +831,14 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
           type: SchemaType.BOOLEAN,
           description: "Ürün aktif/pasif durumu",
         },
+        images: {
+          type: SchemaType.ARRAY,
+          description:
+            "Ürün görselleri URL dizisi. Örnek: ['/uploads/products/erkek-boxer-gri-1-123.png', '/uploads/products/erkek-boxer-gri-2-456.png']. Görselleri generate_image tool'u ile üretip URL'leri bu diziye ekle.",
+          items: {
+            type: SchemaType.STRING,
+          },
+        },
       },
       required: ["id"],
     },
@@ -1398,29 +1408,38 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   },
 
   // ════════════════════════════════════════════════════════════
-  // KATEGORİ 6: BLOG (5 tool)
+  // GENEL: AI GÖRSEL ÜRETİM
   // ════════════════════════════════════════════════════════════
   {
-    name: "generate_cover_image",
+    name: "generate_image",
     description:
-      "Blog yazısı için AI ile kapak görseli üret. Prompt olarak blog konusu ve anahtar kelimeleri ver. Görsel otomatik kaydedilir ve URL döner.",
+      "AI ile görsel üret (blog kapağı, ürün fotoğrafı, banner vb.). Görsel üretilir, dosya sistemine kaydedilir ve URL döner. Her çağrıda 1 görsel üretilir. Birden fazla görsel için birden fazla kez çağır.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
         prompt: {
           type: SchemaType.STRING,
           description:
-            "Görsel üretim promptu. İngilizce olmalı. Örnek: 'Professional photo of modal fabric clothing, soft texture, eco-friendly textile, modern lifestyle, warm lighting'",
+            "Görsel üretim promptu. İngilizce olmalı. E-ticaret ürün fotoğrafı örnek: 'Product photography of men's gray boxer briefs on invisible mannequin, front view, pure white background, professional e-commerce style, sharp focus, 8k quality'. Blog kapak örnek: 'Professional photo of modal fabric clothing, soft texture, eco-friendly textile'",
         },
         filename: {
           type: SchemaType.STRING,
           description:
-            "Dosya adı (slug formatında, uzantısız). Örnek: 'modal-kumasin-faydalari'",
+            "Dosya adı (slug formatında, uzantısız). Örnek: 'erkek-boxer-gri-1' veya 'modal-kumasin-faydalari'",
+        },
+        directory: {
+          type: SchemaType.STRING,
+          description:
+            "Kayıt dizini: 'products' (ürün görselleri) veya 'blog' (blog kapak görselleri). Varsayılan: 'blog'",
         },
       },
       required: ["prompt", "filename"],
     },
   },
+
+  // ════════════════════════════════════════════════════════════
+  // KATEGORİ 6: BLOG (4 tool)
+  // ════════════════════════════════════════════════════════════
   {
     name: "get_blog_posts",
     description:

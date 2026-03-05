@@ -1,10 +1,12 @@
 /**
- * Blog kapak görseli üretim endpoint'i
+ * AI görsel üretim endpoint'i (blog + ürün)
  * POST /api/admin/generate-image
  *
  * @google/genai SDK ile görsel üretir.
  * Öncelik: Imagen 4 → Gemini native image generation (fallback)
- * Görsel public/uploads/blog/ dizinine kaydedilir.
+ *
+ * Body: { prompt, filename, directory? }
+ * - directory: "blog" (default) veya "products"
  *
  * Dokümantasyon:
  * - Imagen: https://ai.google.dev/gemini-api/docs/imagen
@@ -17,6 +19,8 @@ import { GoogleGenAI } from "@google/genai";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
+
+const ALLOWED_DIRS = ["blog", "products"];
 
 export const maxDuration = 60; // Image generation can take 30-60s
 
@@ -35,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { prompt, filename } = await req.json();
+    const { prompt, filename, directory = "blog" } = await req.json();
 
     if (!prompt || !filename) {
       return NextResponse.json(
@@ -43,6 +47,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Güvenlik: sadece izin verilen dizinler
+    const dir = ALLOWED_DIRS.includes(directory) ? directory : "blog";
 
     // Güvenli dosya adı
     const safeFilename = filename
@@ -70,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Görseli dosya sistemine kaydet
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "blog");
+    const uploadsDir = path.join(process.cwd(), "public", "uploads", dir);
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
@@ -81,7 +88,7 @@ export async function POST(req: NextRequest) {
     const imageBuffer = Buffer.from(imageBase64, "base64");
     await writeFile(imagePath, imageBuffer);
 
-    const imageUrl = `/uploads/blog/${imageFilename}`;
+    const imageUrl = `/uploads/${dir}/${imageFilename}`;
 
     console.log(`[generate-image] Görsel kaydedildi: ${imageUrl} (${(imageBuffer.length / 1024).toFixed(0)} KB)`);
 
@@ -102,13 +109,6 @@ export async function POST(req: NextRequest) {
 
 /**
  * Imagen 4 ile görsel üret
- * Dok: https://ai.google.dev/gemini-api/docs/imagen
- *
- * ai.models.generateImages({
- *   model: "imagen-4.0-generate-001",
- *   prompt: "...",
- *   config: { numberOfImages: 1 },
- * })
  */
 async function tryImagen4(
   ai: GoogleGenAI,
@@ -140,13 +140,6 @@ async function tryImagen4(
 
 /**
  * Gemini native image generation (fallback)
- * Dok: https://ai.google.dev/gemini-api/docs/image-generation
- *
- * ai.models.generateContent({
- *   model: "gemini-3.1-flash-image-preview",
- *   contents: "...",
- *   config: { responseModalities: ["TEXT", "IMAGE"] },
- * })
  */
 async function tryGeminiImageGen(
   ai: GoogleGenAI,
@@ -155,13 +148,12 @@ async function tryGeminiImageGen(
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash-exp",
-      contents: `Generate a professional, high-quality blog cover image for the following topic. The image should be visually appealing, modern, and suitable for a textile/underwear e-commerce website. Do NOT include any text in the image. Topic: ${prompt}`,
+      contents: `Generate a professional, high-quality product/marketing image. Do NOT include any text in the image. Description: ${prompt}`,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
       },
     });
 
-    // Response'dan image part'ı bul
     const parts = response.candidates?.[0]?.content?.parts;
     if (parts) {
       for (const part of parts) {

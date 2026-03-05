@@ -185,8 +185,8 @@ async function handleChat(
           },
         ]);
 
-        // Multi-step tool calling loop (max 3 ek adım)
-        for (let step = 0; step < 3; step++) {
+        // Multi-step tool calling loop (max 6 ek adım — ürün görselleri 4 generate + 1 update)
+        for (let step = 0; step < 6; step++) {
           let chainedCalls;
           try {
             chainedCalls = currentResponse.response.functionCalls();
