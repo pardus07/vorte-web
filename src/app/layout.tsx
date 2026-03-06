@@ -41,10 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  // OG image'ı Next.js image optimizer üzerinden serve et (~1MB → ~80KB)
+  // OG image: /api/og-image sharp ile 1200x630 JPEG olarak serve eder (~80KB)
   const ogImageUrl = settings.ogImageUrl
-    ? `${siteUrl}/_next/image?url=${encodeURIComponent(settings.ogImageUrl)}&w=1200&q=75`
-    : "/logo.png";
+    ? `${siteUrl}/api/og-image`
+    : `${siteUrl}/logo.png`;
 
   return {
     title: {
@@ -63,6 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       type: "website",
+      url: siteUrl,
       locale: "tr_TR",
       siteName: settings.siteName || "Vorte Tekstil",
       images: [
@@ -76,6 +77,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
+      images: [ogImageUrl],
     },
     alternates: {
       canonical: "/",
