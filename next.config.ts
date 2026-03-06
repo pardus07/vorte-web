@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        // OG image: /og-image.jpg → API route (clean URL, WhatsApp/Facebook uyumlu)
+        source: "/og-image.jpg",
+        destination: "/api/og-image",
+      },
+      {
         source: "/uploads/:path*",
         destination: "/api/uploads/:path*",
       },
