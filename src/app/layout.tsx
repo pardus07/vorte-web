@@ -41,6 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
+  // OG image'ı Next.js image optimizer üzerinden serve et (~1MB → ~80KB)
+  const ogImageUrl = settings.ogImageUrl
+    ? `${siteUrl}/_next/image?url=${encodeURIComponent(settings.ogImageUrl)}&w=1200&q=80`
+    : "/logo.png";
+
   return {
     title: {
       default: title,
@@ -62,9 +67,9 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: settings.siteName || "Vorte Tekstil",
       images: [
         {
-          url: settings.ogImageUrl || "/logo.png",
-          width: settings.ogImageUrl ? 1200 : 512,
-          height: settings.ogImageUrl ? 630 : 512,
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
           alt: settings.siteName || "Vorte Tekstil",
         },
       ],
