@@ -41,9 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  // OG image: /api/og-image sharp ile 1200x630 JPEG olarak serve eder (~80KB)
+  // OG image: _next/image optimizer ile serve et (Facebook/WhatsApp uyumlu)
+  // _next/image aynı Vary: Accept header'ı döner — logo ile aynı, Facebook bunu kabul ediyor
   const ogImageUrl = settings.ogImageUrl
-    ? `${siteUrl}/api/og-image`
+    ? `${siteUrl}/_next/image?url=${encodeURIComponent(settings.ogImageUrl)}&w=1200&q=75`
     : `${siteUrl}/logo.png`;
 
   return {

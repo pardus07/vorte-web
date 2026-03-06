@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Social media bot'ları: Range header gönderir, Next.js dynamic route'larda
+// bunu handle edemez → 500 veya bozuk response (next.js#44470)
+const BOT_UA_PATTERN = /facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Discordbot/i;
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "";
+  const userAgent = request.headers.get("user-agent") || "";
+
+  // Social media crawler'ları: Range header'ını strip et
+  if (BOT_UA_PATTERN.test(userAgent) && request.headers.has("range")) {
+    const headers = new Headers(request.headers);
+    headers.delete("range");
+    return NextResponse.next({ request: { headers } });
+  }
 
   // Redirect non-www to www (SEO: single canonical domain)
   if (hostname === "vorte.com.tr" || hostname.startsWith("vorte.com.tr:")) {

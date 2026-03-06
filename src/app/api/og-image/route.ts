@@ -1,25 +1,22 @@
 /**
  * OG Image API Route
- * Orijinal OG görseli sharp ile sıkıştırıp serve eder.
- * Facebook/WhatsApp/Twitter crawler'ları bu URL'yi kullanır.
+ * Orijinal OG görseli sharp ile sıkıştırıp diske kaydeder,
+ * sonra dosyayı doğrudan binary olarak döner.
  *
  * Endpoint: /api/og-image
- * Response: Sıkıştırılmış JPEG (~80KB)
+ * Response: Baseline JPEG 1200x630
  *
- * NOT: NextResponse yerine native Response kullanıyoruz çünkü:
- * - NextResponse otomatik Vary header ekliyor (rsc, next-router-state-tree...)
- * - Caddy reverse proxy JPEG'i gereksiz yere gzip'liyor
- * - Facebook scraper bu komboda "Corrupted Image" hatası veriyor
+ * Strateji: Sharp ile optimize → public/uploads/og-optimized.jpg olarak kaydet
+ * Bir kez optimize ettikten sonra disk cache'inden serve et.
  */
 
-import { readFile } from "fs/promises";
+import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { getSiteSettings } from "@/lib/settings";
 
-// Cache: sıkıştırılmış görseli bellekte tut
-let cachedBuffer: Buffer | null = null;
-let cachedSourceUrl: string | null = null;
+const OPTIMIZED_PATH = path.join(process.cwd(), "public", "uploads", "og-optimized.jpg");
+let lastSourceUrl: string | null = null;
 
 export async function GET() {
   try {
@@ -27,7 +24,6 @@ export async function GET() {
     const ogImageUrl = settings.ogImageUrl;
 
     if (!ogImageUrl) {
-      // Fallback: logo.png
       const logoPath = path.join(process.cwd(), "public", "logo.png");
       if (!existsSync(logoPath)) {
         return Response.json({ error: "No OG image configured" }, { status: 404 });
@@ -42,27 +38,24 @@ export async function GET() {
       });
     }
 
-    // Cache hit: aynı görseli tekrar sıkıştırma
-    if (cachedBuffer && cachedSourceUrl === ogImageUrl) {
-      return new Response(cachedBuffer, {
+    // Disk cache: daha önce aynı kaynak görselden optimize edilmişse dosyadan oku
+    if (existsSync(OPTIMIZED_PATH) && lastSourceUrl === ogImageUrl) {
+      const buffer = await readFile(OPTIMIZED_PATH);
+      return new Response(buffer, {
         headers: {
           "Content-Type": "image/jpeg",
-          "Content-Length": cachedBuffer.length.toString(),
+          "Content-Length": buffer.length.toString(),
           "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-          "Content-Encoding": "identity",
         },
       });
     }
 
-    // OG image URL'den dosya yolunu çıkar
-    // URL format: /uploads/blog/og-image-xxx.png veya https://www.vorte.com.tr/uploads/...
+    // Kaynak dosya yolunu çıkar
     let filePath: string;
     try {
       const urlPath = ogImageUrl.startsWith("http")
         ? new URL(ogImageUrl).pathname
         : ogImageUrl;
-
-      // /uploads/... -> public/uploads/...
       const relativePath = urlPath.startsWith("/") ? urlPath.slice(1) : urlPath;
       filePath = path.join(process.cwd(), "public", relativePath);
     } catch {
@@ -73,26 +66,28 @@ export async function GET() {
       return Response.json({ error: "OG image file not found" }, { status: 404 });
     }
 
-    // Sharp ile sıkıştır: 1200x630 baseline JPEG, quality 80
-    // NOT: progressive: false — Facebook scraper progressive JPEG'i bazen "corrupted" algılıyor
+    // Sharp ile optimize: 1200x630 baseline JPEG
     const sharp = (await import("sharp")).default;
     const originalBuffer = await readFile(filePath);
 
     const optimizedBuffer = await sharp(originalBuffer)
       .resize(1200, 630, { fit: "cover", position: "center" })
-      .jpeg({ quality: 80, progressive: false, mozjpeg: true })
+      .jpeg({ quality: 80, progressive: false })
       .toBuffer();
 
-    // Cache'e kaydet
-    cachedBuffer = optimizedBuffer;
-    cachedSourceUrl = ogImageUrl;
+    // Diske kaydet (uploads dizini volume mount ile persistent)
+    const dir = path.dirname(OPTIMIZED_PATH);
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
+    await writeFile(OPTIMIZED_PATH, optimizedBuffer);
+    lastSourceUrl = ogImageUrl;
 
     return new Response(optimizedBuffer, {
       headers: {
         "Content-Type": "image/jpeg",
         "Content-Length": optimizedBuffer.length.toString(),
         "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-        "Content-Encoding": "identity",
       },
     });
   } catch (error) {
