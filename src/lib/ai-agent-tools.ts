@@ -273,7 +273,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
     approvalLevel: 1,
     endpoint: "/api/admin/pages",
     method: "GET",
-    description: "Sayfa listesi",
+    description: "Sadece DB CMS sayfaları (statik sayfalar için get_seo_status kullan)",
   },
   create_page: {
     approvalLevel: 2,
@@ -397,7 +397,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
     approvalLevel: 1,
     endpoint: "/api/admin/seo",
     method: "GET",
-    description: "SEO durum raporu",
+    description: "Komple SEO durum raporu (ürünler, bloglar, sayfalar + statik sayfalar, yönlendirmeler, 404 logları)",
   },
   bulk_update_seo: {
     approvalLevel: 2,
@@ -1566,7 +1566,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "get_pages",
     description:
-      "Statik sayfa listesini getir (Hakkımızda, İletişim, KVKK vb.).",
+      "Sadece veritabanındaki CMS sayfalarını getirir. NOT: Hakkımızda, İletişim, KVKK, SSS gibi hardcoded statik sayfalar burada GÖRÜNMEZ. Tüm sayfaların SEO durumunu görmek için get_seo_status kullan!",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -2116,7 +2116,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "get_seo_status",
     description:
-      "SEO durum raporu getir. Eksik meta tag'ler, optimize edilmemiş ürünler, sitemap durumu gibi bilgileri gösterir.",
+      "Komple SEO durum raporu getir. Ürün SEO (seoTitle, seoDescription, googleCategory), Blog SEO, Sayfa SEO (DB sayfaları + hardcoded statik sayfalar: hakkımızda, iletişim, kvkk, sss vb. 10 sayfa), yönlendirmeler ve 404 loglarını döndürür. SEO bölümü incelemek veya sayfa SEO durumunu kontrol etmek için BU TOOL'U KULLAN (get_pages değil!).",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {},

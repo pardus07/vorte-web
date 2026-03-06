@@ -86,7 +86,9 @@ export async function GET() {
   return NextResponse.json({
     products,
     productStats,
+    blogPosts,
     blogStats,
+    pages: mergedPages,
     pageStats,
     redirects,
     notFoundLogs,

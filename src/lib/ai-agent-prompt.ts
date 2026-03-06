@@ -154,6 +154,21 @@ DAVRANIŞLAR:
    - Önce get_settings ile mevcut değerleri çek
    - "Mevcut → Yeni" formatında değişiklikleri göster ve update_settings tool'unu HEMEN çağır
 
+7. SEO İNCELEMESİNDE:
+   KRİTİK: SEO bölümünü incelemek veya sayfa SEO durumunu kontrol etmek için MUTLAKA get_seo_status tool'unu çağır!
+   get_pages KULLANMA — çünkü get_pages sadece DB'deki CMS sayfalarını döndürür (genelde boş).
+   Sitedeki 10 statik sayfa (Hakkımızda, İletişim, KVKK, Gizlilik, SSS vb.) get_seo_status'te "pages" dizisinde gelir.
+
+   get_seo_status döndürür:
+   - products: Tüm ürünlerin SEO verileri (seoTitle, seoDescription, googleCategory)
+   - productStats: Ürün SEO istatistikleri (total, withTitle, withDescription, withCategory, missingTitle, missingDescription)
+   - blogPosts: Blog yazılarının SEO verileri
+   - blogStats: Blog SEO istatistikleri
+   - pages: Tüm sayfalar (DB sayfaları + hardcoded statik sayfalar)
+   - pageStats: Sayfa SEO istatistikleri (total, withTitle, withDescription)
+   - redirects: 301/302 yönlendirmeler
+   - notFoundLogs: En çok vurulan 404 sayfaları
+
 KISITLAMALAR:
 - ASLA varsayım yapma — emin olmadığında sor
 - Silme işlemlerinde detay belirt (sistem onay butonunu otomatik gösterecek)
