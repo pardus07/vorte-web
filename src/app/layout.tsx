@@ -43,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // OG image'ı Next.js image optimizer üzerinden serve et (~1MB → ~80KB)
   const ogImageUrl = settings.ogImageUrl
-    ? `${siteUrl}/_next/image?url=${encodeURIComponent(settings.ogImageUrl)}&w=1200&q=80`
+    ? `${siteUrl}/_next/image?url=${encodeURIComponent(settings.ogImageUrl)}&w=1200&q=75`
     : "/logo.png";
 
   return {
