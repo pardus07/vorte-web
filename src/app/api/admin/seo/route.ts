@@ -41,16 +41,37 @@ export async function GET() {
     withDescription: blogPosts.filter((p) => p.seoDescription).length,
   };
 
-  // Pages SEO
-  const pages = await db.page.findMany({
+  // Pages SEO — DB sayfaları + hardcoded statik sayfalar
+  const dbPages = await db.page.findMany({
     where: { published: true },
     select: { id: true, title: true, slug: true, seoTitle: true, seoDescription: true },
   });
 
+  // Next.js dosya sistemindeki statik sayfalar (metadata export'lu)
+  const staticPages = [
+    { id: "static-hakkimizda", title: "Hakkımızda", slug: "hakkimizda", seoTitle: "Hakkımızda", seoDescription: "Vorte Tekstil hakkında. Bursa Nilüfer'de kaliteli iç giyim üretimi ve satış. Premium kumaş, uygun fiyat." },
+    { id: "static-iletisim", title: "İletişim", slug: "iletisim", seoTitle: "İletişim", seoDescription: "Vorte Tekstil iletişim bilgileri. Adres, telefon, e-posta. Nilüfer, Bursa." },
+    { id: "static-kvkk", title: "KVKK Aydınlatma Metni", slug: "kvkk", seoTitle: "KVKK Aydınlatma Metni", seoDescription: "Vorte Tekstil KVKK aydınlatma metni. 6698 sayılı kanun kapsamında kişisel veri işleme politikamız." },
+    { id: "static-kullanim", title: "Kullanım Koşulları", slug: "kullanim-kosullari", seoTitle: "Kullanım Koşulları", seoDescription: "Vorte Tekstil web sitesi kullanım koşulları ve şartları." },
+    { id: "static-gizlilik", title: "Gizlilik Politikası", slug: "gizlilik-politikasi", seoTitle: "Gizlilik Politikası", seoDescription: "Vorte Tekstil gizlilik politikası. Kişisel verilerin korunması ve gizlilik ilkelerimiz." },
+    { id: "static-mesafeli", title: "Mesafeli Satış Sözleşmesi", slug: "mesafeli-satis", seoTitle: "Mesafeli Satış Sözleşmesi", seoDescription: "Vorte Tekstil mesafeli satış sözleşmesi. Online alışveriş koşulları ve haklarınız." },
+    { id: "static-iade", title: "İade Politikası", slug: "iade-politikasi", seoTitle: "İade Politikası", seoDescription: "Vorte Tekstil iade ve değişim politikası. 14 gün içinde koşulsuz iade hakkı." },
+    { id: "static-toptan", title: "Toptan Satış", slug: "toptan", seoTitle: "Toptan Satış", seoDescription: "Vorte Tekstil toptan satış ve bayilik fırsatları. Özel toptan fiyatlar, hızlı teslimat. Bayilik başvurusu." },
+    { id: "static-kargo", title: "Kargo ve Teslimat", slug: "kargo-teslimat", seoTitle: "Kargo ve Teslimat", seoDescription: "Vorte Tekstil kargo ve teslimat bilgileri. Türkiye geneli 1-3 iş günü teslimat. 300 TL üzeri ücretsiz kargo." },
+    { id: "static-sss", title: "Sıkça Sorulan Sorular", slug: "sss", seoTitle: "Sıkça Sorulan Sorular", seoDescription: "Vorte Tekstil sıkça sorulan sorular. Sipariş, kargo, iade, beden ve ödeme hakkında merak ettikleriniz." },
+  ];
+
+  // DB sayfalarının slug'larını al, çakışma olmasın
+  const dbSlugs = new Set(dbPages.map(p => p.slug));
+  const mergedPages = [
+    ...dbPages,
+    ...staticPages.filter(sp => !dbSlugs.has(sp.slug)),
+  ];
+
   const pageStats = {
-    total: pages.length,
-    withTitle: pages.filter((p) => p.seoTitle).length,
-    withDescription: pages.filter((p) => p.seoDescription).length,
+    total: mergedPages.length,
+    withTitle: mergedPages.filter((p) => p.seoTitle).length,
+    withDescription: mergedPages.filter((p) => p.seoDescription).length,
   };
 
   // Redirects
