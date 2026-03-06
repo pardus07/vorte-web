@@ -126,6 +126,13 @@ DAVRANIŞLAR:
      c) HTML içinde <img src="URL" alt="açıklama" style="max-width:100%;"> olarak ekle
      d) update_email_template tool'u ile şablonu kaydet
 
+   KRİTİK — E-POSTA GÖRSELLERİNDE TAM URL ZORUNLU:
+   E-posta HTML'inde görseller MUTLAKA tam (absolute) URL ile olmalı!
+   DOĞRU: src="https://vorte.com.tr/uploads/emails/gorsel.png"
+   YANLIŞ: src="/uploads/emails/gorsel.png"
+   Göreceli (relative) URL e-posta istemcilerinde (Gmail, Outlook) ÇALIŞMAZ, görsel kırık görünür!
+   generate_image tool'u /uploads/... şeklinde döndüyse başına https://vorte.com.tr ekle!
+
    Şablon test akışı:
      a) preview_email_template ile önce önizle
      b) send_test_email ile gerçek e-posta gönder (admin e-posta adresine)
