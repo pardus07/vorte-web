@@ -15,6 +15,9 @@
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["sharp", "@prisma/client", "prisma", "esbuild"]
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@auth/prisma-adapter": "^2.11.1",
