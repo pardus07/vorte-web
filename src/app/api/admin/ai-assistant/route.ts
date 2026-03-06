@@ -301,6 +301,78 @@ async function handleChat(
     });
   }
 
+  // 7) Hallucination guard: Gemini tool çağırmadan "yaptım" diyorsa tekrar dene
+  const COMPLETION_PATTERNS = [
+    /başarıyla\s*(oluşturuldu|güncellendi|kaydedildi|eklendi|silindi)/i,
+    /şablon[u\s]*(oluştur|güncelle|kaydet|düzenle)/i,
+    /tool'?u?\s*çağırıyorum/i,
+    /işlemi?\s*tamamlandı/i,
+  ];
+  const looksLikeHallucinatedAction = COMPLETION_PATTERNS.some((p) => p.test(text));
+
+  if (looksLikeHallucinatedAction) {
+    console.warn("[ai-assistant] Hallucination detected — AI claims action without tool call. Re-prompting...");
+    try {
+      const retryResult = await chat.sendMessage(
+        "HATA: Az önce tool çağırmadan işlem yaptığını iddia ettin. Bu YASAKTIR. " +
+        "Bir e-posta şablonu oluşturmak, ürün eklemek veya herhangi bir değişiklik yapmak için " +
+        "MUTLAKA ilgili tool'u (function call) çağırmalısın. " +
+        "Lütfen şimdi gerekli tool'u çağır. Tool çağırmadan 'yaptım' deme."
+      );
+      const retryResponse = retryResult.response;
+
+      // Retry sonucunda function call var mı?
+      let retryCalls;
+      try { retryCalls = retryResponse.functionCalls(); } catch { retryCalls = null; }
+
+      if (retryCalls && retryCalls.length > 0) {
+        const fc = retryCalls[0];
+        const toolName = fc.name;
+        const args = (fc.args || {}) as Record<string, unknown>;
+        console.log("[ai-assistant] Retry succeeded — tool called:", toolName);
+
+        const baseUrl = getBaseUrl(req);
+        const cookies = req.headers.get("cookie") || "";
+        const toolResult = await resolveToolCall(toolName, args, baseUrl, cookies);
+
+        if (toolResult.approvalLevel >= 2) {
+          let aiText = "";
+          try { aiText = retryResponse.text(); } catch { aiText = ""; }
+          return NextResponse.json({
+            reply: aiText || `${toolResult.description} için onayınız gerekiyor.`,
+            pendingAction: {
+              toolName,
+              args: toolResult.pendingArgs,
+              approvalLevel: toolResult.approvalLevel,
+              description: toolResult.description,
+              apiUrl: toolResult.apiUrl,
+              method: toolResult.method,
+            },
+          });
+        }
+
+        // Level 1 — direkt çalıştır
+        if (toolResult.error) {
+          return NextResponse.json({
+            reply: `❌ ${toolResult.description} başarısız: ${toolResult.error}`,
+          });
+        }
+        return NextResponse.json({
+          reply: `✅ ${toolResult.description} tamamlandı.`,
+          toolCall: { name: toolName, args, result: toolResult.data, approvalLevel: 1 },
+        });
+      }
+
+      // Retry'da da tool çağırmadı — orijinal metni döndür ama uyarı ekle
+      let retryText = "";
+      try { retryText = retryResponse.text(); } catch { /* */ }
+      return NextResponse.json({ reply: retryText || text });
+    } catch (err) {
+      console.error("[ai-assistant] Retry failed:", err);
+      // Retry başarısız — orijinal metni döndür
+    }
+  }
+
   return NextResponse.json({ reply: text });
 }
 
