@@ -90,6 +90,9 @@ export default async function RootLayout({
 
   return (
     <html lang="tr">
+      <head>
+        <AnalyticsScripts />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <JsonLd
           data={{
@@ -133,7 +136,6 @@ export default async function RootLayout({
             <ChatWidget />
           </div>
         </Providers>
-        <AnalyticsScripts />
       </body>
     </html>
   );

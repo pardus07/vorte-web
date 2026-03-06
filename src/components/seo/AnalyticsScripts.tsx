@@ -6,14 +6,14 @@ export async function AnalyticsScripts() {
 
   return (
     <>
-      {/* Google Analytics */}
+      {/* Google Analytics — beforeInteractive: <head> içinde render olur, Google bot görebilir */}
       {settings.googleAnalyticsId && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${settings.googleAnalyticsId}`}
-            strategy="afterInteractive"
+            strategy="beforeInteractive"
           />
-          <Script id="google-analytics" strategy="afterInteractive">
+          <Script id="google-analytics" strategy="beforeInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
