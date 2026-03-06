@@ -39,9 +39,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
 
-# Prisma CLI for runtime db push (local install, npx v7 indirmesin)
-RUN npm install --no-save prisma@6.19.2
-
 # Seed görselleri ayrı dizine kopyala (entrypoint volume'a taşıyacak)
 COPY --from=builder /app/public/images ./seed-images
 
