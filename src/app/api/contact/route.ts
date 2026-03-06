@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { db } from "@/lib/db";
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
-}
+import { resendClient } from "@/lib/integrations/resend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,12 +35,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await getResend().emails.send({
-      from: "Vorte İletisim Formu <noreply@vorte.com.tr>",
+    await resendClient.sendEmail({
       to: "info@vorte.com.tr",
-      subject: `Yeni İletisim Mesaji - ${name}`,
+      subject: `Yeni İletişim Mesajı - ${name}`,
       html: `
-        <h2>Yeni İletisim Formu Mesaji</h2>
+        <h2>Yeni İletişim Formu Mesajı</h2>
         <table style="border-collapse:collapse;width:100%;max-width:600px;">
           <tr>
             <td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Ad Soyad</td>
@@ -65,6 +60,7 @@ export async function POST(request: NextRequest) {
         </table>
       `,
       replyTo: email,
+      templateName: "contact-notification",
     });
 
     return NextResponse.json({ success: true });

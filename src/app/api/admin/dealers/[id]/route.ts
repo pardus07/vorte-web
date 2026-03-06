@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import bcryptjs from "bcryptjs";
 import { z } from "zod";
+import { resendClient } from "@/lib/integrations/resend";
 
 const updateDealerSchema = z.object({
   companyName: z.string().optional(),
@@ -122,11 +123,25 @@ export async function PUT(
       id: true,
       companyName: true,
       dealerCode: true,
+      email: true,
       status: true,
       dealerTier: true,
       updatedAt: true,
     },
   });
+
+  // Bayi onay maili gönder
+  if (status === "ACTIVE" && dealer.email) {
+    try {
+      await resendClient.sendDealerApproved(
+        dealer.email,
+        dealer.companyName,
+        dealer.dealerCode
+      );
+    } catch (emailErr) {
+      console.error("[Dealer] Approval email error:", emailErr);
+    }
+  }
 
   return NextResponse.json(dealer);
 }

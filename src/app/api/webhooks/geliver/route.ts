@@ -96,27 +96,22 @@ export async function POST(req: NextRequest) {
       // Send notification emails
       const email = order.user?.email || order.dealer?.email;
       if (email) {
-        if (newStatus === "DELIVERED") {
-          await resendClient.sendEmail({
-            to: email,
-            subject: `Siparişiniz Teslim Edildi — #${order.orderNumber}`,
-            html: `
-              <h2>Siparişiniz teslim edildi!</h2>
-              <p>Sipariş numaraniz: <strong>#${order.orderNumber}</strong></p>
-              <p>Kargo takip no: <strong>${trackingNo || order.cargoTrackingNo}</strong></p>
-              <p>Urunlerimizi begeneceginizi umuyoruz. Iyi gunlerde kullanin!</p>
-              <p><a href="https://vorte.com.tr/hesabim/siparislerim">Siparislerime Git</a></p>
-            `,
-          });
-        } else if (newStatus === "REFUNDED") {
-          await resendClient.sendEmail({
-            to: email,
-            subject: `Kargo Iade Edildi — #${order.orderNumber}`,
-            html: `
-              <p>Siparis numaraniz <strong>#${order.orderNumber}</strong> icin kargo iade edildi.</p>
-              <p>Detaylar icin hesabinizi kontrol edebilirsiniz.</p>
-            `,
-          });
+        try {
+          if (newStatus === "DELIVERED") {
+            await resendClient.sendFromTemplate({
+              templateName: "delivery-notification",
+              to: email,
+              variables: { orderNumber: order.orderNumber },
+            });
+          } else if (newStatus === "REFUNDED") {
+            await resendClient.sendFromTemplate({
+              templateName: "refund-confirmation",
+              to: email,
+              variables: { orderNumber: order.orderNumber, refundAmount: "" },
+            });
+          }
+        } catch (emailErr) {
+          console.error("[Geliver webhook] Email error:", emailErr);
         }
       }
     }

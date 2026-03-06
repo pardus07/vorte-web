@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
         order: {
           include: {
             user: { select: { id: true, email: true, name: true } },
+            dealer: { select: { email: true, companyName: true } },
             items: { include: { variant: true } },
           },
         },
@@ -125,12 +126,18 @@ export async function POST(req: NextRequest) {
       }
 
       // E-posta gönder (non-critical)
-      if (payment.order.user?.email) {
+      const customerEmail = payment.order.user?.email || payment.order.dealer?.email;
+      if (customerEmail) {
         try {
           await resendClient.sendPaymentSuccess(
-            payment.order.user.email,
+            customerEmail,
             payment.order.orderNumber,
             formatPrice(payment.amount)
+          );
+          await resendClient.sendOrderConfirmation(
+            customerEmail,
+            payment.order.orderNumber,
+            formatPrice(payment.order.totalAmount)
           );
         } catch (emailErr) {
           console.error("[iyzico callback] Email error (non-critical):", emailErr);

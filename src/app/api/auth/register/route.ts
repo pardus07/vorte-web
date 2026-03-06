@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import { db } from "@/lib/db";
+import { resendClient } from "@/lib/integrations/resend";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -42,6 +43,13 @@ export async function POST(request: NextRequest) {
       passwordHash,
     },
   });
+
+  // Welcome email (non-critical)
+  try {
+    await resendClient.sendWelcome(user.email, user.name || "");
+  } catch (emailErr) {
+    console.error("[Register] Welcome email error:", emailErr);
+  }
 
   return NextResponse.json(
     {

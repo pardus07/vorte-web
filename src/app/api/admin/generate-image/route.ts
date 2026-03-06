@@ -16,7 +16,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
-const ALLOWED_DIRS = ["blog", "products", "sliders", "banners"];
+const ALLOWED_DIRS = ["blog", "products", "sliders", "banners", "emails"];
 
 export const maxDuration = 60;
 

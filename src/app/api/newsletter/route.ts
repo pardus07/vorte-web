@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
-}
+import { resendClient } from "@/lib/integrations/resend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,23 +21,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await getResend().emails.send({
-      from: "Vorte E-Bulten <noreply@vorte.com.tr>",
+    await resendClient.sendEmail({
       to: "info@vorte.com.tr",
-      subject: "Yeni E-Bulten Aboneligi",
+      subject: "Yeni E-Bülten Aboneliği",
       html: `
-        <h2>Yeni E-Bulten Aboneligi</h2>
-        <p>Asagidaki e-posta adresi e-bultene abone oldu:</p>
+        <h2>Yeni E-Bülten Aboneliği</h2>
+        <p>Aşağıdaki e-posta adresi e-bültene abone oldu:</p>
         <p style="font-size:18px;font-weight:bold;"><a href="mailto:${email}">${email}</a></p>
-        <p style="color:#666;font-size:12px;">Bu bildirim vorte.com.tr e-bulten formundan otomatik olarak gonderilmistir.</p>
+        <p style="color:#666;font-size:12px;">Bu bildirim vorte.com.tr e-bülten formundan otomatik olarak gönderilmiştir.</p>
       `,
+      templateName: "newsletter",
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Newsletter subscription error:", error);
     return NextResponse.json(
-      { error: "Kayit islemi basarisiz. Lutfen tekrar deneyin." },
+      { error: "Kayıt işlemi başarısız. Lütfen tekrar deneyin." },
       { status: 500 }
     );
   }

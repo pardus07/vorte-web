@@ -1,16 +1,123 @@
 /**
- * Resend Email Integration
+ * Email Integration (SMTP + Resend fallback)
  *
- * Handles transactional email sending
+ * - DB şablonları öncelikli, hardcoded fallback
+ * - Email türüne göre FROM adresi (siparis@, fatura@, destek@, bayi@, info@)
+ * - Otomatik EmailLog kaydı
+ * - SMTP öncelikli, Resend API yedek
  */
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.FROM_EMAIL || "Vorte Tekstil <noreply@vorte.com.tr>";
+import * as nodemailer from "nodemailer";
+import { db } from "@/lib/db";
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const DEFAULT_FROM = process.env.FROM_EMAIL || "Vorte Tekstil <info@vorte.com.tr>";
+
+// SMTP settings (own mail server)
+const SMTP_HOST = process.env.SMTP_HOST || "";
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587");
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const SMTP_SECURE = process.env.SMTP_SECURE === "true"; // true for 465, false for 587
+
+// ─── FROM & REPLY-TO Mapping ───────────────────────────────
+const FROM_MAP: Record<string, string> = {
+  "order-confirmation": "Vorte Sipariş <siparis@vorte.com.tr>",
+  "payment-success": "Vorte Sipariş <siparis@vorte.com.tr>",
+  "shipping-notification": "Vorte Sipariş <siparis@vorte.com.tr>",
+  "delivery-notification": "Vorte Sipariş <siparis@vorte.com.tr>",
+  "refund-confirmation": "Vorte Destek <destek@vorte.com.tr>",
+  invoice: "Vorte Fatura <fatura@vorte.com.tr>",
+  "password-reset": "Vorte Destek <destek@vorte.com.tr>",
+  welcome: "Vorte Tekstil <info@vorte.com.tr>",
+  "dealer-approved": "Vorte Bayi <bayi@vorte.com.tr>",
+  newsletter: "Vorte E-Bülten <info@vorte.com.tr>",
+  "contact-reply": "Vorte Tekstil <info@vorte.com.tr>",
+  "contact-notification": "Vorte İletişim <info@vorte.com.tr>",
+};
+
+const REPLY_TO_MAP: Record<string, string> = {
+  "order-confirmation": "siparis@vorte.com.tr",
+  "payment-success": "siparis@vorte.com.tr",
+  "shipping-notification": "siparis@vorte.com.tr",
+  invoice: "fatura@vorte.com.tr",
+  "password-reset": "destek@vorte.com.tr",
+  "refund-confirmation": "destek@vorte.com.tr",
+  "dealer-approved": "bayi@vorte.com.tr",
+};
+
+function getFromAddress(templateName?: string, overrideFrom?: string): string {
+  if (overrideFrom) return overrideFrom;
+  if (templateName && FROM_MAP[templateName]) return FROM_MAP[templateName];
+  return DEFAULT_FROM;
+}
+
+function getReplyTo(templateName?: string): string {
+  if (templateName && REPLY_TO_MAP[templateName])
+    return REPLY_TO_MAP[templateName];
+  return "destek@vorte.com.tr";
+}
+
+// ─── Variable Replacement ──────────────────────────────────
+function replaceVariables(
+  template: string,
+  vars: Record<string, string>
+): string {
+  return template.replace(
+    /\{\{(\w+)\}\}/g,
+    (match, key) => vars[key] ?? match
+  );
+}
+
+// ─── Sample Data for Preview/Test ──────────────────────────
+const SAMPLE_VARS: Record<string, string> = {
+  customerName: "Test Müşteri",
+  orderNumber: "VRT-260306-TEST",
+  totalAmount: "₺299,90",
+  amount: "₺299,90",
+  items: "2x Erkek Boxer (M, Siyah)",
+  trackingNo: "TEST123456789",
+  carrier: "Yurtiçi Kargo",
+  cagoProvider: "Yurtiçi Kargo",
+  invoiceNo: "VRT2026000001",
+  resetUrl: "https://vorte.com.tr/sifre-sifirla?token=test-token",
+  resetLink: "https://vorte.com.tr/sifre-sifirla?token=test-token",
+  companyName: "Test Bayi Ltd.",
+  dealerCode: "BAY-TEST01",
+  loginUrl: "https://vorte.com.tr/bayi-girisi",
+  refundAmount: "₺149,90",
+  content: "<p>Bülten içeriği buraya gelecek.</p>",
+};
+
+// ─── SMTP Transporter (lazy init) ──────────────────────────
+let smtpTransporter: nodemailer.Transporter | null = null;
+function getSmtpTransporter() {
+  if (!smtpTransporter && SMTP_HOST) {
+    smtpTransporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      tls: { rejectUnauthorized: false }, // self-signed cert
+    });
+  }
+  return smtpTransporter;
+}
+
+// ─── Interfaces ────────────────────────────────────────────
 interface EmailParams {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
+  templateName?: string;
+}
+
+interface InternalEmailParams {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
   replyTo?: string;
 }
 
@@ -18,22 +125,65 @@ interface ResendResponse {
   id: string;
 }
 
+interface TemplateSendParams {
+  templateName: string;
+  to: string;
+  variables: Record<string, string>;
+  overrideFrom?: string;
+}
+
+// ─── ResendClient Class ────────────────────────────────────
 class ResendClient {
   private apiKey: string;
-  private from: string;
 
   constructor() {
     this.apiKey = RESEND_API_KEY;
-    this.from = FROM_EMAIL;
   }
 
-  async sendEmail(params: EmailParams): Promise<ResendResponse> {
-    // In development, log the email
-    if (process.env.NODE_ENV !== "production" || !this.apiKey) {
-      console.log("[Resend] Simulating email:");
+  // ── Core: Internal send (supports dynamic FROM) ──
+  private async sendEmailInternal(
+    params: InternalEmailParams
+  ): Promise<ResendResponse & { provider: string }> {
+    const from = params.from || DEFAULT_FROM;
+
+    // Development: mock
+    if (
+      process.env.NODE_ENV !== "production" &&
+      !SMTP_HOST &&
+      !this.apiKey
+    ) {
+      console.log("[Email] Simulating email:");
+      console.log(`  From: ${from}`);
       console.log(`  To: ${params.to}`);
       console.log(`  Subject: ${params.subject}`);
-      return { id: `mock-${Date.now()}` };
+      return { id: `mock-${Date.now()}`, provider: "mock" };
+    }
+
+    // Priority 1: SMTP
+    const transporter = getSmtpTransporter();
+    if (transporter) {
+      try {
+        const info = await transporter.sendMail({
+          from,
+          to: params.to,
+          subject: params.subject,
+          html: params.html,
+          replyTo: params.replyTo || "destek@vorte.com.tr",
+        });
+        console.log(`[SMTP] Email sent: ${info.messageId}`);
+        return {
+          id: info.messageId || `smtp-${Date.now()}`,
+          provider: "smtp",
+        };
+      } catch (err) {
+        console.error("[SMTP] Failed, falling back to Resend:", err);
+      }
+    }
+
+    // Priority 2: Resend API
+    if (!this.apiKey) {
+      console.warn("[Email] No SMTP or Resend configured, skipping");
+      return { id: `skip-${Date.now()}`, provider: "skip" };
     }
 
     const response = await fetch("https://api.resend.com/emails", {
@@ -43,7 +193,7 @@ class ResendClient {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        from: this.from,
+        from,
         to: params.to,
         subject: params.subject,
         html: params.html,
@@ -56,61 +206,348 @@ class ResendClient {
       throw new Error(`Resend API Error [${response.status}]: ${error}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    return { ...data, provider: "resend" };
   }
 
-  // Convenience methods for common email types
+  // ── Auto-logging ──
+  private async logEmail(data: {
+    to: string;
+    subject: string;
+    templateId?: string | null;
+    templateName?: string;
+    fromAddress?: string;
+    status: string;
+    error?: string;
+    provider?: string;
+  }) {
+    try {
+      await db.emailLog.create({
+        data: {
+          to: data.to,
+          subject: data.subject,
+          templateId: data.templateId || null,
+          templateName: data.templateName || null,
+          fromAddress: data.fromAddress || null,
+          status: data.status,
+          error: data.error || null,
+          provider: data.provider || null,
+        },
+      });
+    } catch (err) {
+      console.error("[Email] Failed to log:", err);
+    }
+  }
 
-  async sendOrderConfirmation(to: string, orderNumber: string, totalAmount: string) {
-    return this.sendEmail({
+  // ── Public: Send email (generic, with auto-log) ──
+  async sendEmail(params: EmailParams): Promise<ResendResponse> {
+    const from = getFromAddress(params.templateName);
+    const replyTo = params.replyTo || getReplyTo(params.templateName);
+
+    try {
+      const result = await this.sendEmailInternal({
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        from,
+        replyTo,
+      });
+
+      this.logEmail({
+        to: params.to,
+        subject: params.subject,
+        templateName: params.templateName,
+        fromAddress: from,
+        status: "sent",
+        provider: result.provider,
+      }).catch(() => {});
+
+      return result;
+    } catch (err) {
+      this.logEmail({
+        to: params.to,
+        subject: params.subject,
+        templateName: params.templateName,
+        fromAddress: from,
+        status: "failed",
+        error: err instanceof Error ? err.message : String(err),
+      }).catch(() => {});
+      throw err;
+    }
+  }
+
+  // ── DB Template → Send ──
+  async sendFromTemplate(params: TemplateSendParams): Promise<ResendResponse> {
+    const { templateName, to, variables, overrideFrom } = params;
+
+    let subject: string;
+    let html: string;
+    let fromAddress: string;
+    let templateId: string | null = null;
+
+    try {
+      const template = await db.emailTemplate.findUnique({
+        where: { name: templateName },
+      });
+
+      if (template && template.active) {
+        // DB şablonu kullan
+        subject = replaceVariables(template.subject, variables);
+        html = replaceVariables(template.body, variables);
+        fromAddress = getFromAddress(
+          templateName,
+          template.fromAddress || overrideFrom
+        );
+        templateId = template.id;
+      } else {
+        // Hardcoded fallback
+        const fallback = this.getHardcodedTemplate(templateName, variables);
+        subject = fallback.subject;
+        html = fallback.html;
+        fromAddress = getFromAddress(templateName, overrideFrom);
+      }
+    } catch {
+      // DB hatası → hardcoded fallback
+      const fallback = this.getHardcodedTemplate(templateName, variables);
+      subject = fallback.subject;
+      html = fallback.html;
+      fromAddress = getFromAddress(templateName, overrideFrom);
+    }
+
+    const replyTo = getReplyTo(templateName);
+
+    try {
+      const result = await this.sendEmailInternal({
+        to,
+        subject,
+        html,
+        from: fromAddress,
+        replyTo,
+      });
+
+      this.logEmail({
+        to,
+        subject,
+        templateId,
+        templateName,
+        fromAddress,
+        status: "sent",
+        provider: result.provider,
+      }).catch(() => {});
+
+      return result;
+    } catch (err) {
+      this.logEmail({
+        to,
+        subject,
+        templateId,
+        templateName,
+        fromAddress,
+        status: "failed",
+        error: err instanceof Error ? err.message : String(err),
+      }).catch(() => {});
+      throw err;
+    }
+  }
+
+  // ── Hardcoded fallback templates ──
+  private getHardcodedTemplate(
+    name: string,
+    vars: Record<string, string>
+  ): { subject: string; html: string } {
+    switch (name) {
+      case "order-confirmation":
+        return {
+          subject: `Sipariş Onayı - #${vars.orderNumber || ""}`,
+          html: orderConfirmationTemplate(
+            vars.orderNumber || "",
+            vars.totalAmount || ""
+          ),
+        };
+      case "payment-success":
+        return {
+          subject: `Ödeme Alındı - #${vars.orderNumber || ""}`,
+          html: paymentSuccessTemplate(
+            vars.orderNumber || "",
+            vars.amount || ""
+          ),
+        };
+      case "shipping-notification":
+        return {
+          subject: `Kargonuz Yola Çıktı - #${vars.orderNumber || ""}`,
+          html: shippingNotificationTemplate(
+            vars.orderNumber || "",
+            vars.trackingNo || "",
+            vars.carrier || ""
+          ),
+        };
+      case "delivery-notification":
+        return {
+          subject: `Siparişiniz Teslim Edildi - #${vars.orderNumber || ""}`,
+          html: deliveryNotificationTemplate(vars.orderNumber || ""),
+        };
+      case "welcome":
+        return {
+          subject: "Vorte'ye Hoş Geldiniz!",
+          html: welcomeTemplate(vars.customerName || ""),
+        };
+      case "password-reset":
+        return {
+          subject: "Şifre Sıfırlama - Vorte",
+          html: passwordResetTemplate(vars.resetUrl || vars.resetLink || ""),
+        };
+      case "invoice":
+        return {
+          subject: `Faturanız Hazır - #${vars.invoiceNo || ""}`,
+          html: invoiceTemplate(
+            vars.orderNumber || "",
+            vars.invoiceNo || ""
+          ),
+        };
+      case "refund-confirmation":
+        return {
+          subject: `İade Onayı - #${vars.orderNumber || ""}`,
+          html: refundConfirmationTemplate(
+            vars.orderNumber || "",
+            vars.refundAmount || ""
+          ),
+        };
+      case "dealer-approved":
+        return {
+          subject: "Bayi Hesabınız Onaylandı - Vorte",
+          html: dealerApprovedTemplate(
+            vars.companyName || "",
+            vars.dealerCode || "",
+            vars.loginUrl || "https://vorte.com.tr/bayi-girisi"
+          ),
+        };
+      default:
+        return {
+          subject: `Vorte Tekstil — ${name}`,
+          html: baseTemplate(
+            `<p style="color:#666;">Bu e-posta için şablon bulunamadı.</p>`
+          ),
+        };
+    }
+  }
+
+  // ── Preview: Render template with sample data ──
+  async previewTemplate(
+    templateName: string
+  ): Promise<{ subject: string; html: string; from: string }> {
+    try {
+      const template = await db.emailTemplate.findUnique({
+        where: { name: templateName },
+      });
+
+      if (template && template.active) {
+        return {
+          subject: replaceVariables(template.subject, SAMPLE_VARS),
+          html: replaceVariables(template.body, SAMPLE_VARS),
+          from: getFromAddress(templateName, template.fromAddress || undefined),
+        };
+      }
+    } catch {
+      // fallback
+    }
+
+    const fallback = this.getHardcodedTemplate(templateName, SAMPLE_VARS);
+    return {
+      ...fallback,
+      from: getFromAddress(templateName),
+    };
+  }
+
+  // ── Test: Send template with sample data ──
+  async sendTestEmail(
+    templateName: string,
+    to: string
+  ): Promise<ResendResponse> {
+    return this.sendFromTemplate({
+      templateName,
       to,
-      subject: `Sipariş Onayı - #${orderNumber}`,
-      html: orderConfirmationTemplate(orderNumber, totalAmount),
+      variables: SAMPLE_VARS,
+    });
+  }
+
+  // ─── Convenience Methods (DB template → hardcoded fallback) ───
+
+  async sendOrderConfirmation(
+    to: string,
+    orderNumber: string,
+    totalAmount: string
+  ) {
+    return this.sendFromTemplate({
+      templateName: "order-confirmation",
+      to,
+      variables: { orderNumber, totalAmount },
     });
   }
 
   async sendPaymentSuccess(to: string, orderNumber: string, amount: string) {
-    return this.sendEmail({
+    return this.sendFromTemplate({
+      templateName: "payment-success",
       to,
-      subject: `Ödeme Alındı - #${orderNumber}`,
-      html: paymentSuccessTemplate(orderNumber, amount),
+      variables: { orderNumber, amount },
     });
   }
 
-  async sendShippingNotification(to: string, orderNumber: string, trackingNo: string, carrier: string) {
-    return this.sendEmail({
+  async sendShippingNotification(
+    to: string,
+    orderNumber: string,
+    trackingNo: string,
+    carrier: string
+  ) {
+    return this.sendFromTemplate({
+      templateName: "shipping-notification",
       to,
-      subject: `Kargonuz Yola Çıktı - #${orderNumber}`,
-      html: shippingNotificationTemplate(orderNumber, trackingNo, carrier),
+      variables: { orderNumber, trackingNo, carrier },
     });
   }
 
   async sendWelcome(to: string, name: string) {
-    return this.sendEmail({
+    return this.sendFromTemplate({
+      templateName: "welcome",
       to,
-      subject: `Vorte'ye Hoş Geldiniz!`,
-      html: welcomeTemplate(name),
+      variables: { customerName: name },
     });
   }
 
   async sendPasswordReset(to: string, resetUrl: string) {
-    return this.sendEmail({
+    return this.sendFromTemplate({
+      templateName: "password-reset",
       to,
-      subject: `Şifre Sıfırlama - Vorte`,
-      html: passwordResetTemplate(resetUrl),
+      variables: { resetUrl, resetLink: resetUrl },
     });
   }
 
   async sendInvoice(to: string, orderNumber: string, invoiceNo: string) {
-    return this.sendEmail({
+    return this.sendFromTemplate({
+      templateName: "invoice",
       to,
-      subject: `Faturanız Hazır - #${invoiceNo}`,
-      html: invoiceTemplate(orderNumber, invoiceNo),
+      variables: { orderNumber, invoiceNo },
+    });
+  }
+
+  async sendDealerApproved(
+    to: string,
+    companyName: string,
+    dealerCode: string
+  ) {
+    return this.sendFromTemplate({
+      templateName: "dealer-approved",
+      to,
+      variables: {
+        companyName,
+        dealerCode,
+        loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/bayi-girisi`,
+      },
     });
   }
 }
 
-// Email templates as functions returning HTML strings
+// ─── HTML Template Functions (hardcoded fallback) ──────────
+
 function baseTemplate(content: string): string {
   return `
 <!DOCTYPE html>
@@ -134,7 +571,10 @@ function baseTemplate(content: string): string {
 </html>`;
 }
 
-function orderConfirmationTemplate(orderNumber: string, totalAmount: string): string {
+function orderConfirmationTemplate(
+  orderNumber: string,
+  totalAmount: string
+): string {
   return baseTemplate(`
     <h2 style="color:#333;margin:0 0 16px;">Sipariş Onayı</h2>
     <p style="color:#666;line-height:1.6;">Siparişiniz başarıyla alındı.</p>
@@ -146,7 +586,10 @@ function orderConfirmationTemplate(orderNumber: string, totalAmount: string): st
   `);
 }
 
-function paymentSuccessTemplate(orderNumber: string, amount: string): string {
+function paymentSuccessTemplate(
+  orderNumber: string,
+  amount: string
+): string {
   return baseTemplate(`
     <h2 style="color:#333;margin:0 0 16px;">Ödeme Onayı</h2>
     <p style="color:#666;line-height:1.6;">#${orderNumber} numaralı siparişiniz için <strong>${amount}</strong> tutarında ödemeniz alındı.</p>
@@ -154,7 +597,11 @@ function paymentSuccessTemplate(orderNumber: string, amount: string): string {
   `);
 }
 
-function shippingNotificationTemplate(orderNumber: string, trackingNo: string, carrier: string): string {
+function shippingNotificationTemplate(
+  orderNumber: string,
+  trackingNo: string,
+  carrier: string
+): string {
   return baseTemplate(`
     <h2 style="color:#333;margin:0 0 16px;">Kargonuz Yola Çıktı!</h2>
     <p style="color:#666;line-height:1.6;">#${orderNumber} numaralı siparişiniz kargoya verildi.</p>
@@ -165,9 +612,17 @@ function shippingNotificationTemplate(orderNumber: string, trackingNo: string, c
   `);
 }
 
+function deliveryNotificationTemplate(orderNumber: string): string {
+  return baseTemplate(`
+    <h2 style="color:#333;margin:0 0 16px;">Siparişiniz Teslim Edildi</h2>
+    <p style="color:#666;line-height:1.6;">#${orderNumber} numaralı siparişiniz teslim edildi.</p>
+    <p style="color:#666;font-size:14px;">Alışveriş deneyiminizi değerlendirmeniz bizim için önemli.</p>
+  `);
+}
+
 function welcomeTemplate(name: string): string {
   return baseTemplate(`
-    <h2 style="color:#333;margin:0 0 16px;">Hoş Geldiniz, ${name}!</h2>
+    <h2 style="color:#333;margin:0 0 16px;">Hoş Geldiniz${name ? `, ${name}` : ""}!</h2>
     <p style="color:#666;line-height:1.6;">Vorte ailesine katıldığınız için teşekkür ederiz.</p>
     <p style="color:#666;font-size:14px;">Kaliteli iç giyim ürünlerimizi keşfetmeye başlayın.</p>
     <div style="text-align:center;margin:24px 0;">
@@ -198,5 +653,34 @@ function invoiceTemplate(orderNumber: string, invoiceNo: string): string {
   `);
 }
 
+function refundConfirmationTemplate(
+  orderNumber: string,
+  refundAmount: string
+): string {
+  return baseTemplate(`
+    <h2 style="color:#333;margin:0 0 16px;">İade Onayı</h2>
+    <p style="color:#666;line-height:1.6;">#${orderNumber} numaralı siparişiniz için <strong>${refundAmount}</strong> tutarında iade işleminiz onaylandı.</p>
+    <p style="color:#666;font-size:14px;">İade tutarı ödeme yönteminize göre birkaç iş günü içinde hesabınıza yansıyacaktır.</p>
+  `);
+}
+
+function dealerApprovedTemplate(
+  companyName: string,
+  dealerCode: string,
+  loginUrl: string
+): string {
+  return baseTemplate(`
+    <h2 style="color:#333;margin:0 0 16px;">Bayi Hesabınız Onaylandı!</h2>
+    <p style="color:#666;line-height:1.6;">Sayın ${companyName}, bayi başvurunuz onaylanmıştır.</p>
+    <div style="background:#f9fafb;border-radius:6px;padding:16px;margin:16px 0;">
+      <p style="margin:0;font-size:14px;color:#666;">Bayi Kodu: <strong style="color:#7AC143;">${dealerCode}</strong></p>
+    </div>
+    <p style="color:#666;font-size:14px;">Aşağıdaki bağlantıdan bayi paneline giriş yapabilirsiniz.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${loginUrl}" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Bayi Girişi</a>
+    </div>
+  `);
+}
+
 export const resendClient = new ResendClient();
-export type { EmailParams };
+export type { EmailParams, ResendResponse, TemplateSendParams };

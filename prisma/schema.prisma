@@ -629,25 +629,30 @@ model DailyReport {
 }
 
 model EmailTemplate {
-  id        String   @id @default(cuid())
-  name      String   @unique // "order-confirmation", "shipping-notification" vb.
-  subject   String
-  body      String   @db.Text // HTML template
-  variables String?  // JSON: ["customerName", "orderNumber", ...]
-  active    Boolean  @default(true)
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique // "order-confirmation", "shipping-notification" vb.
+  subject     String
+  body        String   @db.Text // HTML template
+  variables   String?  // JSON: ["customerName", "orderNumber", ...]
+  fromAddress String?  // Override FROM: "siparis@vorte.com.tr" vb.
+  description String?  // Türkçe açıklama
+  active      Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
 
   @@map("email_templates")
 }
 
 model EmailLog {
-  id         String   @id @default(cuid())
-  to         String
-  subject    String
-  templateId String?
-  status     String   // "sent", "failed", "bounced"
-  error      String?
-  sentAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  to           String
+  subject      String
+  templateId   String?
+  templateName String?  // "order-confirmation" vb.
+  fromAddress  String?  // Hangi FROM ile gönderildi
+  status       String   // "sent", "failed", "bounced"
+  error        String?
+  provider     String?  // "smtp" | "resend" | "mock"
+  sentAt       DateTime @default(now())
 
   @@map("email_logs")
 }

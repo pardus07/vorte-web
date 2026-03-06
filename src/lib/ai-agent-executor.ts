@@ -240,6 +240,23 @@ function getSpecialRoute(
     case "mark_notifications_read":
       return { endpoint: "/api/admin/notifications/read-all", method: "POST" };
 
+    // ── E-posta şablon alt-route'ları ──
+    case "delete_email_template":
+      return {
+        endpoint: `/api/admin/email-templates/${args.id}`,
+        method: "DELETE",
+      };
+    case "preview_email_template":
+      return {
+        endpoint: "/api/admin/email-templates/preview",
+        method: "POST",
+      };
+    case "send_test_email":
+      return {
+        endpoint: "/api/admin/email-templates/test",
+        method: "POST",
+      };
+
     default:
       return null;
   }
@@ -333,6 +350,20 @@ async function executeToolCall(
         mobileImage: "imageMobile",
       };
       for (const [from, to] of Object.entries(bannerFieldMap)) {
+        if (from in bodyArgs) {
+          bodyArgs[to] = bodyArgs[from];
+          delete bodyArgs[from];
+        }
+      }
+    }
+
+    // update_email_template: AI tool param adlarını API field adlarına dönüştür
+    if (toolName === "update_email_template") {
+      const emailFieldMap: Record<string, string> = {
+        type: "name",
+        htmlContent: "body",
+      };
+      for (const [from, to] of Object.entries(emailFieldMap)) {
         if (from in bodyArgs) {
           bodyArgs[to] = bodyArgs[from];
           delete bodyArgs[from];

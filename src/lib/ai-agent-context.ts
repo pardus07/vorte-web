@@ -189,8 +189,9 @@ export function getPageContext(pathname: string): PageContext {
       autoTools: ["get_email_templates"],
       shortcuts: [
         "Şablon düzenle",
-        "Yeni şablon oluştur",
-        "Sipariş onay e-postası",
+        "Şablonu önizle",
+        "Test e-postası gönder",
+        "Şablona görsel ekle",
       ],
     },
     "/admin/email-log": {
@@ -199,6 +200,8 @@ export function getPageContext(pathname: string): PageContext {
       shortcuts: [
         "Başarısız gönderimler",
         "Son gönderimler",
+        "Bugünkü gönderimler",
+        "Şablon bazlı istatistik",
       ],
     },
     "/admin/slider": {

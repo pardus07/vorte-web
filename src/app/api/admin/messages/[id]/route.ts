@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
+import { resendClient } from "@/lib/integrations/resend";
 
 // GET — single message + mark as read
 export async function GET(
@@ -42,12 +43,9 @@ export async function PUT(
   const message = await db.contactMessage.findUnique({ where: { id } });
   if (!message) return NextResponse.json({ error: "Mesaj bulunamadı" }, { status: 404 });
 
-  // Send reply email
+  // Send reply email via centralized client
   try {
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: "Vorte Tekstil <info@vorte.com.tr>",
+    await resendClient.sendEmail({
       to: message.email,
       subject: `Re: ${message.subject}`,
       html: `
@@ -57,26 +55,10 @@ export async function PUT(
           <p style="color: #666; font-size: 12px;">— Vorte Tekstil</p>
         </div>
       `,
-    });
-
-    // Log the email
-    await db.emailLog.create({
-      data: {
-        to: message.email,
-        subject: `Re: ${message.subject}`,
-        status: "sent",
-      },
+      templateName: "contact-reply",
     });
   } catch (err) {
-    // Log failed email
-    await db.emailLog.create({
-      data: {
-        to: message.email,
-        subject: `Re: ${message.subject}`,
-        status: "failed",
-        error: err instanceof Error ? err.message : "Unknown error",
-      },
-    });
+    console.error("[Admin message reply] Email error:", err);
   }
 
   // Update message as replied

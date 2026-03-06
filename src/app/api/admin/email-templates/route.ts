@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
   const body = await req.json();
-  const { name, subject, body: templateBody, variables, active } = body;
+  const { name, subject, body: templateBody, variables, active, fromAddress, description } = body;
 
   if (!name || !subject || !templateBody) {
     return NextResponse.json({ error: "Ad, konu ve içerik gerekli" }, { status: 400 });
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
 
   const result = await db.emailTemplate.upsert({
     where: { name },
-    create: { name, subject, body: templateBody, variables, active: active ?? true },
-    update: { subject, body: templateBody, variables, active: active ?? true },
+    create: { name, subject, body: templateBody, variables, fromAddress: fromAddress || null, description: description || null, active: active ?? true },
+    update: { subject, body: templateBody, variables, fromAddress: fromAddress || null, description: description || null, active: active ?? true },
   });
 
   return NextResponse.json(result);

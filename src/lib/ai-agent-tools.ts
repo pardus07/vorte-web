@@ -372,6 +372,25 @@ export const TOOL_META: Record<string, ToolMeta> = {
     method: "POST",
     description: "Şablon düzenle/oluştur",
   },
+  delete_email_template: {
+    approvalLevel: 3,
+    endpoint: "/api/admin/email-templates",
+    method: "DELETE",
+    pathParam: "id",
+    description: "E-posta şablonu sil",
+  },
+  preview_email_template: {
+    approvalLevel: 1,
+    endpoint: "/api/admin/email-templates/preview",
+    method: "POST",
+    description: "E-posta şablonu önizleme (örnek verilerle)",
+  },
+  send_test_email: {
+    approvalLevel: 2,
+    endpoint: "/api/admin/email-templates/test",
+    method: "POST",
+    description: "Test e-postası gönder",
+  },
   get_email_log: {
     approvalLevel: 1,
     endpoint: "/api/admin/email-log",
@@ -2012,20 +2031,24 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "update_email_template",
     description:
-      "E-posta şablonu oluştur veya güncelle. Konu, HTML içerik ve değişkenler ayarlanır. Değişkenler: {{customerName}}, {{orderNumber}}, {{trackingNumber}} vb.",
+      "E-posta şablonu oluştur veya güncelle. Konu, HTML içerik ve değişkenler ayarlanır. Değişkenler: {{customerName}}, {{orderNumber}}, {{totalAmount}}, {{trackingNo}}, {{carrier}}, {{invoiceNo}}, {{resetUrl}}, {{companyName}}, {{dealerCode}}, {{loginUrl}}, {{refundAmount}} vb. Görsel eklemek için önce generate_image tool'unu directory='emails' ile çağır, dönen URL'yi <img> tag'i ile HTML'e ekle.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
         type: {
           type: SchemaType.STRING,
-          description: "Şablon türü",
+          description: "Şablon adı (slug format)",
           enum: [
-            "ORDER_CONFIRMATION",
-            "SHIPPING_NOTIFICATION",
-            "WELCOME",
-            "PASSWORD_RESET",
-            "REVIEW_REQUEST",
-            "DEALER_WELCOME",
+            "order-confirmation",
+            "payment-success",
+            "shipping-notification",
+            "delivery-notification",
+            "refund-confirmation",
+            "welcome",
+            "password-reset",
+            "dealer-approved",
+            "invoice",
+            "newsletter",
           ],
         },
         subject: {
@@ -2034,7 +2057,11 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         htmlContent: {
           type: SchemaType.STRING,
-          description: "E-posta HTML içeriği (değişken desteği)",
+          description: "E-posta HTML içeriği (değişken desteği). Tam HTML şablon olmalı.",
+        },
+        fromAddress: {
+          type: SchemaType.STRING,
+          description: "Gönderici adresi override (opsiyonel). Örnek: siparis@vorte.com.tr",
         },
         active: {
           type: SchemaType.BOOLEAN,
@@ -2042,6 +2069,79 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
       },
       required: ["type", "subject", "htmlContent"],
+    },
+  },
+  {
+    name: "delete_email_template",
+    description:
+      "E-posta şablonunu sil. Silinen şablon yerine hardcoded varsayılan şablon kullanılır. Önce get_email_templates ile ID'yi al.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        id: {
+          type: SchemaType.STRING,
+          description: "Silinecek şablonun ID'si",
+        },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "preview_email_template",
+    description:
+      "E-posta şablonunu örnek verilerle önizle. Şablondaki {{değişkenler}} test verileriyle doldurulur ve HTML döner. FROM adresi de gösterilir.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        templateName: {
+          type: SchemaType.STRING,
+          description: "Şablon adı",
+          enum: [
+            "order-confirmation",
+            "payment-success",
+            "shipping-notification",
+            "delivery-notification",
+            "refund-confirmation",
+            "welcome",
+            "password-reset",
+            "dealer-approved",
+            "invoice",
+            "newsletter",
+          ],
+        },
+      },
+      required: ["templateName"],
+    },
+  },
+  {
+    name: "send_test_email",
+    description:
+      "Bir e-posta şablonunu test olarak belirtilen adrese gönder. Şablon örnek verilerle doldurularak gönderilir. Test sonucu email log'da görünür.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        templateName: {
+          type: SchemaType.STRING,
+          description: "Şablon adı",
+          enum: [
+            "order-confirmation",
+            "payment-success",
+            "shipping-notification",
+            "delivery-notification",
+            "refund-confirmation",
+            "welcome",
+            "password-reset",
+            "dealer-approved",
+            "invoice",
+            "newsletter",
+          ],
+        },
+        to: {
+          type: SchemaType.STRING,
+          description: "Test e-postası gönderilecek adres",
+        },
+      },
+      required: ["templateName", "to"],
     },
   },
   {
