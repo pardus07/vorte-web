@@ -70,6 +70,8 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: ogImageUrl,
+          secureUrl: ogImageUrl,
+          type: "image/jpeg",
           width: 1200,
           height: 630,
           alt: settings.siteName || "Vorte Tekstil",
@@ -78,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      images: [ogImageUrl],
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: settings.siteName || "Vorte Tekstil" }],
     },
     alternates: {
       canonical: "/",
