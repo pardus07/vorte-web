@@ -41,11 +41,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  // OG image: /og-image.jpg → /api/og-image (rewrite ile)
-  // Clean URL + Content-Disposition yok + Range header middleware'de strip ediliyor
-  const ogImageUrl = settings.ogImageUrl
-    ? `${siteUrl}/og-image.jpg`
-    : `${siteUrl}/logo.png`;
+  // OG image: harici URL varsa doğrudan kullan (CDN — Vary header yok, WhatsApp uyumlu)
+  // Yerel dosya ise /og-image.jpg rewrite üzerinden serve et (Facebook uyumlu)
+  let ogImageUrl: string;
+  if (settings.ogImageUrl?.startsWith("http")) {
+    ogImageUrl = settings.ogImageUrl;
+  } else if (settings.ogImageUrl) {
+    ogImageUrl = `${siteUrl}/og-image.jpg`;
+  } else {
+    ogImageUrl = `${siteUrl}/logo.png`;
+  }
 
   return {
     title: {
