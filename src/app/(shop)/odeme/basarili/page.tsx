@@ -1,10 +1,37 @@
 import Link from "next/link";
 import { CheckCircle, Package, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { db } from "@/lib/db";
+import { ConversionTracking } from "@/components/seo/ConversionTracking";
 
-export default function PaymentSuccessPage() {
+interface PageProps {
+  searchParams: Promise<{ order?: string }>;
+}
+
+export default async function PaymentSuccessPage({ searchParams }: PageProps) {
+  const { order: orderId } = await searchParams;
+
+  let orderData: { id: string; totalAmount: number } | null = null;
+
+  if (orderId) {
+    const found = await db.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, totalAmount: true },
+    });
+    if (found) {
+      orderData = found;
+    }
+  }
+
   return (
     <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      {orderData && (
+        <ConversionTracking
+          orderId={orderData.id}
+          totalAmount={orderData.totalAmount}
+        />
+      )}
+
       <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
         <CheckCircle className="h-10 w-10 text-[#7AC143]" />
       </div>

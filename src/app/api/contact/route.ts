@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resendClient } from "@/lib/integrations/resend";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { sanitizeInput, sanitizeHtml } from "@/lib/sanitize";
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = rateLimit(`contact:${ip}`, 3, 15 * 60 * 1000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen 15 dakika sonra tekrar deneyin." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
-    const { name, email, phone, message } = body;
+    const { name: rawName, email, phone: rawPhone, message: rawMessage } = body;
+
+    // Sanitize user input
+    const name = sanitizeInput(rawName);
+    const phone = rawPhone ? sanitizeInput(rawPhone) : rawPhone;
+    const message = sanitizeInput(sanitizeHtml(rawMessage));
 
     // Validate required fields
     if (!name || !email || !message) {

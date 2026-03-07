@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import { db } from "@/lib/db";
 import { createDealerToken } from "@/lib/dealer-session";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = rateLimit(`dealer-login:${ip}`, 5, 15 * 60 * 1000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen 15 dakika sonra tekrar deneyin." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const { dealerCode, password } = body;
 

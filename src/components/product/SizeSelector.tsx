@@ -1,5 +1,7 @@
 "use client";
 
+import { SizeGuide } from "@/components/product/SizeGuide";
+
 interface SizeOption {
   size: string;
   stock: number;
@@ -10,9 +12,10 @@ interface SizeSelectorProps {
   sizes: SizeOption[];
   selectedSize: string;
   onSelect: (size: string) => void;
+  gender?: "erkek" | "kadın";
 }
 
-export function SizeSelector({ sizes, selectedSize, onSelect }: SizeSelectorProps) {
+export function SizeSelector({ sizes, selectedSize, onSelect, gender }: SizeSelectorProps) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
@@ -22,9 +25,13 @@ export function SizeSelector({ sizes, selectedSize, onSelect }: SizeSelectorProp
             <span className="text-sm text-gray-500">{selectedSize}</span>
           )}
         </div>
-        <button className="text-xs text-gray-400 underline hover:text-gray-600">
-          Beden Tablosu
-        </button>
+        {gender ? (
+          <SizeGuide gender={gender} />
+        ) : (
+          <button className="text-xs text-gray-400 underline hover:text-gray-600">
+            Beden Tablosu
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         {sizes.map((s) => {

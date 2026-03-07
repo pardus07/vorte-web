@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/admin-auth";
 import { z } from "zod";
+import { logActivity } from "@/lib/audit";
 
 export async function GET(
   _req: NextRequest,
@@ -114,6 +115,14 @@ export async function PATCH(
     },
   });
 
+  logActivity(
+    admin.userId,
+    "order.update",
+    id,
+    status ? `status: ${status}` : undefined,
+    req.headers.get("x-forwarded-for") || undefined
+  );
+
   return NextResponse.json(order);
 }
 
@@ -156,6 +165,15 @@ export async function DELETE(
 
   try {
     await db.order.delete({ where: { id } });
+
+    logActivity(
+      admin.userId,
+      "order.delete",
+      id,
+      undefined,
+      _req.headers.get("x-forwarded-for") || undefined
+    );
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[admin orders] DELETE error:", error);

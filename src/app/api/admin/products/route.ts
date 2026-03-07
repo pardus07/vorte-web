@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { logActivity } from "@/lib/audit";
 
 async function requireAdmin() {
   const session = await auth();
@@ -134,6 +135,17 @@ export async function POST(request: NextRequest) {
     },
     include: { variants: true },
   });
+
+  const session = await auth();
+  if (session?.user) {
+    logActivity(
+      (session.user as { id: string }).id,
+      "product.create",
+      product.id,
+      product.name,
+      request.headers.get("x-forwarded-for") || undefined
+    );
+  }
 
   return NextResponse.json(product, { status: 201 });
 }

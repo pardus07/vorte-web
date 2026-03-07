@@ -9,6 +9,7 @@
 
 import * as nodemailer from "nodemailer";
 import { db } from "@/lib/db";
+import { createHmac } from "crypto";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const DEFAULT_FROM = process.env.FROM_EMAIL || "Vorte Tekstil <info@vorte.com.tr>";
@@ -19,6 +20,18 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587");
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 const SMTP_SECURE = process.env.SMTP_SECURE === "true"; // true for 465, false for 587
+
+// ─── Newsletter Unsubscribe URL Generator ──────────────────
+export function generateUnsubscribeUrl(email: string): string {
+  const secret = process.env.NEXTAUTH_SECRET || "secret";
+  const token = createHmac("sha256", secret)
+    .update(email)
+    .digest("hex")
+    .slice(0, 32);
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
+  return `${baseUrl}/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+}
 
 // ─── FROM & REPLY-TO Mapping ───────────────────────────────
 const FROM_MAP: Record<string, string> = {
@@ -421,6 +434,14 @@ class ResendClient {
             vars.loginUrl || "https://vorte.com.tr/bayi-girisi"
           ),
         };
+      case "newsletter":
+        return {
+          subject: "Vorte E-Bülten",
+          html: newsletterTemplate(
+            vars.content || "",
+            vars.unsubscribeUrl || ""
+          ),
+        };
       default:
         return {
           subject: `Vorte Tekstil — ${name}`,
@@ -542,6 +563,16 @@ class ResendClient {
         dealerCode,
         loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/bayi-girisi`,
       },
+    });
+  }
+
+  async sendNewsletter(to: string, subject: string, content: string) {
+    const unsubscribeUrl = generateUnsubscribeUrl(to);
+    return this.sendFromTemplate({
+      templateName: "newsletter",
+      to,
+      variables: { content, unsubscribeUrl },
+      overrideFrom: "Vorte E-Bülten <info@vorte.com.tr>",
     });
   }
 }
@@ -680,6 +711,32 @@ function dealerApprovedTemplate(
       <a href="${loginUrl}" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Bayi Girişi</a>
     </div>
   `);
+}
+
+function newsletterTemplate(content: string, unsubscribeUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+  <div style="text-align:center;padding:20px 0;">
+    <h1 style="margin:0;font-size:24px;color:#333;font-weight:bold;">VORTE</h1>
+    <p style="margin:4px 0 0;font-size:12px;color:#7AC143;letter-spacing:2px;">TEKSTİL</p>
+  </div>
+  <div style="background:white;border-radius:8px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    ${content}
+  </div>
+  <div style="text-align:center;padding:20px;font-size:12px;color:#999;">
+    <p>Vorte Tekstil Ticaret Ltd. Şti. | Nilüfer, Bursa</p>
+    <p>Bu e-posta vorte.com.tr tarafından gönderilmiştir.</p>
+    <p style="margin-top:12px;">
+      <a href="${unsubscribeUrl}" style="color:#999;text-decoration:underline;">Abonelikten çık</a>
+    </p>
+  </div>
+</div>
+</body>
+</html>`;
 }
 
 export const resendClient = new ResendClient();

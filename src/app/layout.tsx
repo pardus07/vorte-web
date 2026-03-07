@@ -59,6 +59,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description,
     keywords,
+    themeColor: "#333333",
     metadataBase: new URL(siteUrl),
     icons: {
       icon: [
@@ -106,6 +107,8 @@ export default async function RootLayout({
   return (
     <html lang="tr">
       <head>
+        <meta name="theme-color" content="#333333" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <AnalyticsScripts />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>

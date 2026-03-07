@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { ShoppingBag, Heart, Barcode } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ShoppingBag, Barcode } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ColorSelector } from "@/components/product/ColorSelector";
 import { SizeSelector } from "@/components/product/SizeSelector";
 import { SocialShare } from "@/components/product/SocialShare";
+import { FavoriteButton } from "@/components/product/FavoriteButton";
 import { formatPrice } from "@/lib/utils";
 
 interface Variant {
@@ -29,45 +30,15 @@ interface ProductInfoProps {
   };
   selectedColor: string;
   onColorChange: (color: string) => void;
+  gender?: "erkek" | "kadın";
 }
 
-export function ProductInfo({ product, selectedColor, onColorChange }: ProductInfoProps) {
+export function ProductInfo({ product, selectedColor, onColorChange, gender }: ProductInfoProps) {
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [addError, setAddError] = useState("");
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  const checkFavorite = useCallback(() => {
-    try {
-      const stored = localStorage.getItem("favorites");
-      const favs: string[] = stored ? JSON.parse(stored) : [];
-      setIsFavorite(favs.includes(product.id));
-    } catch { /* ignore */ }
-  }, [product.id]);
-
-  useEffect(() => {
-    checkFavorite();
-    const handler = () => checkFavorite();
-    window.addEventListener("favorites-updated", handler);
-    return () => window.removeEventListener("favorites-updated", handler);
-  }, [checkFavorite]);
-
-  const toggleFavorite = () => {
-    try {
-      const stored = localStorage.getItem("favorites");
-      let favs: string[] = stored ? JSON.parse(stored) : [];
-      if (favs.includes(product.id)) {
-        favs = favs.filter((id) => id !== product.id);
-      } else {
-        favs.push(product.id);
-      }
-      localStorage.setItem("favorites", JSON.stringify(favs));
-      setIsFavorite(!isFavorite);
-      window.dispatchEvent(new CustomEvent("favorites-updated"));
-    } catch { /* ignore */ }
-  };
 
   // Unique colors with availability
   const colors = useMemo(() => {
@@ -186,6 +157,7 @@ export function ProductInfo({ product, selectedColor, onColorChange }: ProductIn
         sizes={sizes}
         selectedSize={selectedSize}
         onSelect={setSelectedSize}
+        gender={gender}
       />
 
       {/* Quantity */}
@@ -221,7 +193,7 @@ export function ProductInfo({ product, selectedColor, onColorChange }: ProductIn
         </div>
       )}
 
-      {/* Add to cart */}
+      {/* Add to cart + Favorite */}
       <div className="flex gap-3">
         <Button
           size="lg"
@@ -243,9 +215,7 @@ export function ProductInfo({ product, selectedColor, onColorChange }: ProductIn
             </>
           )}
         </Button>
-        <Button size="lg" variant="outline" className="px-4" onClick={toggleFavorite}>
-          <Heart className={`h-5 w-5 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
-        </Button>
+        <FavoriteButton productId={product.id} />
       </div>
 
       {/* Error message */}

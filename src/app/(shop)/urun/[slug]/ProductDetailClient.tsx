@@ -25,6 +25,7 @@ interface ProductDetailClientProps {
     images: string[];
     category: { name: string };
     variants: Variant[];
+    gender?: string;
   };
 }
 
@@ -37,6 +38,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [selectedColor, setSelectedColor] = useState(
     product.variants[0]?.color || ""
   );
+
+  // Determine gender for size guide
+  const sizeGuideGender: "erkek" | "kadın" =
+    product.gender === "ERKEK" ? "erkek" : "kadın";
 
   // Filter images based on selected color
   const filteredImages = useMemo(() => {
@@ -62,6 +67,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           product={product}
           selectedColor={selectedColor}
           onColorChange={setSelectedColor}
+          gender={sizeGuideGender}
         />
         <div className="mt-8">
           <ProductAccordion description={product.description} />

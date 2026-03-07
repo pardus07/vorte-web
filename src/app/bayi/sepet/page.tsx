@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Trash2, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Trash2, Minus, Plus, ShoppingCart, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface DealerLimits {
+  minOrderAmount: number | null;
+  minOrderQuantity: number | null;
+}
 
 interface CartItemData {
   id: string;
@@ -24,6 +30,10 @@ interface CartItemData {
 export default function DealerCartPage() {
   const [items, setItems] = useState<CartItemData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [limits, setLimits] = useState<DealerLimits>({ minOrderAmount: null, minOrderQuantity: null });
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const router = useRouter();
 
   const fetchCart = () => {
     fetch("/api/dealer/cart")
@@ -31,7 +41,16 @@ export default function DealerCartPage() {
       .then((data) => { setItems(data); setLoading(false); });
   };
 
-  useEffect(() => { fetchCart(); }, []);
+  useEffect(() => {
+    fetchCart();
+    // Fetch dealer limits
+    fetch("/api/dealer/profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setLimits({ minOrderAmount: data.minOrderAmount, minOrderQuantity: data.minOrderQuantity });
+      })
+      .catch(() => {});
+  }, []);
 
   const updateQty = async (id: string, quantity: number) => {
     if (quantity <= 0) return removeItem(id);
@@ -64,6 +83,32 @@ export default function DealerCartPage() {
 
   const total = items.reduce((sum, item) => sum + getPrice(item) * item.quantity, 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const belowMinAmount = limits.minOrderAmount ? total < limits.minOrderAmount : false;
+  const belowMinQty = limits.minOrderQuantity ? totalItems < limits.minOrderQuantity : false;
+  const canCheckout = !belowMinAmount && !belowMinQty;
+
+  const handleCheckout = async () => {
+    setCheckoutError("");
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch("/api/dealer/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        router.push(`/bayi/siparislerim`);
+      } else {
+        setCheckoutError(data.error || "Sipariş oluşturulamadı");
+      }
+    } catch {
+      setCheckoutError("Bir hata oluştu. Lütfen tekrar deneyin.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -157,7 +202,40 @@ export default function DealerCartPage() {
               <span className="text-[#7AC143]">{total.toFixed(2)} ₺</span>
             </div>
           </div>
-          <Button className="mt-4 w-full" size="lg">
+
+          {belowMinAmount && limits.minOrderAmount && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Minimum sipariş tutarı <strong>{limits.minOrderAmount.toFixed(2)} ₺</strong>.
+                {" "}{(limits.minOrderAmount - total).toFixed(2)} ₺ daha ürün ekleyin.
+              </span>
+            </div>
+          )}
+
+          {belowMinQty && limits.minOrderQuantity && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Minimum sipariş adedi <strong>{limits.minOrderQuantity}</strong>.
+                {" "}{limits.minOrderQuantity - totalItems} adet daha ürün ekleyin.
+              </span>
+            </div>
+          )}
+
+          {checkoutError && (
+            <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600">
+              {checkoutError}
+            </div>
+          )}
+
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            disabled={!canCheckout || checkoutLoading}
+            loading={checkoutLoading}
+            onClick={handleCheckout}
+          >
             Sipariş Ver
           </Button>
           <p className="mt-2 text-center text-xs text-gray-400">

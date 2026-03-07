@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import bcryptjs from "bcryptjs";
 import { z } from "zod";
 import { resendClient } from "@/lib/integrations/resend";
+import { logActivity } from "@/lib/audit";
 
 const updateDealerSchema = z.object({
   companyName: z.string().optional(),
@@ -130,6 +131,14 @@ export async function PUT(
     },
   });
 
+  logActivity(
+    admin.userId,
+    "dealer.update",
+    id,
+    undefined,
+    req.headers.get("x-forwarded-for") || undefined
+  );
+
   // Bayi onay maili gönder
   if (status === "ACTIVE" && dealer.email) {
     try {
@@ -172,5 +181,14 @@ export async function DELETE(
   }
 
   await db.dealer.delete({ where: { id } });
+
+  logActivity(
+    admin.userId,
+    "dealer.delete",
+    id,
+    undefined,
+    _req.headers.get("x-forwarded-for") || undefined
+  );
+
   return NextResponse.json({ success: true });
 }

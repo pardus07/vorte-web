@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
+import { logActivity } from "@/lib/audit";
 
 async function checkAdmin() {
   const session = await auth();
@@ -109,6 +110,17 @@ export async function PUT(
     include: { category: true, variants: true },
   });
 
+  const session = await auth();
+  if (session?.user) {
+    logActivity(
+      (session.user as { id: string }).id,
+      "product.update",
+      id,
+      undefined,
+      req.headers.get("x-forwarded-for") || undefined
+    );
+  }
+
   return NextResponse.json(updated);
 }
 
@@ -122,5 +134,17 @@ export async function DELETE(
 
   const { id } = await params;
   await db.product.delete({ where: { id } });
+
+  const session = await auth();
+  if (session?.user) {
+    logActivity(
+      (session.user as { id: string }).id,
+      "product.delete",
+      id,
+      undefined,
+      _req.headers.get("x-forwarded-for") || undefined
+    );
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { logActivity } from "@/lib/audit";
 
 async function requireAdmin() {
   const session = await auth();
@@ -139,6 +140,17 @@ export async function PUT(request: NextRequest) {
       ...cleanData,
     },
   });
+
+  const session = await auth();
+  if (session?.user) {
+    logActivity(
+      (session.user as { id: string }).id,
+      "settings.update",
+      "main",
+      JSON.stringify(Object.keys(cleanData)),
+      request.headers.get("x-forwarded-for") || undefined
+    );
+  }
 
   return NextResponse.json(settings);
 }

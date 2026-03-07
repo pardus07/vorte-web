@@ -23,6 +23,36 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(target, 301);
   }
 
+
+  // CSRF protection: Validate Origin/Referer for mutating API requests
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/auth/") && // NextAuth handles its own CSRF
+    !pathname.startsWith("/api/webhooks/") && // Webhooks come from external services
+    !pathname.startsWith("/api/payment/callback") && // iyzico callback is a form POST from their server
+    ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)
+  ) {
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const allowedOrigins = [
+      "https://www.vorte.com.tr",
+      "https://vorte.com.tr",
+      process.env.NEXT_PUBLIC_SITE_URL,
+      process.env.NODE_ENV === "development" ? "http://localhost:3000" : null,
+    ].filter(Boolean) as string[];
+
+    // At least one of Origin or Referer must be present and match
+    const originMatch = origin && allowedOrigins.some((o) => origin === o);
+    const refererMatch = referer && allowedOrigins.some((o) => referer.startsWith(o!));
+
+    if (!originMatch && !refererMatch) {
+      return NextResponse.json(
+        { error: "CSRF doğrulaması başarısız" },
+        { status: 403 }
+      );
+    }
+  }
+
   // Admin routes - check for admin session
   if (pathname.startsWith("/admin")) {
     const sessionToken =
