@@ -16,11 +16,7 @@ export function ProductAccordion({ description }: { description?: string | null 
           {
             title: "Ürün Özellikleri",
             icon: <span className="text-lg">📋</span>,
-            content: (
-              <p className="text-sm leading-relaxed text-gray-600">
-                {description}
-              </p>
-            ),
+            content: <DescriptionRenderer text={description} />,
           },
         ]
       : []),
@@ -65,6 +61,43 @@ export function ProductAccordion({ description }: { description?: string | null 
       {items.map((item) => (
         <AccordionSection key={item.title} item={item} />
       ))}
+    </div>
+  );
+}
+
+function DescriptionRenderer({ text }: { text: string }) {
+  const blocks = text.split("\n\n");
+  return (
+    <div className="space-y-3 text-sm leading-relaxed text-gray-600">
+      {blocks.map((block, i) => {
+        const trimmed = block.trim();
+        // Check if block is a list (lines starting with •)
+        const lines = trimmed.split("\n");
+        const isList = lines.every((l) => l.trim().startsWith("•") || l.trim() === "");
+        // Check if block is a heading (ALL CAPS or ends with :)
+        const isHeading = /^[A-ZÇĞIİÖŞÜ\s&]+$/.test(trimmed) || (trimmed.length < 60 && trimmed.endsWith(":"));
+
+        if (isHeading) {
+          return (
+            <h4 key={i} className="mt-2 text-sm font-semibold text-gray-800">
+              {trimmed.replace(/:$/, "")}
+            </h4>
+          );
+        }
+        if (isList) {
+          return (
+            <ul key={i} className="ml-1 space-y-1">
+              {lines.filter((l) => l.trim()).map((line, j) => (
+                <li key={j} className="flex gap-2">
+                  <span className="mt-0.5 text-green-600">•</span>
+                  <span>{line.trim().replace(/^•\s*/, "")}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={i}>{trimmed}</p>;
+      })}
     </div>
   );
 }

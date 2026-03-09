@@ -102,15 +102,40 @@ async function main() {
 
   // ===== PRODUCTS & VARIANTS =====
 
+  // --- Erkek Boxer ortak açıklama ---
+  const erkekBoxerDesc = `Vorte Premium Penye Erkek Boxer — gün boyu konfor, sarkma yok, terleme yok.
+
+%95 taranmış penye pamuk ve %5 elastan (Lycra) karışımıyla üretilen bu boxer, uzun yol dahil her koşulda nefes alır ve formunu korur. Shape Recovery teknolojisi sayesinde esnedikten sonra bile ilk günkü formuna geri döner.
+
+NEDEN VORTE?
+
+• Taranmış penye pamuk yüzey — cildinize temas eden ipeksi, pürüzsüz bir his. Kısa elyaflı karde iplik kesinlikle kullanılmaz.
+• Shape Recovery (Form Koruma) — esnedikten sonra sarkmayı önleyen yapı; gün boyu vücudunuza uyumlu kalır.
+• 160–170 gr/m² optimum kalınlık — iç göstermeyen, terletmeyen, 4 mevsim ideal ağırlık.
+• Sanfor garantili — yıkama sonrası çekmezlik testi geçmiştir; ilk günkü ölçüsünü korur.
+• Yüksek mukavemetli overlok dikiş — dikiş patlaması riskini ortadan kaldıran tekstüre iplik.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Ürün Ağırlığı: ~95 gr`;
+
   // --- ERKEK BOXER: Siyah ---
   const erkekBoxerSiyah = await db.product.create({
     data: {
-      name: "Erkek Modal Boxer Siyah",
+      name: "Vorte Premium Penye Erkek Boxer Siyah",
       slug: "erkek-modal-boxer-siyah",
-      description: "Premium modal kumaş, elastik bel bandı, konforlu kesim. Günlük kullanıma uygun kaliteli erkek boxer. Siyah renk.",
+      description: erkekBoxerDesc,
+      seoTitle: "Vorte Premium Penye Erkek Boxer Siyah | Terletmez & Sarkmaz",
+      seoDescription: "Taranmış penye pamuk ve elastan ile üretilen Vorte erkek boxer. Gün boyu nefes alır, formunu korur, sarkmaz. Uzun yol konforu için tasarlandı.",
       categoryId: catErkekBoxer.id,
       gender: "ERKEK",
-      basePrice: 149.90,
+      basePrice: 249.90,
       featured: true,
       images: [
         "/images/erkek-boxer-siyah-1.png",
@@ -137,12 +162,14 @@ async function main() {
   // --- ERKEK BOXER: Lacivert ---
   const erkekBoxerLacivert = await db.product.create({
     data: {
-      name: "Erkek Modal Boxer Lacivert",
+      name: "Vorte Premium Penye Erkek Boxer Lacivert",
       slug: "erkek-modal-boxer-lacivert",
-      description: "Premium modal kumaş, elastik bel bandı, konforlu kesim. Günlük kullanıma uygun kaliteli erkek boxer. Lacivert renk.",
+      description: erkekBoxerDesc,
+      seoTitle: "Vorte Premium Penye Erkek Boxer Lacivert | Terletmez & Sarkmaz",
+      seoDescription: "Taranmış penye pamuk ve elastan ile üretilen Vorte erkek boxer. Gün boyu nefes alır, formunu korur, sarkmaz. Uzun yol konforu için tasarlandı.",
       categoryId: catErkekBoxer.id,
       gender: "ERKEK",
-      basePrice: 149.90,
+      basePrice: 249.90,
       featured: true,
       images: [
         "/images/erkek-boxer-lacivert-1.png",
@@ -166,15 +193,42 @@ async function main() {
     });
   }
 
+  // --- Kadın Külot ortak açıklama ---
+  const kadinKulotDesc = `Vorte Premium Penye Kadın Külot — gün boyu ferahlık, hijyen ve konfor bir arada.
+
+%95 taranmış penye pamuk ve %5 elastan (Lycra) ile üretilen bu külot, doğal nefes alan yapısıyla gün boyu ferah hissettirir. Shape Recovery teknolojisi sayesinde esnedikten sonra bile formunu korur, sarkmaz.
+
+NEDEN VORTE?
+
+• %100 pamuk iç katman — ağ bölgesinde ekstra hijyen sağlayan saf pamuk astar. Cildiniz yalnızca doğal pamukla temas eder.
+• Taranmış penye pamuk yüzey — ipeksi, pürüzsüz his. Kısa elyaflı karde iplik kesinlikle kullanılmaz.
+• Shape Recovery (Form Koruma) — esnedikten sonra sarkmayı önleyen yapı; gün boyu vücudunuza uyumlu kalır.
+• 160–170 gr/m² optimum kalınlık — iç göstermeyen, terletmeyen, 4 mevsim ideal ağırlık.
+• Sanfor garantili — yıkama sonrası çekmezlik testi geçmiştir; ilk günkü ölçüsünü korur.
+• Yüksek mukavemetli overlok dikiş — dikiş patlaması riskini ortadan kaldıran tekstüre iplik.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• İç Katman: %100 Pamuk (ağ bölgesi hijyen astarı)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Ürün Ağırlığı: ~45 gr`;
+
   // --- KADIN KÜLOT: Siyah ---
   const kadinKulotSiyah = await db.product.create({
     data: {
-      name: "Kadın Modal Külot Siyah",
+      name: "Vorte Premium Penye Kadın Külot Siyah",
       slug: "kadin-modal-kulot-siyah",
-      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Siyah renk.",
+      description: kadinKulotDesc,
+      seoTitle: "Vorte Premium Penye Kadın Külot Siyah | Nefes Alan & Hijyenik",
+      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
-      basePrice: 99.90,
+      basePrice: 169.90,
       featured: true,
       images: [
         "/images/kadin-kulot-siyah-1.png",
@@ -201,12 +255,14 @@ async function main() {
   // --- KADIN KÜLOT: Beyaz ---
   const kadinKulotBeyaz = await db.product.create({
     data: {
-      name: "Kadın Modal Külot Beyaz",
+      name: "Vorte Premium Penye Kadın Külot Beyaz",
       slug: "kadin-modal-kulot-beyaz",
-      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Beyaz renk.",
+      description: kadinKulotDesc,
+      seoTitle: "Vorte Premium Penye Kadın Külot Beyaz | Nefes Alan & Hijyenik",
+      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
-      basePrice: 99.90,
+      basePrice: 169.90,
       featured: true,
       images: [
         "/images/kadin-kulot-beyaz-1.png",
@@ -233,12 +289,14 @@ async function main() {
   // --- KADIN KÜLOT: Ten ---
   const kadinKulotTen = await db.product.create({
     data: {
-      name: "Kadın Modal Külot Ten",
+      name: "Vorte Premium Penye Kadın Külot Ten",
       slug: "kadin-modal-kulot-ten",
-      description: "Yumuşak modal kumaş, zarif ve konforlu kadın külot. Günlük kullanıma ideal. Ten rengi.",
+      description: kadinKulotDesc,
+      seoTitle: "Vorte Premium Penye Kadın Külot Ten | Nefes Alan & Hijyenik",
+      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
-      basePrice: 99.90,
+      basePrice: 169.90,
       featured: true,
       images: [
         "/images/kadin-kulot-ten-1.png",

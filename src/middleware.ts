@@ -28,6 +28,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth/") && // NextAuth handles its own CSRF
+    !pathname.startsWith("/api/admin/") && // Admin routes are session-authenticated
     !pathname.startsWith("/api/webhooks/") && // Webhooks come from external services
     !pathname.startsWith("/api/payment/callback") && // iyzico callback is a form POST from their server
     ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)
