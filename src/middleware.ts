@@ -31,26 +31,31 @@ export function middleware(request: NextRequest) {
     !pathname.startsWith("/api/admin/") && // Admin routes are session-authenticated
     !pathname.startsWith("/api/webhooks/") && // Webhooks come from external services
     !pathname.startsWith("/api/payment/callback") && // iyzico callback is a form POST from their server
+    !pathname.startsWith("/api/dealer-application") && // Mobile middleware proxy (server-to-server)
     ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)
   ) {
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const allowedOrigins = [
-      "https://www.vorte.com.tr",
-      "https://vorte.com.tr",
-      process.env.NEXT_PUBLIC_SITE_URL,
-      process.env.NODE_ENV === "development" ? "http://localhost:3000" : null,
-    ].filter(Boolean) as string[];
+    // Server-to-server calls from middleware proxy bypass CSRF (authenticated via X-Server-Api-Key)
+    const serverApiKey = request.headers.get("x-server-api-key");
+    if (!serverApiKey) {
+      const origin = request.headers.get("origin");
+      const referer = request.headers.get("referer");
+      const allowedOrigins = [
+        "https://www.vorte.com.tr",
+        "https://vorte.com.tr",
+        process.env.NEXT_PUBLIC_SITE_URL,
+        process.env.NODE_ENV === "development" ? "http://localhost:3000" : null,
+      ].filter(Boolean) as string[];
 
-    // At least one of Origin or Referer must be present and match
-    const originMatch = origin && allowedOrigins.some((o) => origin === o);
-    const refererMatch = referer && allowedOrigins.some((o) => referer.startsWith(o!));
+      // At least one of Origin or Referer must be present and match
+      const originMatch = origin && allowedOrigins.some((o) => origin === o);
+      const refererMatch = referer && allowedOrigins.some((o) => referer.startsWith(o!));
 
-    if (!originMatch && !refererMatch) {
-      return NextResponse.json(
-        { error: "CSRF doğrulaması başarısız" },
-        { status: 403 }
-      );
+      if (!originMatch && !refererMatch) {
+        return NextResponse.json(
+          { error: "CSRF doğrulaması başarısız" },
+          { status: 403 }
+        );
+      }
     }
   }
 
