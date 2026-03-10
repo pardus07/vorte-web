@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const tempPassword = Math.random().toString(36).slice(-8);
   const passwordHash = await bcryptjs.hash(tempPassword, 12);
 
-  await db.dealer.create({
+  const newDealer = await db.dealer.create({
     data: {
       companyName: data.companyName,
       taxNumber: data.taxNumber,
@@ -83,5 +83,19 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ success: true, message: "Başvurunuz alınmıştır. En kısa sürede tarafınıza dönüş yapılacaktır." }, { status: 201 });
+  return NextResponse.json({
+    success: true,
+    message: "Başvurunuz alınmıştır. En kısa sürede tarafınıza dönüş yapılacaktır.",
+    dealer: {
+      id: newDealer.id,
+      dealerCode: newDealer.dealerCode,
+      companyName: newDealer.companyName,
+      contactName: newDealer.contactName,
+      phone: newDealer.phone,
+      email: newDealer.email,
+      city: newDealer.city,
+      district: newDealer.district,
+      status: newDealer.status,
+    },
+  }, { status: 201 });
 }
