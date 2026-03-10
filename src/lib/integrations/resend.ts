@@ -431,7 +431,8 @@ class ResendClient {
           html: dealerApprovedTemplate(
             vars.companyName || "",
             vars.dealerCode || "",
-            vars.loginUrl || "https://vorte.com.tr/bayi-girisi"
+            vars.loginUrl || "https://vorte.com.tr/bayi-girisi",
+            vars.password || undefined
           ),
         };
       case "newsletter":
@@ -553,7 +554,8 @@ class ResendClient {
   async sendDealerApproved(
     to: string,
     companyName: string,
-    dealerCode: string
+    dealerCode: string,
+    password?: string
   ) {
     return this.sendFromTemplate({
       templateName: "dealer-approved",
@@ -561,6 +563,7 @@ class ResendClient {
       variables: {
         companyName,
         dealerCode,
+        password: password || "",
         loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/bayi-girisi`,
       },
     });
@@ -698,14 +701,17 @@ function refundConfirmationTemplate(
 function dealerApprovedTemplate(
   companyName: string,
   dealerCode: string,
-  loginUrl: string
+  loginUrl: string,
+  password?: string
 ): string {
   return baseTemplate(`
     <h2 style="color:#333;margin:0 0 16px;">Bayi Hesabınız Onaylandı!</h2>
     <p style="color:#666;line-height:1.6;">Sayın ${companyName}, bayi başvurunuz onaylanmıştır.</p>
     <div style="background:#f9fafb;border-radius:6px;padding:16px;margin:16px 0;">
       <p style="margin:0;font-size:14px;color:#666;">Bayi Kodu: <strong style="color:#7AC143;">${dealerCode}</strong></p>
+      ${password ? `<p style="margin:8px 0 0;font-size:14px;color:#666;">Şifre: <strong style="color:#333;">${password}</strong></p>` : ""}
     </div>
+    ${password ? `<p style="color:#e74c3c;font-size:13px;margin:8px 0 16px;">Güvenliğiniz için lütfen ilk girişten sonra şifrenizi değiştiriniz.</p>` : ""}
     <p style="color:#666;font-size:14px;">Aşağıdaki bağlantıdan bayi paneline giriş yapabilirsiniz.</p>
     <div style="text-align:center;margin:24px 0;">
       <a href="${loginUrl}" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Bayi Girişi</a>

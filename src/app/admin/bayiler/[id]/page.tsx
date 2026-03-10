@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -110,6 +111,7 @@ export default function AdminDealerDetailPage() {
   const [dealer, setDealer] = useState<DealerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("info");
 
   // Form state
@@ -233,6 +235,28 @@ export default function AdminDealerDetailPage() {
     } catch { /* silent */ }
   };
 
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `"${dealer?.companyName}" bayisini silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/dealers/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("Bayi silindi");
+        router.push("/admin/bayiler");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Bayi silinemedi");
+      }
+    } catch {
+      alert("Bir hata oluştu");
+    }
+    setDeleting(false);
+  };
+
   if (loading || !dealer) {
     return (
       <div className="flex justify-center py-20">
@@ -276,11 +300,22 @@ export default function AdminDealerDetailPage() {
             </div>
           </div>
         </div>
-        {dealer.status === "PENDING" && (
-          <Button onClick={handleApprove} disabled={saving}>
-            Başvuruyu Onayla
+        <div className="flex items-center gap-2">
+          {dealer.status === "PENDING" && (
+            <Button onClick={handleApprove} disabled={saving}>
+              Başvuruyu Onayla
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="border-red-300 text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            {deleting ? "Siliniyor..." : "Bayi Sil"}
           </Button>
-        )}
+        </div>
       </div>
 
       {/* Tabs */}

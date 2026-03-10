@@ -101,6 +101,7 @@ export async function PUT(
   const updateData: any = { ...data };
 
   // Handle status change
+  let generatedPassword: string | undefined;
   if (status) {
     const current = await db.dealer.findUnique({ where: { id }, select: { status: true } });
     if (current && current.status !== status) {
@@ -108,11 +109,14 @@ export async function PUT(
       if (status === "ACTIVE" && current.status === "PENDING") {
         updateData.approvedAt = new Date();
         updateData.approvedBy = admin.userId;
+        // Generate a new password for the dealer on approval
+        generatedPassword = Math.random().toString(36).slice(-8);
+        updateData.passwordHash = await bcryptjs.hash(generatedPassword, 12);
       }
     }
   }
 
-  // Handle password reset
+  // Handle manual password reset
   if (newPassword) {
     updateData.passwordHash = await bcryptjs.hash(newPassword, 12);
   }
@@ -139,13 +143,14 @@ export async function PUT(
     req.headers.get("x-forwarded-for") || undefined
   );
 
-  // Bayi onay maili gönder
+  // Bayi onay maili gönder (şifre dahil)
   if (status === "ACTIVE" && dealer.email) {
     try {
       await resendClient.sendDealerApproved(
         dealer.email,
         dealer.companyName,
-        dealer.dealerCode
+        dealer.dealerCode,
+        generatedPassword
       );
     } catch (emailErr) {
       console.error("[Dealer] Approval email error:", emailErr);
