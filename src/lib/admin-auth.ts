@@ -78,13 +78,15 @@ export interface AdminSession {
 /**
  * Check if request has valid server API key (for middleware proxy).
  * Returns ADMIN session if valid, null otherwise.
+ *
+ * Note: headers() is async in Next.js 15+ (returns Promise<ReadonlyHeaders>).
  */
-function checkServerApiKey(): AdminSession | null {
+async function checkServerApiKey(): Promise<AdminSession | null> {
   const apiKey = process.env.VORTE_SERVER_API_KEY;
   if (!apiKey) return null;
 
   try {
-    const headersList = headers();
+    const headersList = await headers();
     const requestApiKey = headersList.get("x-server-api-key");
     if (requestApiKey && requestApiKey === apiKey) {
       return {
@@ -108,7 +110,7 @@ function checkServerApiKey(): AdminSession | null {
  */
 export async function getAdminSession(): Promise<AdminSession | null> {
   // Check server API key first (middleware proxy)
-  const serverSession = checkServerApiKey();
+  const serverSession = await checkServerApiKey();
   if (serverSession) return serverSession;
 
   const session = await auth();
