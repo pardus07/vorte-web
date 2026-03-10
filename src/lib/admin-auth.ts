@@ -1,9 +1,14 @@
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 /**
  * Admin role hierarchy (higher = more access):
  * ADMIN (superadmin) > EDITOR > VIEWER
  * CUSTOMER has no admin access
+ *
+ * Server-to-server API key auth:
+ * Middleware proxy sends X-Server-Api-Key header for admin API access.
+ * This bypasses NextAuth session check and grants ADMIN permissions.
  */
 
 export type AdminRole = "ADMIN" | "EDITOR" | "VIEWER";
@@ -71,9 +76,41 @@ export interface AdminSession {
 }
 
 /**
+ * Check if request has valid server API key (for middleware proxy).
+ * Returns ADMIN session if valid, null otherwise.
+ */
+function checkServerApiKey(): AdminSession | null {
+  const apiKey = process.env.VORTE_SERVER_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const headersList = headers();
+    const requestApiKey = headersList.get("x-server-api-key");
+    if (requestApiKey && requestApiKey === apiKey) {
+      return {
+        userId: "server-middleware",
+        email: "middleware@vorte.com.tr",
+        name: "Vorte Middleware",
+        role: "ADMIN",
+        permissions: null,
+      };
+    }
+  } catch {
+    // headers() may throw outside request context
+  }
+
+  return null;
+}
+
+/**
  * Get admin session. Returns null if not an admin user.
+ * Also checks for server API key (middleware proxy).
  */
 export async function getAdminSession(): Promise<AdminSession | null> {
+  // Check server API key first (middleware proxy)
+  const serverSession = checkServerApiKey();
+  if (serverSession) return serverSession;
+
   const session = await auth();
   if (!session?.user) return null;
 
