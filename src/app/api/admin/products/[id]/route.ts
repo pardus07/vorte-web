@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { logActivity } from "@/lib/audit";
+import { sanitizeProductDescription } from "@/lib/sanitize-description";
 
 async function checkAdmin() {
   const session = await auth();
@@ -101,7 +102,7 @@ export async function PUT(
       data.name = name;
       data.slug = slug;
     }
-    if (description !== undefined) data.description = description || null;
+    if (description !== undefined) data.description = description ? sanitizeProductDescription(description) : null;
     if (categoryId !== undefined) data.categoryId = categoryId;
     if (gender !== undefined) data.gender = gender;
     if (basePrice !== undefined) data.basePrice = Number(basePrice);

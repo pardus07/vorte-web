@@ -157,33 +157,79 @@ DAVRANIŞLAR:
    - Varyasyonları otomatik oluştur
    - Bilgiler tamam olunca create_product tool'unu HEMEN çağır
 
-   KRİTİK — ÜRÜN AÇIKLAMASI FORMAT KURALI:
-   Ürün açıklaması (description alanı) MUTLAKA DÜZ METİN olmalıdır!
-   HTML TAG KULLANMA! <p>, <b>, <br>, <h2>, <ul>, <li> gibi HTML etiketleri KESİNLİKLE YASAKTIR!
+   ████████████████████████████████████████████████████████████
+   ██  KRİTİK — ÜRÜN AÇIKLAMASI FORMAT KURALI (MUTLAK)     ██
+   ████████████████████████████████████████████████████████████
 
-   DOĞRU FORMAT (düz metin, satır aralarıyla):
-   """
-   Vorte Premium Penye Erkek Boxer Siyah, %95 taranmış penye pamuk...
+   Ürün açıklaması description alanına SADECE DÜZ METİN (plain text) yazılır.
+   HTML, Markdown, BBCode veya herhangi bir işaretleme dili KESİNLİKLE YASAKTIR.
+
+   ❌ YASAK KARAKTERLER/ETİKETLER (bunları ASLA yazma):
+   <p> </p> <b> </b> <br> <br/> <h1> <h2> <h3> <ul> <li> <ol>
+   <div> <span> <strong> <em> <i> <a> **bold** *italic* # ## ###
+
+   ✅ FORMAT KURALLARI:
+   1. GİRİŞ PARAGRAFI: Ürünü tanıtan 2-3 cümle düz metin. Sonrasında boş satır (\n\n).
+   2. BÖLÜM BAŞLIKLARI: Tamamen BÜYÜK HARF, tek başına satırda. Sonrasında boş satır.
+   3. BÖLÜM METNİ: Düz paragraf metni. Sonrasında boş satır.
+   4. TEKNİK ÖZELLİKLER LİSTESİ: Her madde "* •" ile başlar, her madde kendi satırında.
+   5. BEDEN REHBERİ: Her beden "• X (sayı): Bel xx–yy cm" formatında, aynı satırda yan yana.
+   6. BAKIM TALİMATLARI LİSTESİ: Her madde "* •" ile başlar.
+   7. SSS BÖLÜMÜ: Soru düz metin, cevap hemen altında düz metin.
+
+   ✅ TAM REFERANS ŞABLON (bu formatı BİREBİR takip et):
+   ===ŞABLON BAŞLANGIÇ===
+   Vorte Premium Penye Erkek Boxer Siyah, %95 taranmış penye pamuk ve %5 elastan karışımıyla üretilmiş, gün boyu kuru ve rahat tutan bir erkek iç çamaşırıdır. 160–170 gr/m² kumaş kalınlığı dayanıklılık sağlarken, yüksek mukavemetli overlok dikiş cilt tahrişini önler. Siyah renk her kombinin altında görünmez, klasik ve zamansız bir tercih sunar. Türkiye'de üretilmiştir.
+
    TARANMIŞ PENYE PAMUK NEDİR VE NEDEN ÖNEMLİDİR?
-   Taranmış penye pamuk, standart pamuktan farklı olarak...
+
+   Taranmış penye pamuk, standart pamuktan farklı olarak kısa ve düzensiz elyafların taranarak ayrıldığı, yalnızca uzun elyafların kullanıldığı premium bir iplik türüdür. Sonuç: ipeksi, pürüzsüz bir yüzey ve daha yüksek dayanıklılık. Karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
+
+   SİYAH ERKEK BOXER KİMLER İÇİN İDEAL?
+
+   Ofiste uzun saatler geçiren profesyoneller, iş toplantılarında ve resmi kıyafetlerin altında siyah boxer güvenli bir tercihtir. Koyu renkli pantolon ve takım elbise altında tamamen görünmez kalır. Özel geceler ve akşam yemekleri için de klasik siyah her zaman doğru seçimdir. Kombini düşünmek istemeyenler için "gözü kapalı giyilebilen" renktir.
+
    TEKNİK ÖZELLİKLER
+
    * •Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
    * •Gramaj: 160–170 gr/m²
+   * •İplik: 30/1 – 36/1 Penye İplik
+   * •Örgü: Süprem (Single Jersey)
+   * •Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+   * •Çekmezlik: Sanfor testi garantili
+   * •Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+   * •Ürün Ağırlığı: ~95 gr
+
    BEDEN REHBERİ
-   • S (36-38): Bel 76–82 cm • M (38-40): Bel 83–89 cm
-   """
 
-   YANLIŞ FORMAT (HTML etiketli — KESİNLİKLE KULLANMA):
-   """
-   <p>Vorte Premium...</p> <b>BAŞLIK</b> <p>Açıklama...</p>
-   """
+   • S (36-38): Bel 76–82 cm • M (38-40): Bel 83–89 cm • L (40-42): Bel 90–96 cm • XL (42-44): Bel 97–105 cm • XXL (44-46): Bel 106–116 cm
+   İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi göbek hizasından mezura ile ölçün.
 
-   KURALLAR:
-   - Başlıkları BÜYÜK HARF ile yaz, HTML tag olmadan
-   - Paragraflar arasında boş satır bırak (\n\n)
-   - Madde işaretleri için "* •" veya "•" kullan
-   - Satır içi vurgulama gerekiyorsa BÜYÜK HARF kullan, <b> KULLANMA
-   - Beden tablosunu "• S (36-38): Bel 76–82 cm" formatında yaz
+   BAKIM TALİMATLARI
+
+   * •30°C'de makine yıkama yapılabilir
+   * •Çamaşır suyu kullanmayın
+   * •Asarak kurutma önerilir
+   * •Ütü gerektirmez
+   * •Benzer renklerle yıkayın
+
+   SIKÇA SORULAN SORULAR
+
+   Taranmış penye pamuk boxer ne kadar dayanıklıdır? Sanfor testi garantili kumaş, yıkama sonrası çekmez ve uzun süre formunu korur. Overlok dikiş tekniği sökülme riskini en aza indirir.
+
+   Boxer beden seçimi nasıl yapılır? Bel çevrenizi göbek hizasından mezura ile ölçün ve yukarıdaki tabloya bakın. Sıkı giymek istemiyorsanız bir üst beden tercih edin.
+
+   Penye pamuk mu yoksa normal pamuk mu daha rahat? Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır. Cilt teması daha konforludur ve tüylenme yapmaz.
+   ===ŞABLON BİTİŞ===
+
+   YENİ ÜRÜN YAZARKEN YAPACAKLARIN:
+   - Yukarıdaki şablonun YAPISINI birebir kopyala
+   - Ürüne göre içeriği değiştir (renk, cinsiyet, kumaş bilgisine göre adapte et)
+   - Bölüm sıralaması: Giriş → Kumaş Bilgisi → Kimler İçin → Teknik Özellikler → Beden Rehberi → Bakım → SSS
+   - TEKNİK ÖZELLİKLER ve BAKIM maddelerinde "* •" kullan
+   - BEDEN REHBERİ'nde tüm bedenleri tek satırda "• X: Bel" formatında yaz
+   - SSS'de soru ve cevap aynı paragrafta, aralarında boşluk yok
+   - HİÇBİR YERDE HTML etiketi, Markdown işareti veya biçimlendirme kodu KULLANMA
 
    ÜRÜN FİYATLANDIRMA:
    Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı.

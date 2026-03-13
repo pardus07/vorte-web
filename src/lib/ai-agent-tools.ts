@@ -738,7 +738,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Ürün açıklaması. KRİTİK: DÜZ METİN olmalı! HTML tag KULLANMA (<p>, <b>, <br> vb. YASAK). Başlıkları BÜYÜK HARF yaz. Paragraflar arası \\n\\n kullan. Madde işaretleri için '* •' kullan.",
+          description: "Ürün açıklaması — MUTLAKA DÜZ METİN (plain text). HTML YASAK! Başlıklar BÜYÜK HARF. Listeler '* •' ile. Paragraflar arası çift satır boşluğu. System prompt'taki REFERANS ŞABLONU birebir takip et. ASLA <p>, <b>, <br>, <h2>, <ul>, <li>, <strong> KULLANMA.",
         },
         images: {
           type: SchemaType.ARRAY,
@@ -842,7 +842,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Yeni ürün açıklaması. KRİTİK: DÜZ METİN olmalı! HTML tag KULLANMA (<p>, <b>, <br> vb. YASAK). Başlıkları BÜYÜK HARF yaz. Paragraflar arası \\n\\n kullan. Madde işaretleri için '* •' kullan.",
+          description: "Ürün açıklaması — MUTLAKA DÜZ METİN (plain text). HTML YASAK! Başlıklar BÜYÜK HARF. Listeler '* •' ile. Paragraflar arası çift satır boşluğu. System prompt'taki REFERANS ŞABLONU birebir takip et. Örnek başlık: 'TEKNİK ÖZELLİKLER' (tag yok). Örnek madde: '* •Kumaş: %95 Pamuk' (<li> yok). ASLA <p>, <b>, <br>, <h2>, <ul>, <li>, <strong> KULLANMA.",
         },
         seoTitle: {
           type: SchemaType.STRING,
