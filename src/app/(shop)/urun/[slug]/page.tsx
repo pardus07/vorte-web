@@ -80,6 +80,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
     take: 4,
   });
 
+  // Onaylı yorumları çek (aggregateRating + review için)
+  const approvedReviews = await db.productReview.findMany({
+    where: { productId: product.id, approved: true },
+    include: { user: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+
+  const reviewCount = approvedReviews.length;
+  const avgRating =
+    reviewCount > 0
+      ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+      : 0;
+
   const productBanners = await getBannersByPosition("product-sidebar");
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
   const variantPrices = product.variants.filter(v => v.price).map(v => v.price!);
@@ -109,6 +123,30 @@ export default async function ProductDetailPage({ params }: PageProps) {
               : "https://schema.org/OutOfStock",
             url: `${baseUrl}/urun/${product.slug}`,
           },
+          ...(reviewCount > 0 && {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: Math.round(avgRating * 10) / 10,
+              reviewCount,
+              bestRating: 5,
+              worstRating: 1,
+            },
+            review: approvedReviews.slice(0, 5).map((r) => ({
+              "@type": "Review",
+              reviewRating: {
+                "@type": "Rating",
+                ratingValue: r.rating,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              author: {
+                "@type": "Person",
+                name: r.user?.name || "Anonim",
+              },
+              datePublished: r.createdAt.toISOString().split("T")[0],
+              reviewBody: r.comment || r.title || "",
+            })),
+          }),
         }}
       />
       {/* Breadcrumb */}
