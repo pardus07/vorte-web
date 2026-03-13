@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductDetailClient } from "./ProductDetailClient";
@@ -62,6 +62,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
   });
 
   if (!product) {
+    // Ürün bulunamadı — redirect tablosunda eski slug var mı kontrol et
+    const redirectRecord = await db.redirect.findUnique({
+      where: { fromPath: `/urun/${slug}` },
+    });
+    if (redirectRecord?.active) {
+      redirect(redirectRecord.toPath);
+    }
     notFound();
   }
 

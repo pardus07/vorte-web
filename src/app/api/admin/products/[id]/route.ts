@@ -101,6 +101,27 @@ export async function PUT(
       if (existingSlug) slug = `${slug}-${Date.now()}`;
       data.name = name;
       data.slug = slug;
+
+      // Slug değiştiyse eski slug'ı redirect tablosuna kaydet (301 SEO)
+      if (existing.slug !== slug) {
+        try {
+          await db.redirect.upsert({
+            where: { fromPath: `/urun/${existing.slug}` },
+            create: {
+              fromPath: `/urun/${existing.slug}`,
+              toPath: `/urun/${slug}`,
+              permanent: true,
+              active: true,
+            },
+            update: {
+              toPath: `/urun/${slug}`,
+              active: true,
+            },
+          });
+        } catch (e) {
+          console.warn("[products] Redirect kayıt hatası (kritik değil):", e);
+        }
+      }
     }
     if (description !== undefined) data.description = description ? sanitizeProductDescription(description) : null;
     if (categoryId !== undefined) data.categoryId = categoryId;
