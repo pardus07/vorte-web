@@ -222,14 +222,48 @@ DAVRANIŞLAR:
    Penye pamuk mu yoksa normal pamuk mu daha rahat? Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır. Cilt teması daha konforludur ve tüylenme yapmaz.
    ===ŞABLON BİTİŞ===
 
-   YENİ ÜRÜN YAZARKEN YAPACAKLARIN:
-   - Yukarıdaki şablonun YAPISINI birebir kopyala
-   - Ürüne göre içeriği değiştir (renk, cinsiyet, kumaş bilgisine göre adapte et)
-   - Bölüm sıralaması: Giriş → Kumaş Bilgisi → Kimler İçin → Teknik Özellikler → Beden Rehberi → Bakım → SSS
-   - TEKNİK ÖZELLİKLER ve BAKIM maddelerinde "* •" kullan
-   - BEDEN REHBERİ'nde tüm bedenleri tek satırda "• X: Bel" formatında yaz
-   - SSS'de soru ve cevap aynı paragrafta, aralarında boşluk yok
-   - HİÇBİR YERDE HTML etiketi, Markdown işareti veya biçimlendirme kodu KULLANMA
+   ██ SATIR DÜZENİ KURALLARI (EN ÖNEMLİ) ██
+
+   description string'inde SATIRLARI AYIRMAK İÇİN \\n KULLAN!
+   Her bölüm başlığından ÖNCE ve SONRA \\n\\n (çift satır sonu) KOY!
+   Her "* •" maddesini AYRI SATIRDA yaz — tek satırda yan yana YAZMA!
+
+   ❌ YANLIŞ (tek satırda yapışık — BU ŞEKİLDE YAZMA):
+   "TEKNİK ÖZELLİKLER • Kumaş: %95 Pamuk • Gramaj: 160 gr/m² • İplik: 30/1"
+
+   ✅ DOĞRU (her madde kendi satırında):
+   "TEKNİK ÖZELLİKLER\\n\\n* •Kumaş: %95 Pamuk\\n* •Gramaj: 160 gr/m²\\n* •İplik: 30/1"
+
+   ❌ YANLIŞ (başlık ile metin yapışık):
+   "...Türkiye'de üretilmiştir. TARANMIŞ PENYE PAMUK NEDİR?"
+
+   ✅ DOĞRU (başlık öncesi boş satır):
+   "...Türkiye'de üretilmiştir.\\n\\nTARANMIŞ PENYE PAMUK NEDİR?"
+
+   ❌ YANLIŞ (bakım maddeleri tek satırda):
+   "BAKIM TALİMATLARI • 30°C'de yıkama • Çamaşır suyu kullanmayın • Asarak kurutun"
+
+   ✅ DOĞRU (her madde ayrı satırda):
+   "BAKIM TALİMATLARI\\n\\n* •30°C'de yıkama\\n* •Çamaşır suyu kullanmayın\\n* •Asarak kurutun"
+
+   ❌ YANLIŞ (SSS cümleleri yapışık):
+   "SIKÇA SORULAN SORULAR Soru1? Cevap1. Soru2? Cevap2."
+
+   ✅ DOĞRU (her soru-cevap ayrı paragrafta):
+   "SIKÇA SORULAN SORULAR\\n\\nSoru1? Cevap1.\\n\\nSoru2? Cevap2."
+
+   BEDEN REHBERİ İSTİSNA: Bedenleri TEK SATIRDA yan yana yaz (bu bölüm için sıralama doğru):
+   "• S (36-38): Bel 76–82 cm • M (38-40): Bel 83–89 cm • L (40-42): Bel 90–96 cm"
+
+   ÖZET KONTROL LİSTESİ:
+   ☑ Her bölüm başlığı (BÜYÜK HARF) öncesi \\n\\n var mı?
+   ☑ Her bölüm başlığı sonrası \\n\\n var mı?
+   ☑ TEKNİK ÖZELLİKLER maddeleri her biri ayrı satırda mı? (\\n ile ayrılmış)
+   ☑ BAKIM TALİMATLARI maddeleri her biri ayrı satırda mı?
+   ☑ SSS soru-cevap çiftleri ayrı paragraflarda mı? (\\n\\n ile ayrılmış)
+   ☑ Madde işareti "* •" ile mi başlıyor? (sadece "•" YANLIŞ)
+   ☑ HTML tag yok mu? (<p>, <b>, <br> vb.)
+   ☑ Markdown yok mu? (**, ##, vb.)
 
    ÜRÜN FİYATLANDIRMA:
    Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı.

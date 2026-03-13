@@ -738,7 +738,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Ürün açıklaması — MUTLAKA DÜZ METİN (plain text). HTML YASAK! Başlıklar BÜYÜK HARF. Listeler '* •' ile. Paragraflar arası çift satır boşluğu. System prompt'taki REFERANS ŞABLONU birebir takip et. ASLA <p>, <b>, <br>, <h2>, <ul>, <li>, <strong> KULLANMA.",
+          description: "Ürün açıklaması — DÜZ METİN. HTML/Markdown YASAK. SATIR DÜZENİ KRİTİK: Bölüm başlıkları (BÜYÜK HARF) öncesi ve sonrası \\n\\n koy. TEKNİK ÖZELLİKLER ve BAKIM maddelerinde her '* •' maddesini AYRI SATIRDA yaz (\\n ile ayır), tek satıra yapıştırma! SSS'de her soru-cevap \\n\\n ile ayır. BEDEN REHBERİ tek satırda. REFERANS ŞABLONU takip et.",
         },
         images: {
           type: SchemaType.ARRAY,
@@ -842,7 +842,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Ürün açıklaması — MUTLAKA DÜZ METİN (plain text). HTML YASAK! Başlıklar BÜYÜK HARF. Listeler '* •' ile. Paragraflar arası çift satır boşluğu. System prompt'taki REFERANS ŞABLONU birebir takip et. Örnek başlık: 'TEKNİK ÖZELLİKLER' (tag yok). Örnek madde: '* •Kumaş: %95 Pamuk' (<li> yok). ASLA <p>, <b>, <br>, <h2>, <ul>, <li>, <strong> KULLANMA.",
+          description: "Ürün açıklaması — DÜZ METİN. HTML/Markdown YASAK. SATIR DÜZENİ KRİTİK: Bölüm başlıkları (BÜYÜK HARF) öncesi ve sonrası \\n\\n koy. TEKNİK ÖZELLİKLER ve BAKIM maddelerinde her '* •' maddesini AYRI SATIRDA yaz (\\n ile ayır), tek satıra yapıştırma! SSS'de her soru-cevap \\n\\n ile ayır. BEDEN REHBERİ tek satırda. REFERANS ŞABLONU takip et.",
         },
         seoTitle: {
           type: SchemaType.STRING,
