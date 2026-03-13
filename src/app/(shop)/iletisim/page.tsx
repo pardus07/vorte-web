@@ -1,5 +1,6 @@
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ContactForm } from "@/components/forms/ContactForm";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -12,6 +13,40 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ClothingStore",
+          name: "Vorte Tekstil",
+          url: "https://www.vorte.com.tr",
+          logo: "https://www.vorte.com.tr/logo.png",
+          image: "https://www.vorte.com.tr/logo.png",
+          telephone: "+90-537-622-0694",
+          email: "info@vorte.com.tr",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
+            addressLocality: "Nilüfer",
+            addressRegion: "Bursa",
+            postalCode: "16110",
+            addressCountry: "TR",
+          },
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: 40.2295192,
+            longitude: 28.8313634,
+          },
+          openingHoursSpecification: [
+            {
+              "@type": "OpeningHoursSpecification",
+              dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+              opens: "09:00",
+              closes: "18:00",
+            },
+          ],
+          priceRange: "₺₺",
+        }}
+      />
       <Breadcrumb items={[{ label: "Ana Sayfa", href: "/" }, { label: "İletişim" }]} />
       <h1 className="mt-6 text-3xl font-bold text-gray-900">İletişim</h1>
 

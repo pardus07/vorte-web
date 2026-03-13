@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 
@@ -211,8 +212,24 @@ function AccordionItem({ item }: { item: FAQItem }) {
 }
 
 export default function FAQPage() {
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqData.flatMap((section) =>
+      section.items.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      }))
+    ),
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <JsonLd data={faqJsonLd} />
       <Breadcrumb
         items={[
           { label: "Ana Sayfa", href: "/" },

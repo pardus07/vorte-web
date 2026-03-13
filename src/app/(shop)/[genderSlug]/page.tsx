@@ -12,6 +12,7 @@ import { FilterToggle } from "./FilterToggle";
 import { DesktopFilter } from "./DesktopFilter";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import { getBannersByPosition } from "@/lib/banners";
+import { JsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
 const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; description: string }> = {
@@ -153,8 +154,27 @@ export default async function ProductListingPage({ params, searchParams }: PageP
 
   const bannerImage = genderKey === "erkek" ? "/images/banner-erkek.png" : "/images/banner-kadin.png";
 
+  const collectionJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: genderInfo.label,
+    description: genderInfo.description,
+    url: `https://www.vorte.com.tr/${genderKey}-ic-giyim`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: totalCount,
+      itemListElement: products.map((p, i) => ({
+        "@type": "ListItem",
+        position: (page - 1) * perPage + i + 1,
+        url: `https://www.vorte.com.tr/urun/${p.slug}`,
+        name: p.name,
+      })),
+    },
+  };
+
   return (
     <div>
+      <JsonLd data={collectionJsonLd} />
       {/* Category Banner */}
       <div className="relative h-[200px] w-full overflow-hidden md:h-[280px]">
         <Image
