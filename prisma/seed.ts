@@ -102,18 +102,16 @@ async function main() {
 
   // ===== PRODUCTS & VARIANTS =====
 
-  // --- Erkek Boxer ortak açıklama ---
-  const erkekBoxerDesc = `Vorte Premium Penye Erkek Boxer — gün boyu konfor, sarkma yok, terleme yok.
+  // --- ERKEK BOXER: Siyah açıklama (AEO uyumlu) ---
+  const erkekBoxerSiyahDesc = `Vorte Premium Penye Erkek Boxer Siyah, %95 taranmış penye pamuk ve %5 elastan karışımıyla üretilmiş, gün boyu kuru ve rahat tutan bir erkek iç çamaşırıdır. 160–170 gr/m² kumaş kalınlığı dayanıklılık sağlarken, yüksek mukavemetli overlok dikiş cilt tahrişini önler. Siyah renk her kombinin altında görünmez, klasik ve zamansız bir tercih sunar. Türkiye'de üretilmiştir.
 
-%95 taranmış penye pamuk ve %5 elastan (Lycra) karışımıyla üretilen bu boxer, uzun yol dahil her koşulda nefes alır ve formunu korur. Shape Recovery teknolojisi sayesinde esnedikten sonra bile ilk günkü formuna geri döner.
+TARANMIŞ PENYE PAMUK NEDİR VE NEDEN ÖNEMLİDİR?
 
-NEDEN VORTE?
+Taranmış penye pamuk, standart pamuktan farklı olarak kısa ve düzensiz elyafların taranarak ayrıldığı, yalnızca uzun elyafların kullanıldığı premium bir iplik türüdür. Sonuç: ipeksi, pürüzsüz bir yüzey ve daha yüksek dayanıklılık. Karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
 
-• Taranmış penye pamuk yüzey — cildinize temas eden ipeksi, pürüzsüz bir his. Kısa elyaflı karde iplik kesinlikle kullanılmaz.
-• Shape Recovery (Form Koruma) — esnedikten sonra sarkmayı önleyen yapı; gün boyu vücudunuza uyumlu kalır.
-• 160–170 gr/m² optimum kalınlık — iç göstermeyen, terletmeyen, 4 mevsim ideal ağırlık.
-• Sanfor garantili — yıkama sonrası çekmezlik testi geçmiştir; ilk günkü ölçüsünü korur.
-• Yüksek mukavemetli overlok dikiş — dikiş patlaması riskini ortadan kaldıran tekstüre iplik.
+SİYAH ERKEK BOXER KİMLER İÇİN İDEAL?
+
+Ofiste uzun saatler geçiren profesyoneller, iş toplantılarında ve resmi kıyafetlerin altında siyah boxer güvenli bir tercihtir. Koyu renkli pantolon ve takım elbise altında tamamen görünmez kalır. Özel geceler ve akşam yemekleri için de klasik siyah her zaman doğru seçimdir. Kombini düşünmek istemeyenler için "gözü kapalı giyilebilen" renktir.
 
 TEKNİK ÖZELLİKLER:
 
@@ -123,16 +121,45 @@ TEKNİK ÖZELLİKLER:
 • Örgü: Süprem (Single Jersey)
 • Dikiş: Yüksek mukavemetli overlok tekstüre iplik
 • Çekmezlik: Sanfor testi garantili
-• Ürün Ağırlığı: ~95 gr`;
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~95 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 76–82 cm
+• M (38-40): Bel 83–89 cm
+• L (40-42): Bel 90–96 cm
+• XL (42-44): Bel 97–105 cm
+• XXL (44-46): Bel 106–116 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi göbek hizasından mezura ile ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Çamaşır suyu kullanmayın
+• Asarak kurutma önerilir
+• Ütü gerektirmez
+• Benzer renklerle yıkayın
+
+SIKÇA SORULAN SORULAR:
+
+Taranmış penye pamuk boxer ne kadar dayanıklıdır?
+Sanfor testi garantili kumaş, yıkama sonrası çekmez ve uzun süre formunu korur. Overlok dikiş tekniği sökülme riskini en aza indirir.
+
+Boxer beden seçimi nasıl yapılır?
+Bel çevrenizi göbek hizasından mezura ile ölçün ve yukarıdaki tabloya bakın. Sıkı giymek istemiyorsanız bir üst beden tercih edin.
+
+Penye pamuk mu yoksa normal pamuk mu daha rahat?
+Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır. Cilt teması daha konforludur ve tüylenme yapmaz.`;
 
   // --- ERKEK BOXER: Siyah ---
   const erkekBoxerSiyah = await db.product.create({
     data: {
       name: "Vorte Premium Penye Erkek Boxer Siyah",
       slug: "erkek-modal-boxer-siyah",
-      description: erkekBoxerDesc,
+      description: erkekBoxerSiyahDesc,
       seoTitle: "Vorte Premium Penye Erkek Boxer Siyah | Terletmez & Sarkmaz",
-      seoDescription: "Taranmış penye pamuk ve elastan ile üretilen Vorte erkek boxer. Gün boyu nefes alır, formunu korur, sarkmaz. Uzun yol konforu için tasarlandı.",
+      seoDescription: "%95 penye pamuk erkek boxer siyah. Gün boyu nefes alır, formunu korur, sarkmaz. Sanfor garantili, Türkiye üretimi.",
       categoryId: catErkekBoxer.id,
       gender: "ERKEK",
       basePrice: 249.90,
@@ -159,14 +186,64 @@ TEKNİK ÖZELLİKLER:
     });
   }
 
+  // --- ERKEK BOXER: Lacivert açıklama (AEO uyumlu) ---
+  const erkekBoxerLacivertDesc = `Vorte Premium Penye Erkek Boxer Lacivert, siyah kadar sade ama daha modern bir alternatif arayan erkekler için tasarlandı. %95 taranmış penye pamuk ve %5 elastan karışımı, günlük tempoya ayak uyduran esneklik ve nefes alabilirlik sunar. Spor sonrası duştan çıkıp giyebileceğiniz, hafta sonu brunch'a da iş yerine de uyum sağlayan spor-şık bir renk. Türkiye'de üretilmiştir.
+
+TARANMIŞ PENYE PAMUK NEDİR VE NEDEN ÖNEMLİDİR?
+
+Taranmış penye pamuk, kısa ve düzensiz elyafların taranarak ayrıldığı, yalnızca uzun elyafların kullanıldığı premium bir iplik türüdür. Sonuç: ipeksi, pürüzsüz bir yüzey ve yüksek dayanıklılık. Karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
+
+LACİVERT ERKEK BOXER KİMLER İÇİN İDEAL?
+
+Günlük hayatında aktif olan, spor sonrası doğrudan sosyal ortama geçen erkekler için lacivert doğru renk. Kot pantolon, chino ve casual kombinlerin altında siyahın ağırlığını taşımadan şık kalır. Hafta içi ofis, hafta sonu açık hava — lacivert her ikisinde de rahat eder. Siyahtan sıkılanlar için modern ve enerjik bir alternatiftir.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~95 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 76–82 cm
+• M (38-40): Bel 83–89 cm
+• L (40-42): Bel 90–96 cm
+• XL (42-44): Bel 97–105 cm
+• XXL (44-46): Bel 106–116 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi göbek hizasından mezura ile ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Çamaşır suyu kullanmayın
+• Asarak kurutma önerilir
+• Ütü gerektirmez
+• Benzer renklerle yıkayın
+
+SIKÇA SORULAN SORULAR:
+
+Lacivert boxer açık renkli pantolonun altında belli eder mi?
+Lacivert orta tonlu bir renk olduğu için koyu ve orta tonlu kıyafetlerin altında görünmez. Çok açık renkli pantolonlar için gri tercih edilebilir.
+
+Boxer beden seçimi nasıl yapılır?
+Bel çevrenizi göbek hizasından mezura ile ölçün ve yukarıdaki tabloya bakın. Sıkı giymek istemiyorsanız bir üst beden tercih edin.
+
+Penye pamuk mu yoksa normal pamuk mu daha rahat?
+Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır. Cilt teması daha konforludur ve tüylenme yapmaz.`;
+
   // --- ERKEK BOXER: Lacivert ---
   const erkekBoxerLacivert = await db.product.create({
     data: {
       name: "Vorte Premium Penye Erkek Boxer Lacivert",
       slug: "erkek-modal-boxer-lacivert",
-      description: erkekBoxerDesc,
+      description: erkekBoxerLacivertDesc,
       seoTitle: "Vorte Premium Penye Erkek Boxer Lacivert | Terletmez & Sarkmaz",
-      seoDescription: "Taranmış penye pamuk ve elastan ile üretilen Vorte erkek boxer. Gün boyu nefes alır, formunu korur, sarkmaz. Uzun yol konforu için tasarlandı.",
+      seoDescription: "%95 penye pamuk erkek boxer lacivert. Spor-şık günlük tercih, nefes alır, sarkmaz. Sanfor garantili, Türkiye üretimi.",
       categoryId: catErkekBoxer.id,
       gender: "ERKEK",
       basePrice: 249.90,
@@ -193,19 +270,16 @@ TEKNİK ÖZELLİKLER:
     });
   }
 
-  // --- Kadın Külot ortak açıklama ---
-  const kadinKulotDesc = `Vorte Premium Penye Kadın Külot — gün boyu ferahlık, hijyen ve konfor bir arada.
+  // --- ERKEK BOXER: Gri açıklama (AEO uyumlu) ---
+  const erkekBoxerGriDesc = `Vorte Premium Penye Erkek Boxer Gri, açık renkli kıyafetlerin altında iz bırakmayan, nötr ve görünmez bir iç çamaşırıdır. %95 taranmış penye pamuk ve %5 elastan karışımı, özellikle yaz aylarında hafif ve serin bir his sunar. Beyaz gömlek, keten pantolon ya da açık ton chino'ların altında siyah veya laciverdin belli ettiği yerde gri tamamen kaybolur. Türkiye'de üretilmiştir.
 
-%95 taranmış penye pamuk ve %5 elastan (Lycra) ile üretilen bu külot, doğal nefes alan yapısıyla gün boyu ferah hissettirir. Shape Recovery teknolojisi sayesinde esnedikten sonra bile formunu korur, sarkmaz.
+TARANMIŞ PENYE PAMUK NEDİR VE NEDEN ÖNEMLİDİR?
 
-NEDEN VORTE?
+Taranmış penye pamuk, kısa ve düzensiz elyafların taranarak ayrıldığı, yalnızca uzun elyafların kullanıldığı premium bir iplik türüdür. Sonuç: ipeksi, pürüzsüz bir yüzey ve yüksek dayanıklılık. Karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
 
-• %100 pamuk iç katman — ağ bölgesinde ekstra hijyen sağlayan saf pamuk astar. Cildiniz yalnızca doğal pamukla temas eder.
-• Taranmış penye pamuk yüzey — ipeksi, pürüzsüz his. Kısa elyaflı karde iplik kesinlikle kullanılmaz.
-• Shape Recovery (Form Koruma) — esnedikten sonra sarkmayı önleyen yapı; gün boyu vücudunuza uyumlu kalır.
-• 160–170 gr/m² optimum kalınlık — iç göstermeyen, terletmeyen, 4 mevsim ideal ağırlık.
-• Sanfor garantili — yıkama sonrası çekmezlik testi geçmiştir; ilk günkü ölçüsünü korur.
-• Yüksek mukavemetli overlok dikiş — dikiş patlaması riskini ortadan kaldıran tekstüre iplik.
+GRİ ERKEK BOXER KİMLER İÇİN İDEAL?
+
+Yaz aylarında açık renkli kıyafetler giyen, beyaz pantolon veya keten tercih eden erkekler için gri olmazsa olmaz renktir. Spor yaparken de nötr tonu sayesinde ter lekesi belli etmez. Minimalist giyim tarzını benimseyenler ve dolabında "her şeyin altına giyebileceğim" tek bir renk isteyenler için gri en pratik seçimdir. Özellikle sıcak havalarda açık tonun verdiği psikolojik serinlik hissi de cabası.
 
 TEKNİK ÖZELLİKLER:
 
@@ -213,19 +287,132 @@ TEKNİK ÖZELLİKLER:
 • Gramaj: 160–170 gr/m²
 • İplik: 30/1 – 36/1 Penye İplik
 • Örgü: Süprem (Single Jersey)
-• İç Katman: %100 Pamuk (ağ bölgesi hijyen astarı)
 • Dikiş: Yüksek mukavemetli overlok tekstüre iplik
 • Çekmezlik: Sanfor testi garantili
-• Ürün Ağırlığı: ~45 gr`;
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~95 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 76–82 cm
+• M (38-40): Bel 83–89 cm
+• L (40-42): Bel 90–96 cm
+• XL (42-44): Bel 97–105 cm
+• XXL (44-46): Bel 106–116 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi göbek hizasından mezura ile ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Çamaşır suyu kullanmayın
+• Asarak kurutma önerilir
+• Ütü gerektirmez
+• Benzer renklerle yıkayın
+
+SIKÇA SORULAN SORULAR:
+
+Gri boxer beyaz pantolonun altında görünür mü?
+Gri, cilt tonuna en yakın nötr renklerden biridir. Beyaz ve açık renkli kıyafetlerin altında siyah veya laciverte göre çok daha az belli eder.
+
+Boxer beden seçimi nasıl yapılır?
+Bel çevrenizi göbek hizasından mezura ile ölçün ve yukarıdaki tabloya bakın. Sıkı giymek istemiyorsanız bir üst beden tercih edin.
+
+Penye pamuk mu yoksa normal pamuk mu daha rahat?
+Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır. Cilt teması daha konforludur ve tüylenme yapmaz.`;
+
+  // --- ERKEK BOXER: Gri ---
+  const erkekBoxerGri = await db.product.create({
+    data: {
+      name: "Vorte Premium Penye Erkek Boxer Gri",
+      slug: "erkek-modal-boxer-gri",
+      description: erkekBoxerGriDesc,
+      seoTitle: "Vorte Premium Penye Erkek Boxer Gri | Terletmez & Sarkmaz",
+      seoDescription: "%95 penye pamuk erkek boxer gri. Açık renkli kıyafetlerin altında görünmez, nefes alır, sarkmaz. Sanfor garantili, Türkiye üretimi.",
+      categoryId: catErkekBoxer.id,
+      gender: "ERKEK",
+      basePrice: 249.90,
+      featured: true,
+      images: [
+        "/images/erkek-boxer-gri-1.png",
+        "/images/erkek-boxer-gri-2.png",
+        "/images/erkek-boxer-gri-3.png",
+        "/images/erkek-boxer-gri-4.png",
+      ],
+    },
+  });
+
+  for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    await db.variant.create({
+      data: {
+        productId: erkekBoxerGri.id,
+        color: "Gri",
+        colorHex: "#808080",
+        size: size as "S" | "M" | "L" | "XL" | "XXL",
+        sku: `VRT-MBX-GRI-${size}`,
+        stock: 50,
+      },
+    });
+  }
+
+  // --- KADIN KÜLOT: Siyah açıklama (AEO uyumlu) ---
+  const kadinKulotSiyahDesc = `Vorte Premium Penye Kadın Külot Siyah, zamansız şıklığıyla her mevsim ve her kıyafetle uyumlu çalışan çok yönlü bir iç çamaşırıdır. %95 taranmış penye pamuk ve %5 elastan karışımı gün boyu konfor sağlarken, ağ bölgesinde %100 saf pamuk iç katman hijyen güvencesi sunar. Sabah ofise, akşam yemeğe — siyah her geçişte doğru tercih olarak kalır. Türkiye'de üretilmiştir.
+
+TARANMIŞ PENYE PAMUK İÇ GİYİMDE NEDEN FARK YARATIR?
+
+Taranmış penye pamuk, kısa elyafların taranarak ayrıldığı, yalnızca uzun ve düzgün elyafların kullanıldığı premium bir iplik türüdür. Ciltle temas eden yüzey ipeksi ve pürüzsüzdür — karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
+
+SİYAH KADIN KÜLOT KİMLER İÇİN İDEAL?
+
+İş hayatı, günlük yaşam ve özel geceler arasında sürekli geçiş yapan kadınlar için siyah en pratik seçenektir. Koyu renkli kıyafetlerin altında tamamen görünmez, tayt ve dar pantolonlarda çizgi bırakmaz. Adet dönemlerinde güven veren bir renk olmasıyla da tercih sebebidir. Dolabında tek bir renk bulundurmak isteyen minimalistler için siyah tüm koşulları karşılar — mevsim, kıyafet ve ortam fark etmez.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• İç Katman: %100 Pamuk — ağ bölgesinde ekstra hijyen astarı
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~45 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 64–70 cm / Kalça 88–94 cm
+• M (38-40): Bel 70–76 cm / Kalça 94–100 cm
+• L (40-42): Bel 76–82 cm / Kalça 100–106 cm
+• XL (42-44): Bel 82–88 cm / Kalça 106–112 cm
+• XXL (44-46): Bel 88–94 cm / Kalça 112–118 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi en ince noktadan, kalça çevrenizi en geniş noktadan ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Çamaşır suyu kullanmayın — siyah solar
+• Asarak kurutma önerilir
+• Ütü gerektirmez
+• Benzer renklerle yıkayın — açık renklerle karıştırmayın
+
+SIKÇA SORULAN SORULAR:
+
+Siyah külot açık renkli kıyafetlerin altında belli eder mi?
+Evet, beyaz veya çok açık renkli ince kumaşların altında siyah belli edebilir. Bu durumda ten rengi tercih edin. Orta ve koyu tonlu kıyafetlerde siyah görünmez.
+
+Kadın külot beden seçimi nasıl yapılır?
+Bel ve kalça çevrenizi ölçüp yukarıdaki tabloya bakın. Rahat kullanım için sıkıştırmayan bedeni seçin.
+
+%100 pamuk iç katman ne işe yarar?
+Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesini sağlar. Nefes alabilirliği artırır ve hijyen güvencesi sunar.`;
 
   // --- KADIN KÜLOT: Siyah ---
   const kadinKulotSiyah = await db.product.create({
     data: {
       name: "Vorte Premium Penye Kadın Külot Siyah",
       slug: "kadin-modal-kulot-siyah",
-      description: kadinKulotDesc,
+      description: kadinKulotSiyahDesc,
       seoTitle: "Vorte Premium Penye Kadın Külot Siyah | Nefes Alan & Hijyenik",
-      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
+      seoDescription: "%95 penye pamuk kadın külot siyah. %100 pamuk iç katman, gün boyu konfor. Her kıyafetle uyumlu, Türkiye üretimi.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
       basePrice: 169.90,
@@ -252,14 +439,65 @@ TEKNİK ÖZELLİKLER:
     });
   }
 
+  // --- KADIN KÜLOT: Beyaz açıklama (AEO uyumlu) ---
+  const kadinKulotBeyazDesc = `Vorte Premium Penye Kadın Külot Beyaz, ferah ve hijyenik hissiyle özellikle yaz aylarının vazgeçilmez iç çamaşırıdır. %95 taranmış penye pamuk ve %5 elastan karışımı, sıcak havalarda bile nefes alan bir konfor sunar. Ağ bölgesinde %100 saf pamuk iç katman hijyen güvencesi sağlar. Beyaz ve pastel tonlu kıyafetlerle ideal uyum yakalar, günlük kullanımda temizlik ve tazelik hissi verir. Türkiye'de üretilmiştir.
+
+TARANMIŞ PENYE PAMUK İÇ GİYİMDE NEDEN FARK YARATIR?
+
+Taranmış penye pamuk, kısa elyafların taranarak ayrıldığı, yalnızca uzun ve düzgün elyafların kullanıldığı premium bir iplik türüdür. Ciltle temas eden yüzey ipeksi ve pürüzsüzdür — karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
+
+BEYAZ KADIN KÜLOT KİMLER İÇİN İDEAL?
+
+Yaz aylarında ferahlık arayanlar için beyaz en doğal seçimdir. Beyaz pantolon, keten etek ve pastel tonlu kıyafetlerle uyumlu çalışır. Günlük kullanımda temizlik ve tazelik hissini ön planda tutan kadınlar beyazı tercih eder. Pamuklu pijama ve ev kıyafetlerinin altında da rahatlığıyla öne çıkar. Hijyen hassasiyeti yüksek olanlar için beyaz, kirliliğin anında fark edilmesini sağlayan en pratik renktir.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• İç Katman: %100 Pamuk — ağ bölgesinde ekstra hijyen astarı
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~45 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 64–70 cm / Kalça 88–94 cm
+• M (38-40): Bel 70–76 cm / Kalça 94–100 cm
+• L (40-42): Bel 76–82 cm / Kalça 100–106 cm
+• XL (42-44): Bel 82–88 cm / Kalça 106–112 cm
+• XXL (44-46): Bel 88–94 cm / Kalça 112–118 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi en ince noktadan, kalça çevrenizi en geniş noktadan ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Beyaz için oksijen bazlı ağartıcı kullanılabilir (klorlu çamaşır suyu önerilmez)
+• Asarak kurutma önerilir — güneşte kurutma beyazlığı korur
+• Ütü gerektirmez
+• Beyazları ayrı yıkayın — renk geçişi riski
+
+SIKÇA SORULAN SORULAR:
+
+Beyaz külot koyu kıyafetlerin altında belli eder mi?
+Evet, koyu renkli ince kumaşların altında beyaz belli edebilir. Koyu kıyafetler için siyah, ince kumaşlar için ten rengi tercih edin.
+
+Beyaz külotun beyazlığı nasıl korunur?
+Beyazları ayrı yıkayın, oksijen bazlı ağartıcı kullanabilirsiniz. Güneşte kurutma doğal ağartma etkisi yapar.
+
+%100 pamuk iç katman ne işe yarar?
+Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesini sağlar. Nefes alabilirliği artırır ve hijyen güvencesi sunar.`;
+
   // --- KADIN KÜLOT: Beyaz ---
   const kadinKulotBeyaz = await db.product.create({
     data: {
       name: "Vorte Premium Penye Kadın Külot Beyaz",
       slug: "kadin-modal-kulot-beyaz",
-      description: kadinKulotDesc,
+      description: kadinKulotBeyazDesc,
       seoTitle: "Vorte Premium Penye Kadın Külot Beyaz | Nefes Alan & Hijyenik",
-      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
+      seoDescription: "%95 penye pamuk kadın külot beyaz. %100 pamuk iç katman, yaz aylarında ferah konfor. Hijyenik, Türkiye üretimi.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
       basePrice: 169.90,
@@ -286,14 +524,65 @@ TEKNİK ÖZELLİKLER:
     });
   }
 
+  // --- KADIN KÜLOT: Ten açıklama (AEO uyumlu) ---
+  const kadinKulotTenDesc = `Vorte Premium Penye Kadın Külot Ten, cilt tonuna en yakın renk olarak ince kumaşların altında tamamen görünmez kalır. %95 taranmış penye pamuk ve %5 elastan karışımı, gün boyu ferahlık ve konfor sağlar. Ağ bölgesinde %100 saf pamuk iç katman hijyen güvencesi sunar. Elbise, etek ve ince kumaşlı kıyafetlerin altında iz bırakmayan, kadın dolabının olmazsa olmaz parçasıdır. Türkiye'de üretilmiştir.
+
+TARANMIŞ PENYE PAMUK İÇ GİYİMDE NEDEN FARK YARATIR?
+
+Taranmış penye pamuk, kısa elyafların taranarak ayrıldığı, yalnızca uzun ve düzgün elyafların kullanıldığı premium bir iplik türüdür. Ciltle temas eden yüzey ipeksi ve pürüzsüzdür — karde ipliğin verdiği kaşıntı ve tüylenme olmaz.
+
+TEN RENGİ KADIN KÜLOT KİMLER İÇİN İDEAL?
+
+İnce kumaşlı elbise ve etek giyen kadınlar için ten rengi en güvenli seçimdir. Düğün, davet ve özel günlerde kıyafetin altından iç çamaşırı çizgisi belli etmez. Yazın beyaz veya açık pastel tonlarda giyinenler için de ten rengi görünmezlik sağlar. Ofiste ince bluz ve kumaş pantolon tercih eden profesyonel kadınlar için gün boyu güven verir.
+
+TEKNİK ÖZELLİKLER:
+
+• Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+• İç Katman: %100 Pamuk — ağ bölgesinde ekstra hijyen astarı
+• Gramaj: 160–170 gr/m²
+• İplik: 30/1 – 36/1 Penye İplik
+• Örgü: Süprem (Single Jersey)
+• Dikiş: Yüksek mukavemetli overlok tekstüre iplik
+• Çekmezlik: Sanfor testi garantili
+• Elastan katkısı: Esneme sonrası formuna döner, sarkma yapmaz
+• Ürün Ağırlığı: ~45 gr
+
+BEDEN REHBERİ:
+
+• S (36-38): Bel 64–70 cm / Kalça 88–94 cm
+• M (38-40): Bel 70–76 cm / Kalça 94–100 cm
+• L (40-42): Bel 76–82 cm / Kalça 100–106 cm
+• XL (42-44): Bel 82–88 cm / Kalça 106–112 cm
+• XXL (44-46): Bel 88–94 cm / Kalça 112–118 cm
+İki beden arasında kalırsanız büyük bedeni tercih edin. Bel çevrenizi en ince noktadan, kalça çevrenizi en geniş noktadan ölçün.
+
+BAKIM TALİMATLARI:
+
+• 30°C'de makine yıkama yapılabilir
+• Çamaşır suyu kullanmayın — ten rengi solar
+• Asarak kurutma önerilir
+• Ütü gerektirmez
+• Benzer renklerle yıkayın — koyu renklerle karıştırmayın
+
+SIKÇA SORULAN SORULAR:
+
+Ten rengi külot beyaz elbisenin altında görünür mü?
+Ten rengi, cilt tonuna en yakın renk olduğu için beyaz ve açık renkli kıyafetlerin altında beyaz külottan bile daha az belli eder. İnce kumaşlarda en görünmez seçenektir.
+
+Kadın külot beden seçimi nasıl yapılır?
+Bel ve kalça çevrenizi ölçüp yukarıdaki tabloya bakın. Rahat kullanım için sıkıştırmayan bedeni seçin.
+
+%100 pamuk iç katman ne işe yarar?
+Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesini sağlar. Nefes alabilirliği artırır ve hijyen güvencesi sunar.`;
+
   // --- KADIN KÜLOT: Ten ---
   const kadinKulotTen = await db.product.create({
     data: {
       name: "Vorte Premium Penye Kadın Külot Ten",
       slug: "kadin-modal-kulot-ten",
-      description: kadinKulotDesc,
+      description: kadinKulotTenDesc,
       seoTitle: "Vorte Premium Penye Kadın Külot Ten | Nefes Alan & Hijyenik",
-      seoDescription: "%100 pamuk iç katmanlı Vorte kadın külot. Taranmış penye pamuk, nefes alan yapı, gün boyu konfor. Sarkmaz, terletmez.",
+      seoDescription: "%95 penye pamuk kadın külot ten rengi. %100 pamuk iç katman, ince kumaşların altında görünmez. Türkiye üretimi.",
       categoryId: catKadinKulot.id,
       gender: "KADIN",
       basePrice: 169.90,
@@ -320,10 +609,10 @@ TEKNİK ÖZELLİKLER:
     });
   }
 
-  console.log("  ✓ Products & variants created (5 products, 25 variants)");
+  console.log("  ✓ Products & variants created (6 products, 30 variants)");
 
   // ===== DEALER PRICES =====
-  const allProducts = [erkekBoxerSiyah, erkekBoxerLacivert, kadinKulotSiyah, kadinKulotBeyaz, kadinKulotTen];
+  const allProducts = [erkekBoxerSiyah, erkekBoxerLacivert, erkekBoxerGri, kadinKulotSiyah, kadinKulotBeyaz, kadinKulotTen];
 
   for (const product of allProducts) {
     // General wholesale price (for all dealers)
