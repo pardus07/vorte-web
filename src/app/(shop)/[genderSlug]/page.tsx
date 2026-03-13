@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 dk ISR — admin güncelleme sonrası revalidatePath ile anında yenilenir
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { BookOpen, Calendar, Tag, User } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 600; // 10 dk ISR — admin güncelleme sonrası revalidatePath ile anında yenilenir
 
 export const metadata: Metadata = {
   title: "Blog",

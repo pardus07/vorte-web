@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { Header } from "@/components/layout/Header";
@@ -15,6 +15,10 @@ const inter = Inter({
   subsets: ["latin", "latin-ext"],
   variable: "--font-inter",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#333333",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -59,7 +63,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description,
     keywords,
-    themeColor: "#333333",
     metadataBase: new URL(siteUrl),
     icons: {
       icon: [
