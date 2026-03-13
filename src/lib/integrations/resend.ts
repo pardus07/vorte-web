@@ -307,6 +307,23 @@ class ResendClient {
         // DB şablonu kullan
         subject = replaceVariables(template.subject, variables);
         html = replaceVariables(template.body, variables);
+
+        // dealer-approved: DB template'inde {{password}} yoksa şifre satırını enjekte et
+        if (
+          templateName === "dealer-approved" &&
+          variables?.password &&
+          !template.body.includes("{{password}}")
+        ) {
+          const passwordHtml = `<p style="margin:8px 0 0;font-size:14px;color:#666;">Şifre: <strong style="color:#1A1A1A;font-size:16px;">${variables.password}</strong></p>
+            <p style="color:#e74c3c;font-size:13px;margin:8px 0 16px;">⚠️ Güvenliğiniz için lütfen ilk girişten sonra şifrenizi değiştiriniz.</p>`;
+          // Bayi kodu satırından sonra enjekte et
+          const dealerCodePattern = /BAY-[A-Z0-9]+<\/strong><\/p>/;
+          const match = html.match(dealerCodePattern);
+          if (match) {
+            html = html.replace(match[0], match[0] + passwordHtml);
+          }
+        }
+
         fromAddress = getFromAddress(
           templateName,
           template.fromAddress || overrideFrom
@@ -558,15 +575,24 @@ class ResendClient {
     password?: string
   ) {
     const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/bayi-girisi`;
-    const subject = `Bayiliğiniz Onaylandı - Vorte Tekstil - ${companyName}`;
-    const html = dealerApprovedTemplate(companyName, dealerCode, loginUrl, password);
-    return this.sendEmailInternal({
+    const result = await this.sendFromTemplate({
+      templateName: "dealer-approved",
       to,
-      subject,
-      html,
-      from: getFromAddress("dealer-approved"),
-      replyTo: getReplyTo("dealer-approved"),
+      variables: {
+        companyName,
+        dealerCode,
+        password: password || "",
+        loginUrl,
+      },
     });
+
+    // DB template'inde {{password}} yoksa, şifreyi HTML'e enjekte et
+    if (password && result.provider) {
+      // sendFromTemplate zaten gönderdi, ama şifre template'te yoksa
+      // bir sonraki sefere DB template'ini güncellememiz gerekecek
+    }
+
+    return result;
   }
 
   async sendNewsletter(to: string, subject: string, content: string) {
