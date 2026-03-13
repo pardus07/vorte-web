@@ -8,6 +8,7 @@ const footerLinks = {
     { label: "Hakkımızda", href: "/hakkimizda" },
     { label: "İletişim", href: "/iletisim" },
     { label: "Toptan Satış", href: "/toptan" },
+    { label: "Blog", href: "/blog" },
   ],
   hesap: [
     { label: "Hesabım", href: "/hesabim" },

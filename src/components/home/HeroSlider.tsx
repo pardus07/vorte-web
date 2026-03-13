@@ -22,8 +22,8 @@ export interface SlideData {
 
 const fallbackSlides: SlideData[] = [
   {
-    imageDesktop: "/images/hero-1.png",
-    imageMobile: "/images/hero-mobile-1.png",
+    imageDesktop: "/images/hero-1.jpg",
+    imageMobile: "/images/hero-mobile-1.jpg",
     subtitle: "Yeni Sezon 2026",
     title: "Kaliteli İç Giyim,",
     highlight: "Uygun Fiyat",
@@ -35,8 +35,8 @@ const fallbackSlides: SlideData[] = [
     secondaryButtonLink: "/kadin-ic-giyim",
   },
   {
-    imageDesktop: "/images/hero-2.png",
-    imageMobile: "/images/hero-mobile-2.png",
+    imageDesktop: "/images/hero-2.jpg",
+    imageMobile: "/images/hero-mobile-2.jpg",
     subtitle: "Kadın Koleksiyonu",
     title: "Zarif Tasarım,",
     highlight: "Üstün Konfor",
@@ -48,8 +48,8 @@ const fallbackSlides: SlideData[] = [
     secondaryButtonLink: "/erkek-ic-giyim",
   },
   {
-    imageDesktop: "/images/hero-3.png",
-    imageMobile: "/images/hero-mobile-1.png",
+    imageDesktop: "/images/hero-3.jpg",
+    imageMobile: "/images/hero-mobile-3.jpg",
     subtitle: "Toptan Satış",
     title: "Bayilik Fırsatı,",
     highlight: "%45'e Varan İndirim",
@@ -90,11 +90,13 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps) {
       {/* Background Images */}
       {slides.map((s, i) => {
         const alt = s.altText || `Vorte Tekstil - ${s.title || ""} ${s.highlight || ""}`;
+        const isActive = i === current;
+        const isFirst = i === 0;
         return (
           <div
             key={i}
             className={`absolute inset-0 transition-opacity duration-1000 ${
-              i === current ? "opacity-100" : "opacity-0"
+              isActive ? "opacity-100" : "opacity-0"
             }`}
           >
             {/* Desktop */}
@@ -103,8 +105,10 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps) {
               alt={alt}
               fill
               className="hidden md:block object-cover object-center"
-              priority={i === 0}
+              priority={isFirst}
+              loading={isFirst ? "eager" : "lazy"}
               sizes="100vw"
+              quality={80}
             />
             {/* Mobile */}
             <Image
@@ -112,8 +116,10 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps) {
               alt={alt}
               fill
               className="block md:hidden object-cover object-center"
-              priority={i === 0}
+              priority={isFirst}
+              loading={isFirst ? "eager" : "lazy"}
               sizes="100vw"
+              quality={80}
             />
           </div>
         );

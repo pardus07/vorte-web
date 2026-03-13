@@ -11,9 +11,12 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: 60 saniye cache, LCP iyileştirmesi
 
 export const metadata: Metadata = {
+  title: "Vorte Tekstil | Kaliteli İç Giyim - Erkek Boxer & Kadın Külot",
+  description:
+    "Vorte Tekstil - Premium modal kumaştan erkek boxer ve kadın külot. Toptan ve perakende iç giyim. Hızlı kargo, güvenli ödeme, uygun fiyat. Bursa.",
   alternates: { canonical: "/" },
 };
 

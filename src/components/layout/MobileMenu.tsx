@@ -13,6 +13,7 @@ const menuItems = [
   { label: "ERKEK İÇ GİYİM", href: "/erkek-ic-giyim" },
   { label: "KADIN İÇ GİYİM", href: "/kadin-ic-giyim" },
   { label: "TOPTAN SATIŞ", href: "/toptan" },
+  { label: "BLOG", href: "/blog" },
   { label: "HAKKIMIZDA", href: "/hakkimizda" },
   { label: "İLETİŞİM", href: "/iletisim" },
 ];

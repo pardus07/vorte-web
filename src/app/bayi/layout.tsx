@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDealerSession } from "@/lib/dealer-session";
 import { DealerSidebar } from "@/components/dealer/DealerSidebar";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DealerLayout({
   children,

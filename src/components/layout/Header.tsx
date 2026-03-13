@@ -58,6 +58,12 @@ export function Header() {
             >
               TOPTAN SATIŞ
             </Link>
+            <Link
+              href="/blog"
+              className="text-sm font-semibold tracking-wide text-[#1A1A1A] hover:text-[#7AC143] transition-colors"
+            >
+              BLOG
+            </Link>
           </nav>
 
           {/* Center: Search bar (desktop) */}

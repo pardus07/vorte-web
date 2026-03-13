@@ -24,7 +24,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!product) return {};
 
-  const description = product.description || `${product.name} - Vorte Tekstil`;
+  const rawDesc = product.description || `${product.name} - Vorte Tekstil`;
+  const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + "..." : rawDesc;
 
   return {
     title: product.name,

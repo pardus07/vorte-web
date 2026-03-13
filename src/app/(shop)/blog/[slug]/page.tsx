@@ -19,12 +19,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) return { title: "Yazı Bulunamadı" };
 
+  const rawDesc = post.seoDescription || post.excerpt || undefined;
+  const description = rawDesc && rawDesc.length > 155 ? rawDesc.slice(0, 152) + "..." : rawDesc;
+
   return {
     title: post.seoTitle || post.title,
-    description: post.seoDescription || post.excerpt || undefined,
+    description,
     openGraph: {
       title: post.seoTitle || post.title,
-      description: post.seoDescription || post.excerpt || undefined,
+      description,
       images: post.coverImage ? [post.coverImage] : undefined,
     },
     alternates: { canonical: `/blog/${slug}` },
