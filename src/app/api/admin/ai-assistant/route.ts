@@ -2,7 +2,7 @@
  * Vorte Admin AI Agent — API Route
  * POST /api/admin/ai-assistant
  *
- * Gemini 2.5 Flash + Native Function Calling
+ * Gemini 2.5 Pro + Native Function Calling
  * Sadece ADMIN rolü erişebilir.
  */
 
@@ -14,7 +14,7 @@ import { resolveToolCall, executeApprovedToolCall } from "@/lib/ai-agent-executo
 import { buildSystemPrompt, fetchDynamicContext } from "@/lib/ai-agent-prompt";
 import { getPageContext } from "@/lib/ai-agent-context";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.5-pro";
 
 export const maxDuration = 120; // Image generation chain can take 60s+
 
