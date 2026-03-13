@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import { logActivity } from "@/lib/audit";
-import { sanitizeProductDescription } from "@/lib/sanitize-description";
+
 
 async function requireAdmin() {
   const session = await auth();
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     data: {
       name,
       slug,
-      description: description ? sanitizeProductDescription(description) : null,
+      description: description || null,
       categoryId,
       gender,
       basePrice: Number(basePrice),

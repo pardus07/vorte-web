@@ -5,6 +5,7 @@
  */
 
 import { TOOL_META, type ApprovalLevel } from "./ai-agent-tools";
+import { sanitizeProductDescription } from "./sanitize-description";
 
 export interface ToolCallResult {
   toolName: string;
@@ -373,6 +374,15 @@ async function executeToolCall(
           delete bodyArgs[from];
         }
       }
+    }
+
+    // AI Agent ürün oluşturma/güncelleme yapıyorsa description'ı sanitize et
+    if (
+      (toolName === "create_product" || toolName === "update_product") &&
+      typeof bodyArgs.description === "string" &&
+      bodyArgs.description.trim().length > 0
+    ) {
+      bodyArgs.description = sanitizeProductDescription(bodyArgs.description);
     }
 
     // Boş body gönderme — ama description gibi büyük alanlar olabilir
