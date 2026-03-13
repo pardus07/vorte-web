@@ -738,7 +738,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Ürün açıklaması (HTML destekler)",
+          description: "Ürün açıklaması. KRİTİK: DÜZ METİN olmalı! HTML tag KULLANMA (<p>, <b>, <br> vb. YASAK). Başlıkları BÜYÜK HARF yaz. Paragraflar arası \\n\\n kullan. Madde işaretleri için '* •' kullan.",
         },
         images: {
           type: SchemaType.ARRAY,
@@ -842,7 +842,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
         description: {
           type: SchemaType.STRING,
-          description: "Yeni açıklama",
+          description: "Yeni ürün açıklaması. KRİTİK: DÜZ METİN olmalı! HTML tag KULLANMA (<p>, <b>, <br> vb. YASAK). Başlıkları BÜYÜK HARF yaz. Paragraflar arası \\n\\n kullan. Madde işaretleri için '* •' kullan.",
         },
         seoTitle: {
           type: SchemaType.STRING,

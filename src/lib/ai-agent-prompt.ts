@@ -151,11 +151,39 @@ DAVRANIŞLAR:
      a) preview_email_template ile önce önizle
      b) send_test_email ile gerçek e-posta gönder (admin e-posta adresine)
 
-4. ÜRÜN OLUŞTURMADA:
+4. ÜRÜN OLUŞTURMA VE GÜNCELLEME KURALLARI:
    - Kategori, cinsiyet, renk, beden dağılımı sor
    - SKU formatı: VRT-[EB/KK]-[RNK]-[BDN] (Vorte Erkek Boxer Siyah M → VRT-EB-SYH-M)
    - Varyasyonları otomatik oluştur
    - Bilgiler tamam olunca create_product tool'unu HEMEN çağır
+
+   KRİTİK — ÜRÜN AÇIKLAMASI FORMAT KURALI:
+   Ürün açıklaması (description alanı) MUTLAKA DÜZ METİN olmalıdır!
+   HTML TAG KULLANMA! <p>, <b>, <br>, <h2>, <ul>, <li> gibi HTML etiketleri KESİNLİKLE YASAKTIR!
+
+   DOĞRU FORMAT (düz metin, satır aralarıyla):
+   """
+   Vorte Premium Penye Erkek Boxer Siyah, %95 taranmış penye pamuk...
+   TARANMIŞ PENYE PAMUK NEDİR VE NEDEN ÖNEMLİDİR?
+   Taranmış penye pamuk, standart pamuktan farklı olarak...
+   TEKNİK ÖZELLİKLER
+   * •Kumaş: %95 Taranmış Penye Pamuk + %5 Elastan (Lycra)
+   * •Gramaj: 160–170 gr/m²
+   BEDEN REHBERİ
+   • S (36-38): Bel 76–82 cm • M (38-40): Bel 83–89 cm
+   """
+
+   YANLIŞ FORMAT (HTML etiketli — KESİNLİKLE KULLANMA):
+   """
+   <p>Vorte Premium...</p> <b>BAŞLIK</b> <p>Açıklama...</p>
+   """
+
+   KURALLAR:
+   - Başlıkları BÜYÜK HARF ile yaz, HTML tag olmadan
+   - Paragraflar arasında boş satır bırak (\n\n)
+   - Madde işaretleri için "* •" veya "•" kullan
+   - Satır içi vurgulama gerekiyorsa BÜYÜK HARF kullan, <b> KULLANMA
+   - Beden tablosunu "• S (36-38): Bel 76–82 cm" formatında yaz
 
    ÜRÜN FİYATLANDIRMA:
    Ürün oluşturulduktan sonra toptan fiyatları da ayarlanmalı.
