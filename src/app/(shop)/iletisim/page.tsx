@@ -5,22 +5,31 @@ import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "İletişim",
-  description: "Vorte Tekstil iletişim bilgileri. Adres, telefon, e-posta. Nilüfer, Bursa.",
+  title: "İletişim — Vorte Tekstil | Nilüfer, Bursa",
+  description:
+    "Vorte Tekstil iletişim bilgileri. Adres: Dumlupınar Mah., Nilüfer/Bursa. Tel: 0537 622 06 94. E-posta: info@vorte.com.tr. Toptan satış ve bayilik başvuruları.",
   alternates: { canonical: "/iletisim" },
 };
 
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* LocalBusiness — Google Business Profile uyumlu */}
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@type": "ClothingStore",
+          "@type": ["ClothingStore", "LocalBusiness"],
+          "@id": "https://www.vorte.com.tr/#business",
           name: "Vorte Tekstil",
+          alternateName: "Vorte İç Giyim & Çorap Toptan",
           url: "https://www.vorte.com.tr",
           logo: "https://www.vorte.com.tr/logo.png",
-          image: "https://www.vorte.com.tr/logo.png",
+          image: [
+            "https://www.vorte.com.tr/og-image.jpg",
+            "https://www.vorte.com.tr/logo.png",
+          ],
+          description:
+            "35 yıllık tekstil deneyimiyle erkek boxer ve kadın külot üreten, yapay zeka destekli üretim süreçleriyle çalışan Türkiye merkezli iç giyim markası. Toptan ve perakende satış.",
           telephone: "+90-537-622-0694",
           email: "info@vorte.com.tr",
           address: {
@@ -36,15 +45,73 @@ export default function ContactPage() {
             latitude: 40.2295192,
             longitude: 28.8313634,
           },
+          hasMap:
+            "https://www.google.com/maps?cid=14934680307233444750",
           openingHoursSpecification: [
             {
               "@type": "OpeningHoursSpecification",
-              dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+              dayOfWeek: [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ],
               opens: "09:00",
               closes: "18:00",
             },
           ],
           priceRange: "₺₺",
+          currenciesAccepted: "TRY",
+          paymentAccepted: "Kredi Kartı, Banka Havalesi",
+          areaServed: {
+            "@type": "Country",
+            name: "Türkiye",
+          },
+          brand: {
+            "@type": "Brand",
+            name: "Vorte",
+          },
+          foundingDate: "1990",
+          knowsAbout: [
+            "taranmış penye pamuk iç giyim",
+            "erkek boxer toptan",
+            "kadın külot toptan",
+            "yapay zeka destekli tekstil üretimi",
+          ],
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Vorte İç Giyim Koleksiyonu",
+            itemListElement: [
+              {
+                "@type": "OfferCatalog",
+                name: "Erkek Boxer",
+                itemListElement: [
+                  {
+                    "@type": "Offer",
+                    itemOffered: {
+                      "@type": "Product",
+                      name: "Vorte Premium Penye Erkek Boxer",
+                    },
+                  },
+                ],
+              },
+              {
+                "@type": "OfferCatalog",
+                name: "Kadın Külot",
+                itemListElement: [
+                  {
+                    "@type": "Offer",
+                    itemOffered: {
+                      "@type": "Product",
+                      name: "Vorte Premium Penye Kadın Külot",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
         }}
       />
       <Breadcrumb items={[{ label: "Ana Sayfa", href: "/" }, { label: "İletişim" }]} />

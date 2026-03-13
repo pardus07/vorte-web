@@ -117,8 +117,24 @@ export default async function RootLayout({
             "@context": "https://schema.org",
             "@type": ["Organization", "ClothingStore"],
             name: settings.siteName || "Vorte Tekstil",
+            alternateName: "Vorte",
             url: settings.siteUrl || "https://www.vorte.com.tr",
-            logo: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
+            logo: {
+              "@type": "ImageObject",
+              url: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
+              width: 512,
+              height: 512,
+            },
+            image: `${settings.siteUrl || "https://www.vorte.com.tr"}/og-image.jpg`,
+            description:
+              "35 yıllık tekstil deneyimiyle yapay zeka destekli üretim süreçleri ve %95 taranmış penye pamuk kalitesiyle erkek boxer ve kadın külot üreten Türkiye merkezli iç giyim markası.",
+            slogan:
+              "Yapay Zeka Destekli Premium İç Giyim",
+            foundingDate: "1990",
+            foundingLocation: {
+              "@type": "Place",
+              name: "İstanbul, Türkiye",
+            },
             telephone: settings.contactPhone || "+90-537-622-0694",
             email: settings.contactEmail || "info@vorte.com.tr",
             address: {
@@ -129,12 +145,64 @@ export default async function RootLayout({
               postalCode: "16110",
               addressCountry: "TR",
             },
-            contactPoint: {
-              "@type": "ContactPoint",
-              telephone: settings.contactPhone || "+90-537-622-0694",
-              contactType: "customer service",
-              availableLanguage: "Turkish",
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: 40.2295192,
+              longitude: 28.8313634,
             },
+            areaServed: {
+              "@type": "Country",
+              name: "Türkiye",
+            },
+            brand: {
+              "@type": "Brand",
+              name: "Vorte",
+              logo: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
+            },
+            numberOfEmployees: {
+              "@type": "QuantitativeValue",
+              value: "10-50",
+            },
+            knowsAbout: [
+              "taranmış penye pamuk",
+              "erkek boxer",
+              "kadın külot",
+              "iç giyim üretimi",
+              "yapay zeka destekli tekstil",
+            ],
+            makesOffer: [
+              {
+                "@type": "Offer",
+                itemOffered: {
+                  "@type": "Product",
+                  name: "Vorte Premium Penye Erkek Boxer",
+                  category: "Erkek İç Giyim",
+                },
+              },
+              {
+                "@type": "Offer",
+                itemOffered: {
+                  "@type": "Product",
+                  name: "Vorte Premium Penye Kadın Külot",
+                  category: "Kadın İç Giyim",
+                },
+              },
+            ],
+            contactPoint: [
+              {
+                "@type": "ContactPoint",
+                telephone: settings.contactPhone || "+90-537-622-0694",
+                contactType: "customer service",
+                availableLanguage: "Turkish",
+              },
+              {
+                "@type": "ContactPoint",
+                telephone: settings.contactPhone || "+90-537-622-0694",
+                contactType: "sales",
+                availableLanguage: "Turkish",
+                description: "Toptan satış ve bayilik başvuruları",
+              },
+            ],
             sameAs: [
               settings.instagramUrl,
               settings.facebookUrl,

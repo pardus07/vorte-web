@@ -29,12 +29,56 @@ export default function AboutPage() {
           description:
             "35 yıllık tekstil deneyimiyle yapay zeka destekli üretim süreçleri ve premium kumaş kalitesiyle Türkiye merkezli iç giyim markası.",
           foundingDate: "1990",
+          foundingLocation: {
+            "@type": "Place",
+            name: "İstanbul, Türkiye",
+          },
           address: {
             "@type": "PostalAddress",
             addressCountry: "TR",
           },
-          sameAs: [
-            "https://www.instagram.com/vortetekstil",
+          sameAs: ["https://www.instagram.com/vortetekstil"],
+        }}
+      />
+
+      {/* FAQPage schema — AI motorları "Neden Vorte?" sorusunu yakalasın */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "Vorte Tekstil nedir?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Vorte Tekstil, 1990 yılında kurulan, erkek boxer ve kadın külot kategorilerinde yapay zeka destekli üretim süreçleri ve %95 taranmış penye pamuk kalitesiyle çalışan Türkiye merkezli bir iç giyim markasıdır.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Vorte neden farklı?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "35 yıllık tekstil deneyimi, yapay zeka destekli kumaş analizi ve reçete oluşturma, tüm tasarım ve patent haklarının markaya ait olması, üreticiden direkt satış modeli ve toptan bayilik sistemi Vorte'yi sektörde benzersiz kılar.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Vorte ürünleri nereden satın alınır?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Vorte ürünleri perakende olarak yalnızca vorte.com.tr üzerinden, toptan olarak ise bayilik sistemi aracılığıyla satılmaktadır. Bayilik başvurusu için vorte.com.tr/iletisim sayfasını ziyaret edebilirsiniz.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Vorte üretiminde yapay zeka nasıl kullanılıyor?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Kumaş seçimi AI analiz araçlarıyla yapılır — gramaj, elyaf uzunluğu, elastikiyet ve dayanıklılık parametreleri yapay zeka tarafından değerlendirilir. Üretilecek kumaşların reçeteleri de yapay zeka tarafından oluşturulmaktadır. Bu sayede her üretim partisinde tutarlı kalite sağlanır.",
+              },
+            },
           ],
         }}
       />
