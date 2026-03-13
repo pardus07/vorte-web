@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
@@ -147,6 +148,13 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-forwarded-for") || undefined
     );
   }
+
+  // Sitemap + kategori sayfalarını revalidate et
+  try {
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/erkek-ic-giyim");
+    revalidatePath("/kadin-ic-giyim");
+  } catch { /* revalidate hatası kritik değil */ }
 
   return NextResponse.json(product, { status: 201 });
 }

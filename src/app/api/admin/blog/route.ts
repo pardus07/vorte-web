@@ -90,10 +90,11 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Cache temizle — anasayfa blog bölümü + blog listesi + yeni yazı sayfası
+  // Cache temizle — anasayfa blog bölümü + blog listesi + yeni yazı sayfası + sitemap
   revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath(`/blog/${finalSlug}`);
+  revalidatePath("/sitemap.xml");
 
   return NextResponse.json(post, { status: 201 });
 }

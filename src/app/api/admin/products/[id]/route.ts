@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
@@ -236,6 +237,17 @@ export async function PUT(
       );
     }
 
+    // Sitemap + ürün sayfalarını revalidate et
+    try {
+      revalidatePath("/sitemap.xml");
+      if (updated?.slug) revalidatePath(`/urun/${updated.slug}`);
+      // Eski slug farklıysa onu da revalidate et
+      if (existing.slug !== updated?.slug) revalidatePath(`/urun/${existing.slug}`);
+      // Kategori sayfalarını da revalidate et
+      revalidatePath("/erkek-ic-giyim");
+      revalidatePath("/kadin-ic-giyim");
+    } catch { /* revalidate hatası kritik değil */ }
+
     return NextResponse.json(updated);
   } catch (err) {
     console.error("[products/[id]] PUT error:", err);
@@ -256,6 +268,13 @@ export async function DELETE(
 
   const { id } = await params;
   await db.product.delete({ where: { id } });
+
+  // Sitemap + sayfaları revalidate et
+  try {
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/erkek-ic-giyim");
+    revalidatePath("/kadin-ic-giyim");
+  } catch { /* revalidate hatası kritik değil */ }
 
   const session = await auth();
   if (session?.user) {

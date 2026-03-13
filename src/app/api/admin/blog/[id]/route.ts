@@ -73,10 +73,11 @@ export async function PUT(
 
   const post = await db.blogPost.update({ where: { id }, data: updateData });
 
-  // Cache temizle — anasayfa blog bölümü + blog listesi + yazı sayfası
+  // Cache temizle — anasayfa blog bölümü + blog listesi + yazı sayfası + sitemap
   revalidatePath("/");
   revalidatePath("/blog");
   if (post.slug) revalidatePath(`/blog/${post.slug}`);
+  revalidatePath("/sitemap.xml");
 
   return NextResponse.json(post);
 }
@@ -93,10 +94,11 @@ export async function DELETE(
   const post = await db.blogPost.findUnique({ where: { id }, select: { slug: true } });
   await db.blogPost.delete({ where: { id } });
 
-  // Cache temizle
+  // Cache temizle + sitemap
   revalidatePath("/");
   revalidatePath("/blog");
   if (post?.slug) revalidatePath(`/blog/${post.slug}`);
+  revalidatePath("/sitemap.xml");
 
   return NextResponse.json({ success: true });
 }
