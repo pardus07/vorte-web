@@ -195,10 +195,11 @@ export default function NewProductPage() {
                   Açıklama
                 </label>
                 <textarea
-                  rows={3}
+                  rows={16}
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  className="form-input w-full"
+                  className="form-input w-full font-mono text-xs leading-relaxed"
+                  placeholder="Ürün açıklaması — düz metin formatında yazın"
                 />
               </div>
 
