@@ -109,6 +109,7 @@ export function AdminSidebar() {
         >
           ← Mağazaya Dön
         </Link>
+        <p className="mt-2 text-[10px] text-gray-300">v{process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0"}</p>
       </div>
     </aside>
   );
