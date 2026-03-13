@@ -131,31 +131,72 @@ export async function PUT(
       });
     }
 
-    // Varyant güncelleme: sadece variants gönderilmişse
+    // Varyant güncelleme: upsert + güvenli silme
+    // deleteMany kullanılamaz — sipariş kalemi bağlı varyantlar foreign key hatası verir
     if (variants !== undefined && variants?.length > 0) {
-      await db.variant.deleteMany({ where: { productId: realId } });
-      await db.variant.createMany({
-        data: variants.map(
-          (v: {
-            color: string;
-            colorHex: string;
-            size: string;
-            sku: string;
-            gtinBarcode: string;
-            stock: number;
-            price: string;
-          }) => ({
-            productId: realId,
-            color: v.color,
-            colorHex: v.colorHex,
-            size: v.size as "S" | "M" | "L" | "XL" | "XXL",
-            sku: v.sku,
-            gtinBarcode: v.gtinBarcode || null,
-            stock: v.stock || 0,
-            price: v.price ? parseFloat(v.price) : null,
-          })
-        ),
-      });
+      const incomingSkus = new Set<string>();
+
+      for (const v of variants as {
+        color: string;
+        colorHex: string;
+        size: string;
+        sku: string;
+        gtinBarcode: string;
+        stock: number;
+        price: string;
+      }[]) {
+        incomingSkus.add(v.sku);
+
+        // Mevcut varyantı SKU ile bul
+        const existingVariant = await db.variant.findFirst({
+          where: { productId: realId, sku: v.sku },
+        });
+
+        if (existingVariant) {
+          // Güncelle
+          await db.variant.update({
+            where: { id: existingVariant.id },
+            data: {
+              color: v.color,
+              colorHex: v.colorHex,
+              size: v.size as "S" | "M" | "L" | "XL" | "XXL",
+              gtinBarcode: v.gtinBarcode || null,
+              stock: v.stock || 0,
+              price: v.price ? parseFloat(v.price) : null,
+            },
+          });
+        } else {
+          // Yeni oluştur
+          await db.variant.create({
+            data: {
+              productId: realId,
+              color: v.color,
+              colorHex: v.colorHex,
+              size: v.size as "S" | "M" | "L" | "XL" | "XXL",
+              sku: v.sku,
+              gtinBarcode: v.gtinBarcode || null,
+              stock: v.stock || 0,
+              price: v.price ? parseFloat(v.price) : null,
+            },
+          });
+        }
+      }
+
+      // Artık kullanılmayan varyantları sil (sipariş bağlantısı olmayanlar)
+      const oldVariants = existing.variants.filter(
+        (v) => !incomingSkus.has(v.sku)
+      );
+      for (const old of oldVariants) {
+        try {
+          await db.variant.delete({ where: { id: old.id } });
+        } catch {
+          // Sipariş bağlantısı varsa silinemez — stoku 0 yap, pasifleştir
+          await db.variant.update({
+            where: { id: old.id },
+            data: { stock: 0 },
+          });
+        }
+      }
     }
 
     const updated = await db.product.findUnique({
