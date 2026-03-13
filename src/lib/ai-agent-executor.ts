@@ -371,15 +371,31 @@ async function executeToolCall(
       }
     }
 
-    // Boş body gönderme
+    // Boş body gönderme — ama description gibi büyük alanlar olabilir
     if (Object.keys(bodyArgs).length > 0) {
       fetchOptions.body = JSON.stringify(bodyArgs);
     }
   }
 
   console.log(`[ai-agent-executor] ${method} ${url}`);
+  if (fetchOptions.body) {
+    const bodyStr = fetchOptions.body as string;
+    console.log(`[ai-agent-executor] Body size: ${bodyStr.length} chars`);
+    // Büyük body'lerde ilk 500 karakteri logla
+    if (bodyStr.length > 500) {
+      console.log(`[ai-agent-executor] Body preview: ${bodyStr.substring(0, 500)}...`);
+    }
+  }
 
-  const response = await fetch(url, fetchOptions);
+  let response: Response;
+  try {
+    response = await fetch(url, fetchOptions);
+  } catch (fetchErr) {
+    console.error(`[ai-agent-executor] Fetch failed:`, fetchErr);
+    throw new Error(
+      `API'ye bağlanılamadı (${method} ${url}): ${fetchErr instanceof Error ? fetchErr.message : "Bağlantı hatası"}`
+    );
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -401,7 +417,7 @@ async function executeToolCall(
         errorMsg = parsed.error || parsed.message || errorBody;
       }
     } catch {
-      errorMsg = errorBody;
+      errorMsg = errorBody || `HTTP ${response.status} ${response.statusText}`;
     }
     console.error(`[ai-agent-executor] Error ${response.status}:`, errorMsg);
     throw new Error(`API hatası (${response.status}): ${errorMsg}`);

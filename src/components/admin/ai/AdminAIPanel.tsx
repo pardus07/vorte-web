@@ -340,7 +340,7 @@ export function AdminAIPanel() {
                   Vorte Asistan
                 </h2>
                 <p className="text-[10px] text-gray-400">
-                  {pageContext.pageTitle} • Gemini 2.5 Flash
+                  {pageContext.pageTitle} • Gemini 2.5 Pro
                 </p>
               </div>
             </div>

@@ -686,13 +686,13 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "get_product",
     description:
-      "Tek bir ürünün detayını getir. Varyasyonlar, stok bilgisi, fiyatlar, SEO bilgileri ve görselleri içerir.",
+      "Tek bir ürünün detayını getir. Varyasyonlar, stok bilgisi, fiyatlar, SEO bilgileri ve görselleri içerir. ID veya slug ile çalışır.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
         id: {
           type: SchemaType.STRING,
-          description: "Ürün ID'si",
+          description: "Ürün ID'si (CUID) veya slug'ı (örn: 'erkek-modal-boxer-siyah'). Her ikisi de kabul edilir.",
         },
       },
       required: ["id"],
@@ -801,13 +801,13 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "update_product",
     description:
-      "Mevcut ürünü güncelle. Sadece değiştirilmek istenen alanlar gönderilir.",
+      "Mevcut ürünü güncelle. Sadece değiştirilmek istenen alanlar gönderilir. ÖNEMLİ: id parametresine ürünün gerçek veritabanı ID'sini VEYA slug'ını yazabilirsin. Birden fazla ürün güncellemek için bu tool'u her ürün için AYRI AYRI çağır.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
         id: {
           type: SchemaType.STRING,
-          description: "Güncellenecek ürün ID'si",
+          description: "Güncellenecek ürünün veritabanı ID'si (CUID) veya slug'ı. Önce get_products ile ürün listesini çekip doğru ID/slug'ı bul.",
         },
         name: {
           type: SchemaType.STRING,
