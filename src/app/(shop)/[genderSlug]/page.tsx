@@ -13,18 +13,19 @@ import { DesktopFilter } from "./DesktopFilter";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import { getBannersByPosition } from "@/lib/banners";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { CategoryGuide } from "@/components/seo/CategoryGuide";
 import type { Metadata } from "next";
 
 const GENDERS: Record<string, { label: string; gender: "ERKEK" | "KADIN"; description: string }> = {
   erkek: {
     label: "Erkek İç Giyim",
     gender: "ERKEK",
-    description: "Erkek modal boxer koleksiyonu. Premium kumaş kalitesi, uygun fiyat.",
+    description: "Vorte erkek boxer koleksiyonu — %95 taranmış penye pamuk, overlok dikiş, Türkiye üretimi. Siyah, lacivert, gri renk seçenekleri, S'den XXL'e tüm bedenler.",
   },
   kadin: {
     label: "Kadın İç Giyim",
     gender: "KADIN",
-    description: "Kadın modal külot koleksiyonu. Konfor ve şıklık bir arada.",
+    description: "Vorte kadın külot koleksiyonu — %95 taranmış penye pamuk, %100 pamuk iç katman, Türkiye üretimi. Siyah, beyaz, ten rengi seçenekleri, S'den XXL'e tüm bedenler.",
   },
 };
 
@@ -200,6 +201,9 @@ export default async function ProductListingPage({ params, searchParams }: PageP
       )}
 
       <div className="mx-auto max-w-7xl px-4 py-6">
+      {/* AEO Rehber Bloku — ürün grid'inin üstünde */}
+      <CategoryGuide gender={genderKey as "erkek" | "kadin"} />
+
       {/* Breadcrumb */}
       <Breadcrumb
         items={[
