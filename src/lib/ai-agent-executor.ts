@@ -177,32 +177,36 @@ function getSpecialRoute(
     }
 
     // ── Bayi Seviye ──
+    // NOT: dealers/tiers/[id] route'u YOK — tüm işlemler /api/admin/dealers/tiers base route'u kullanır
     case "manage_dealer_tiers": {
       const action = args.action as string;
       if (action === "create")
         return { endpoint: "/api/admin/dealers/tiers", method: "POST" };
       if (action === "update")
-        return {
-          endpoint: `/api/admin/dealers/tiers/${args.id}`,
-          method: "PUT",
-        };
+        // Tier güncelleme = POST (upsert) — PUT yok
+        return { endpoint: "/api/admin/dealers/tiers", method: "POST" };
       if (action === "delete")
+        // DELETE /api/admin/dealers/tiers?tier=TIER_NAME — query param ile
         return {
-          endpoint: `/api/admin/dealers/tiers/${args.id}`,
+          endpoint: `/api/admin/dealers/tiers?tier=${args.tier || args.id}`,
           method: "DELETE",
         };
-      return null;
+      // List
+      return { endpoint: "/api/admin/dealers/tiers", method: "GET" };
     }
 
     // ── Yorum moderasyon/silme ──
+    // NOT: reviews/[id] route'u YOK — her iki işlem de /api/admin/reviews base route'u kullanır
     case "moderate_review":
+      // PUT /api/admin/reviews — body'de { id, approved } gönderilir
       return {
-        endpoint: `/api/admin/reviews/${args.id}`,
+        endpoint: "/api/admin/reviews",
         method: "PUT",
       };
     case "delete_review":
+      // DELETE /api/admin/reviews?id=xxx — query param ile
       return {
-        endpoint: `/api/admin/reviews/${args.id}`,
+        endpoint: `/api/admin/reviews?id=${args.id}`,
         method: "DELETE",
       };
 

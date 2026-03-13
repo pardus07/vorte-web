@@ -225,6 +225,12 @@ export const TOOL_META: Record<string, ToolMeta> = {
     method: "POST",
     description: "Bayi seviyesi yönet",
   },
+  get_pricing_matrix: {
+    approvalLevel: 1,
+    endpoint: "/api/admin/pricing",
+    method: "GET",
+    description: "Fiyatlandırma matrisi — ürünler, bayiler ve toptan fiyatlar",
+  },
   update_pricing_matrix: {
     approvalLevel: 2,
     endpoint: "/api/admin/pricing",
@@ -460,7 +466,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
     approvalLevel: 3,
     endpoint: "/api/admin/reviews",
     method: "DELETE",
-    pathParam: "id",
+    // NOT: pathParam yok — id query param, special route ile hallediliyor
     description: "Yorum sil",
   },
 
@@ -1389,6 +1395,15 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         },
       },
       required: ["action"],
+    },
+  },
+  {
+    name: "get_pricing_matrix",
+    description:
+      "Mevcut fiyatlandırma matrisini getir. Ürünler, bayiler ve toptan fiyatları döner. Fiyat güncellemeden ÖNCE mevcut fiyatları görmek için kullan.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
     },
   },
   {
