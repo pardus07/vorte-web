@@ -37,7 +37,7 @@ export default function AboutPage() {
             "@type": "PostalAddress",
             addressCountry: "TR",
           },
-          sameAs: ["https://www.instagram.com/vortetekstil"],
+          sameAs: ["https://www.instagram.com/vortestore"],
         }}
       />
 
