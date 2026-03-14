@@ -24,6 +24,7 @@ const DEFAULT_TEMPLATES = [
   { name: "password-reset", label: "Şifre Sıfırlama", vars: "customerName, resetUrl", from: "destek@vorte.com.tr" },
   { name: "dealer-approved", label: "Bayi Onayı", vars: "companyName, dealerCode, loginUrl", from: "bayi@vorte.com.tr" },
   { name: "newsletter", label: "Bülten", vars: "content", from: "info@vorte.com.tr" },
+  { name: "production-termin", label: "Üretim Termin Bildirimi", vars: "companyName, orderNumber, terminDate, totalAmount, productionNote", from: "bayi@vorte.com.tr" },
 ];
 
 interface TemplateData {
