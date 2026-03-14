@@ -26,8 +26,8 @@ export const STAND_PACKAGES: StandPackage[] = [
     format: "Kasa yanı veya duvar/masaüstü tipi, tek yönlü karton stand",
     totalItems: 50,
     items: [
-      { productSlug: "erkek-modal-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
     ],
   },
   {
@@ -37,10 +37,10 @@ export const STAND_PACKAGES: StandPackage[] = [
     format: "Orta boy, çift yönlü ada tipi karton stand",
     totalItems: 100,
     items: [
-      { productSlug: "erkek-modal-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
-      { productSlug: "erkek-modal-boxer-lacivert", color: "Lacivert", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-lacivert", color: "Lacivert", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
     ],
   },
   {
@@ -50,12 +50,12 @@ export const STAND_PACKAGES: StandPackage[] = [
     format: "Tam boy, mağaza içi ada tipi (145x45x45 cm), çift yönlü karton stand",
     totalItems: 150,
     items: [
-      { productSlug: "erkek-modal-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
-      { productSlug: "erkek-modal-boxer-lacivert", color: "Lacivert", sizes: BEDEN_DAGILIMI },
-      { productSlug: "erkek-modal-boxer-gri", color: "Gri", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-beyaz", color: "Beyaz", sizes: BEDEN_DAGILIMI },
-      { productSlug: "kadin-modal-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-lacivert", color: "Lacivert", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-erkek-boxer-gri", color: "Gri", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-siyah", color: "Siyah", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-beyaz", color: "Beyaz", sizes: BEDEN_DAGILIMI },
+      { productSlug: "vorte-premium-penye-kadin-kulot-ten", color: "Ten", sizes: BEDEN_DAGILIMI },
     ],
   },
 ];
