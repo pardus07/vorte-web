@@ -44,6 +44,8 @@ enum OrderStatus {
   PENDING
   PAID
   PROCESSING
+  PRODUCTION
+  PRODUCTION_READY
   SHIPPED
   DELIVERED
   CANCELLED
@@ -79,6 +81,7 @@ enum NotificationType {
   DEALER_ORDER
   PAYMENT_SUCCESS
   PAYMENT_FAILED
+  PRODUCTION_TERMIN
   STOCK_ALERT
   NEW_DEALER
 }
@@ -302,6 +305,9 @@ model Order {
   notes            String?
   adminNotes      String?     @db.Text
   couponCode      String?
+  isProduction     Boolean    @default(false)  // Üretim siparişi mi?
+  productionTermin DateTime?                   // Tahmini üretim teslim tarihi
+  productionNote   String?                     // Admin üretim notu
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

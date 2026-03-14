@@ -10,6 +10,8 @@ import {
   StickyNote,
   AlertTriangle,
   CheckCircle,
+  Factory,
+  CalendarClock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -17,6 +19,8 @@ const STATUSES = [
   { value: "PENDING", label: "Bekliyor" },
   { value: "PAID", label: "Ödendi" },
   { value: "PROCESSING", label: "Hazırlanıyor" },
+  { value: "PRODUCTION", label: "Üretimde" },
+  { value: "PRODUCTION_READY", label: "Üretim Hazır" },
   { value: "SHIPPED", label: "Kargoda" },
   { value: "DELIVERED", label: "Teslim Edildi" },
   { value: "CANCELLED", label: "İptal" },
@@ -42,6 +46,9 @@ interface OrderActionsProps {
   hasShipment: boolean;
   paymentStatus: string;
   orderItems: OrderItem[];
+  isProduction: boolean;
+  productionTermin: string | null;
+  productionNote: string | null;
 }
 
 export function OrderActions({
@@ -54,6 +61,9 @@ export function OrderActions({
   hasShipment,
   paymentStatus,
   orderItems,
+  isProduction,
+  productionTermin: initialTermin,
+  productionNote: initialProductionNote,
 }: OrderActionsProps) {
   const router = useRouter();
 
@@ -73,6 +83,11 @@ export function OrderActions({
 
   // Invoice
   const [invoicing, setInvoicing] = useState(false);
+
+  // Production
+  const [termin, setTermin] = useState(initialTermin || "");
+  const [prodNote, setProdNote] = useState(initialProductionNote || "");
+  const [savingTermin, setSavingTermin] = useState(false);
 
   // Refund
   const [showRefund, setShowRefund] = useState(false);
@@ -141,6 +156,31 @@ export function OrderActions({
       showMessage("Bir hata oluştu", true);
     }
     setSavingNotes(false);
+  };
+
+  const handleSaveTermin = async () => {
+    setSavingTermin(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productionTermin: termin || null,
+          productionNote: prodNote || null,
+        }),
+      });
+
+      if (res.ok) {
+        showMessage("Termin bilgisi kaydedildi ve bayiye bildirildi");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        showMessage(data.error || "Termin kaydetme başarısız", true);
+      }
+    } catch {
+      showMessage("Bir hata oluştu", true);
+    }
+    setSavingTermin(false);
   };
 
   const handleCreateShipment = async () => {
@@ -224,9 +264,9 @@ export function OrderActions({
   const formatPrice = (n: number) =>
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
 
-  const canShip = ["PAID", "PROCESSING"].includes(currentStatus) && !hasShipment;
-  const canInvoice = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(currentStatus) && !hasInvoice;
-  const canRefund = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"].includes(currentStatus) && paymentStatus === "SUCCESS";
+  const canShip = ["PAID", "PROCESSING", "PRODUCTION_READY"].includes(currentStatus) && !hasShipment;
+  const canInvoice = ["PAID", "PROCESSING", "PRODUCTION_READY", "SHIPPED", "DELIVERED"].includes(currentStatus) && !hasInvoice;
+  const canRefund = ["PAID", "PROCESSING", "PRODUCTION_READY", "SHIPPED", "DELIVERED"].includes(currentStatus) && paymentStatus === "SUCCESS";
 
   return (
     <div className="space-y-6">
@@ -409,6 +449,51 @@ export function OrderActions({
                 İade Et
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Production Panel — only for production orders */}
+      {isProduction && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+            <Factory className="h-5 w-5 text-amber-600" />
+            Üretim Bilgileri
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                <CalendarClock className="mr-1 inline h-4 w-4" />
+                Tahmini Termin Tarihi
+              </label>
+              <input
+                type="date"
+                value={termin ? termin.slice(0, 10) : ""}
+                onChange={(e) => setTermin(e.target.value ? new Date(e.target.value).toISOString() : "")}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Üretim Notu</label>
+              <input
+                type="text"
+                value={prodNote}
+                onChange={(e) => setProdNote(e.target.value)}
+                placeholder="Üretime ilişkin not (bayiye iletilir)"
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          {initialTermin && (
+            <p className="mt-2 text-xs text-amber-700">
+              Mevcut termin: {new Date(initialTermin).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+          )}
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleSaveTermin} loading={savingTermin}>
+              <CalendarClock className="mr-2 h-4 w-4" />
+              Termin Kaydet &amp; Bayiye Bildir
+            </Button>
           </div>
         </div>
       )}

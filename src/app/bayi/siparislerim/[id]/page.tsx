@@ -14,22 +14,36 @@ import {
   XCircle,
   Copy,
   ExternalLink,
+  Factory,
+  CalendarClock,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string; step: number }> = {
   PENDING: { label: "Bekliyor", color: "bg-yellow-100 text-yellow-700", step: 0 },
   PAID: { label: "Ödendi", color: "bg-green-100 text-green-700", step: 1 },
   PROCESSING: { label: "Hazırlanıyor", color: "bg-blue-100 text-blue-700", step: 2 },
-  SHIPPED: { label: "Kargoda", color: "bg-purple-100 text-purple-700", step: 3 },
-  DELIVERED: { label: "Teslim Edildi", color: "bg-green-100 text-green-700", step: 4 },
+  PRODUCTION: { label: "Üretimde", color: "bg-amber-100 text-amber-700", step: 2 },
+  PRODUCTION_READY: { label: "Üretim Hazır", color: "bg-emerald-100 text-emerald-700", step: 3 },
+  SHIPPED: { label: "Kargoda", color: "bg-purple-100 text-purple-700", step: 4 },
+  DELIVERED: { label: "Teslim Edildi", color: "bg-green-100 text-green-700", step: 5 },
   CANCELLED: { label: "İptal Edildi", color: "bg-red-100 text-red-700", step: -1 },
   REFUNDED: { label: "İade Edildi", color: "bg-gray-100 text-gray-700", step: -1 },
 };
 
-const TIMELINE_STEPS = [
+// Dinamik timeline: üretim siparişleri için farklı adımlar
+const STOCK_TIMELINE = [
   { key: "PENDING", label: "Sipariş Alındı", icon: Clock },
   { key: "PAID", label: "Ödeme Onayı", icon: CheckCircle },
   { key: "PROCESSING", label: "Hazırlanıyor", icon: Package },
+  { key: "SHIPPED", label: "Kargoya Verildi", icon: Truck },
+  { key: "DELIVERED", label: "Teslim Edildi", icon: CheckCircle },
+];
+
+const PRODUCTION_TIMELINE = [
+  { key: "PENDING", label: "Sipariş Alındı", icon: Clock },
+  { key: "PAID", label: "Ödeme Onayı", icon: CheckCircle },
+  { key: "PRODUCTION", label: "Üretimde", icon: Factory },
+  { key: "PRODUCTION_READY", label: "Üretim Hazır", icon: CheckCircle },
   { key: "SHIPPED", label: "Kargoya Verildi", icon: Truck },
   { key: "DELIVERED", label: "Teslim Edildi", icon: CheckCircle },
 ];
@@ -84,11 +98,39 @@ export default async function DealerOrderDetailPage({ params }: { params: Promis
         </span>
       </div>
 
+      {/* Production Info Banner */}
+      {order.isProduction && (
+        <div className="mt-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <Factory className="h-6 w-6 text-amber-600" />
+          <div className="flex-1">
+            <p className="font-medium text-amber-800">Üretim Siparişi</p>
+            <p className="text-sm text-amber-600">
+              {order.productionTermin
+                ? `Tahmini teslim: ${new Date(order.productionTermin).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}`
+                : "Termin tarihi henüz belirlenmedi"}
+            </p>
+            {order.productionNote && (
+              <p className="mt-1 text-xs text-amber-500">Not: {order.productionNote}</p>
+            )}
+          </div>
+          {order.productionTermin && (
+            <div className="text-right">
+              <CalendarClock className="mx-auto h-5 w-5 text-amber-600" />
+              <p className="mt-1 text-xs font-medium text-amber-700">
+                {new Date(order.productionTermin).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Status Timeline */}
-      {currentStep >= 0 && (
+      {currentStep >= 0 && (() => {
+        const timelineSteps = order.isProduction ? PRODUCTION_TIMELINE : STOCK_TIMELINE;
+        return (
         <div className="mt-6 rounded-lg border bg-white p-6">
           <div className="flex items-center justify-between">
-            {TIMELINE_STEPS.map((step, i) => {
+            {timelineSteps.map((step, i) => {
               const Icon = step.icon;
               const isActive = currentStep >= i;
               const isCurrent = currentStep === i;
@@ -106,7 +148,7 @@ export default async function DealerOrderDetailPage({ params }: { params: Promis
                   <p className={`mt-2 text-[11px] font-medium ${isActive ? "text-gray-900" : "text-gray-400"}`}>
                     {step.label}
                   </p>
-                  {i < TIMELINE_STEPS.length - 1 && (
+                  {i < timelineSteps.length - 1 && (
                     <div className={`absolute mt-5 h-0.5 w-full ${isActive ? "bg-[#7AC143]" : "bg-gray-200"}`} />
                   )}
                 </div>
@@ -114,7 +156,8 @@ export default async function DealerOrderDetailPage({ params }: { params: Promis
             })}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Cancelled/Refunded */}
       {currentStep < 0 && (

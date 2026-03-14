@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       // ===== ÖDEME BAŞARILI =====
       console.log("[dealer-iyzico callback] SUCCESS for order:", payment.order.orderNumber);
 
-      // Payment + Order güncelle
+      // Payment güncelle
       await db.payment.update({
         where: { id: payment.id },
         data: {
@@ -68,17 +68,33 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await db.order.update({
-        where: { id: payment.orderId },
-        data: { status: "PAID" },
-      });
+      // Üretim kontrolü: herhangi bir kalemde stok yetersizse → tüm sipariş üretim
+      const isProduction = payment.order.items.some(
+        (item) => item.quantity > item.variant.stock
+      );
 
-      // Stok düş — ödeme onayı sonrası
-      for (const item of payment.order.items) {
-        await db.variant.update({
-          where: { id: item.variantId },
-          data: { stock: { decrement: item.quantity } },
+      if (isProduction) {
+        // ÜRETİM SİPARİŞİ — stok düşülMEZ
+        console.log("[dealer-iyzico callback] PRODUCTION ORDER for:", payment.order.orderNumber);
+        await db.order.update({
+          where: { id: payment.orderId },
+          data: { status: "PRODUCTION", isProduction: true },
         });
+      } else {
+        // STOKTAN SİPARİŞ — stok düşülür, hazırlanıyor durumuna geç
+        console.log("[dealer-iyzico callback] STOCK ORDER for:", payment.order.orderNumber);
+        await db.order.update({
+          where: { id: payment.orderId },
+          data: { status: "PROCESSING", isProduction: false },
+        });
+
+        // Stok düş — sadece stoktan siparişlerde
+        for (const item of payment.order.items) {
+          await db.variant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
       }
 
       // Sepet temizle
@@ -95,8 +111,8 @@ export async function POST(req: NextRequest) {
         await db.notification.create({
           data: {
             type: "PAYMENT_SUCCESS",
-            title: "Bayi Ödeme Alındı",
-            message: `${payment.order.dealer?.companyName} — #${payment.order.orderNumber} — ${formatPrice(payment.amount)}`,
+            title: isProduction ? "Bayi Üretim Siparişi" : "Bayi Ödeme Alındı",
+            message: `${payment.order.dealer?.companyName} — #${payment.order.orderNumber} — ${formatPrice(payment.amount)}${isProduction ? " (ÜRETİM)" : ""}`,
             orderId: payment.orderId,
           },
         });

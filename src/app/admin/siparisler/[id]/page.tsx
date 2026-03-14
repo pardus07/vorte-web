@@ -11,6 +11,8 @@ const STATUS_MAP: Record<string, { label: string; variant: "default" | "success"
   PENDING: { label: "Bekliyor", variant: "warning" },
   PAID: { label: "Ödendi", variant: "success" },
   PROCESSING: { label: "Hazırlanıyor", variant: "new" },
+  PRODUCTION: { label: "Üretimde", variant: "warning" },
+  PRODUCTION_READY: { label: "Üretim Hazır", variant: "new" },
   SHIPPED: { label: "Kargoda", variant: "default" },
   DELIVERED: { label: "Teslim Edildi", variant: "success" },
   CANCELLED: { label: "İptal", variant: "discount" },
@@ -66,6 +68,9 @@ export default async function AdminOrderDetailPage({
             <Badge variant={order.type === "WHOLESALE" ? "new" : "outline"}>
               {order.type === "WHOLESALE" ? "Toptan" : "Perakende"}
             </Badge>
+            {order.isProduction && (
+              <Badge variant="warning" className="ml-1">ÜRETİM</Badge>
+            )}
           </p>
         </div>
         <Badge variant={statusInfo.variant} className="text-sm px-3 py-1">
@@ -169,6 +174,9 @@ export default async function AdminOrderDetailPage({
               quantity: item.quantity,
               totalPrice: item.totalPrice,
             }))}
+            isProduction={order.isProduction}
+            productionTermin={order.productionTermin?.toISOString() || null}
+            productionNote={order.productionNote || null}
           />
 
           {/* Timeline */}

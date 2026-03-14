@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/admin-auth";
 import { z } from "zod";
 import { logActivity } from "@/lib/audit";
+import { resendClient } from "@/lib/integrations/resend";
+import { formatPrice } from "@/lib/utils";
 
 export async function GET(
   _req: NextRequest,
@@ -41,11 +43,13 @@ export async function GET(
 }
 
 const updateOrderSchema = z.object({
-  status: z.enum(["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
+  status: z.enum(["PENDING", "PAID", "PROCESSING", "PRODUCTION", "PRODUCTION_READY", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
   cargoTrackingNo: z.string().nullable().optional(),
   cargoProvider: z.string().nullable().optional(),
   adminNotes: z.string().nullable().optional(),
   statusNote: z.string().optional(),
+  productionTermin: z.string().nullable().optional(), // ISO date string
+  productionNote: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -68,12 +72,19 @@ export async function PATCH(
     );
   }
 
-  const { status, statusNote, adminNotes, ...rest } = parsed.data;
+  const { status, statusNote, adminNotes, productionTermin, productionNote, ...rest } = parsed.data;
 
   // Get current order for status history
   const currentOrder = await db.order.findUnique({
     where: { id },
-    select: { status: true },
+    select: {
+      status: true,
+      isProduction: true,
+      orderNumber: true,
+      totalAmount: true,
+      dealerId: true,
+    },
+    // items needed if transitioning to PRODUCTION_READY
   });
 
   if (!currentOrder) {
@@ -85,6 +96,14 @@ export async function PATCH(
 
   if (adminNotes !== undefined) {
     updateData.adminNotes = adminNotes;
+  }
+
+  // Üretim termin tarihi
+  if (productionTermin !== undefined) {
+    updateData.productionTermin = productionTermin ? new Date(productionTermin) : null;
+  }
+  if (productionNote !== undefined) {
+    updateData.productionNote = productionNote;
   }
 
   if (status && status !== currentOrder.status) {
@@ -100,6 +119,67 @@ export async function PATCH(
         changedBy: admin.userId,
       },
     });
+
+    // PRODUCTION_READY'e geçişte stok düş
+    if (status === "PRODUCTION_READY" && currentOrder.isProduction) {
+      const orderWithItems = await db.order.findUnique({
+        where: { id },
+        include: { items: { include: { variant: true } } },
+      });
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          await db.variant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+        console.log("[admin orders] Stock decremented for production order:", currentOrder.orderNumber);
+      }
+    }
+  }
+
+  // Termin girildiğinde bayiye bildirim + email gönder
+  if (productionTermin && currentOrder.dealerId) {
+    const terminDate = new Date(productionTermin).toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    // Bildirim oluştur
+    try {
+      await db.notification.create({
+        data: {
+          type: "PRODUCTION_TERMIN",
+          title: "Üretim Termin Bildirimi",
+          message: `#${currentOrder.orderNumber} — Tahmini teslim: ${terminDate}`,
+          orderId: id,
+        },
+      });
+    } catch {}
+
+    // Bayiye email gönder
+    try {
+      const dealer = await db.dealer.findUnique({
+        where: { id: currentOrder.dealerId },
+        select: { email: true, companyName: true },
+      });
+      if (dealer?.email) {
+        await resendClient.sendFromTemplate({
+          templateName: "production-termin",
+          to: dealer.email,
+          variables: {
+            companyName: dealer.companyName,
+            orderNumber: currentOrder.orderNumber,
+            terminDate,
+            productionNote: productionNote || updateData.productionNote || "",
+            totalAmount: formatPrice(currentOrder.totalAmount),
+          },
+        });
+      }
+    } catch (emailErr) {
+      console.error("[admin orders] Termin email error:", emailErr);
+    }
   }
 
   const order = await db.order.update({
@@ -107,7 +187,7 @@ export async function PATCH(
     data: updateData,
     include: {
       user: { select: { name: true, email: true } },
-      dealer: { select: { companyName: true } },
+      dealer: { select: { companyName: true, email: true } },
       payment: { select: { status: true } },
       statusHistory: {
         orderBy: { createdAt: "desc" },

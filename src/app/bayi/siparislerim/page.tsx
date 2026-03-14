@@ -2,12 +2,14 @@ import { getDealerSession } from "@/lib/dealer-session";
 import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
-import { ClipboardList, Eye, RefreshCw, Package } from "lucide-react";
+import { ClipboardList, Eye, Package, Factory, CalendarClock } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Bekliyor", color: "bg-yellow-100 text-yellow-700" },
   PAID: { label: "Ödendi", color: "bg-green-100 text-green-700" },
   PROCESSING: { label: "Hazırlanıyor", color: "bg-blue-100 text-blue-700" },
+  PRODUCTION: { label: "Üretimde", color: "bg-amber-100 text-amber-700" },
+  PRODUCTION_READY: { label: "Üretim Hazır", color: "bg-emerald-100 text-emerald-700" },
   SHIPPED: { label: "Kargoda", color: "bg-purple-100 text-purple-700" },
   DELIVERED: { label: "Teslim Edildi", color: "bg-green-100 text-green-700" },
   CANCELLED: { label: "İptal", color: "bg-red-100 text-red-700" },
@@ -107,6 +109,19 @@ export default async function DealerOrdersPage() {
                     })}
                   </p>
                 </div>
+
+                {/* Production termin */}
+                {order.isProduction && order.productionTermin && (
+                  <div className="hidden text-right sm:block">
+                    <p className="flex items-center gap-1 text-[10px] text-amber-600">
+                      <CalendarClock className="h-3 w-3" />
+                      Tahmini Teslim
+                    </p>
+                    <p className="text-xs font-medium text-amber-700">
+                      {new Date(order.productionTermin).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
+                    </p>
+                  </div>
+                )}
 
                 {/* Cargo */}
                 {order.cargoTrackingNo && (

@@ -47,6 +47,7 @@ const FROM_MAP: Record<string, string> = {
   newsletter: "Vorte E-Bülten <info@vorte.com.tr>",
   "contact-reply": "Vorte Tekstil <info@vorte.com.tr>",
   "contact-notification": "Vorte İletişim <info@vorte.com.tr>",
+  "production-termin": "Vorte Bayi <bayi@vorte.com.tr>",
 };
 
 const REPLY_TO_MAP: Record<string, string> = {
@@ -57,6 +58,7 @@ const REPLY_TO_MAP: Record<string, string> = {
   "password-reset": "destek@vorte.com.tr",
   "refund-confirmation": "destek@vorte.com.tr",
   "dealer-approved": "bayi@vorte.com.tr",
+  "production-termin": "bayi@vorte.com.tr",
 };
 
 function getFromAddress(templateName?: string, overrideFrom?: string): string {
@@ -100,6 +102,8 @@ const SAMPLE_VARS: Record<string, string> = {
   loginUrl: "https://vorte.com.tr/bayi-girisi",
   refundAmount: "₺149,90",
   content: "<p>Bülten içeriği buraya gelecek.</p>",
+  terminDate: "15 Nisan 2026",
+  productionNote: "Üretim planına alındı, termin tarihi tahminidir.",
 };
 
 // ─── SMTP Transporter (lazy init) ──────────────────────────
@@ -452,6 +456,17 @@ class ResendClient {
             vars.password || ""
           ),
         };
+      case "production-termin":
+        return {
+          subject: `Üretim Termin Bildirimi - #${vars.orderNumber || ""}`,
+          html: productionTerminTemplate(
+            vars.companyName || "",
+            vars.orderNumber || "",
+            vars.terminDate || "",
+            vars.productionNote || "",
+            vars.totalAmount || ""
+          ),
+        };
       case "newsletter":
         return {
           subject: "Vorte E-Bülten",
@@ -584,6 +599,21 @@ class ResendClient {
         password: password || "",
         loginUrl,
       },
+    });
+  }
+
+  async sendProductionTerminNotification(
+    to: string,
+    companyName: string,
+    orderNumber: string,
+    terminDate: string,
+    productionNote: string,
+    totalAmount: string
+  ) {
+    return this.sendFromTemplate({
+      templateName: "production-termin",
+      to,
+      variables: { companyName, orderNumber, terminDate, productionNote, totalAmount },
     });
   }
 
@@ -733,6 +763,29 @@ function dealerApprovedTemplate(
     <p style="color:#666;font-size:14px;">Aşağıdaki bağlantıdan bayi paneline giriş yapabilirsiniz.</p>
     <div style="text-align:center;margin:24px 0;">
       <a href="${loginUrl}" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Bayi Girişi</a>
+    </div>
+  `);
+}
+
+function productionTerminTemplate(
+  companyName: string,
+  orderNumber: string,
+  terminDate: string,
+  productionNote: string,
+  totalAmount: string
+): string {
+  return baseTemplate(`
+    <h2 style="color:#333;margin:0 0 16px;">Üretim Termin Bildirimi</h2>
+    <p style="color:#666;line-height:1.6;">Sayın ${companyName},</p>
+    <p style="color:#666;line-height:1.6;">#${orderNumber} numaralı siparişiniz için üretim termin tarihi belirlenmiştir.</p>
+    <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:16px;margin:16px 0;">
+      <p style="margin:0;font-size:14px;color:#92400e;">Tahmini Teslim Tarihi: <strong style="color:#78350f;font-size:16px;">${terminDate}</strong></p>
+      <p style="margin:8px 0 0;font-size:14px;color:#92400e;">Sipariş Tutarı: <strong>${totalAmount}</strong></p>
+      ${productionNote ? `<p style="margin:8px 0 0;font-size:13px;color:#92400e;">Not: ${productionNote}</p>` : ""}
+    </div>
+    <p style="color:#666;font-size:14px;">Siparişinizi bayi panelinizden takip edebilirsiniz.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="https://vorte.com.tr/bayi/siparislerim" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Siparişlerimi Gör</a>
     </div>
   `);
 }

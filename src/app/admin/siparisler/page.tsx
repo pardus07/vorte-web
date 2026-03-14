@@ -21,6 +21,8 @@ import {
   Calendar,
   Trash2,
   ExternalLink,
+  Factory,
+  PackageCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -30,6 +32,8 @@ const STATUS_OPTIONS = [
   { value: "PENDING", label: "Bekliyor", icon: Clock },
   { value: "PAID", label: "Ödendi", icon: CreditCard },
   { value: "PROCESSING", label: "Hazırlanıyor", icon: Package },
+  { value: "PRODUCTION", label: "Üretimde", icon: Factory },
+  { value: "PRODUCTION_READY", label: "Üretim Hazır", icon: PackageCheck },
   { value: "SHIPPED", label: "Kargoda", icon: Truck },
   { value: "DELIVERED", label: "Teslim Edildi", icon: CheckCircle },
   { value: "CANCELLED", label: "İptal", icon: XCircle },
@@ -43,6 +47,8 @@ const STATUS_MAP: Record<
   PENDING: { label: "Bekliyor", variant: "warning" },
   PAID: { label: "Ödendi", variant: "success" },
   PROCESSING: { label: "Hazırlanıyor", variant: "new" },
+  PRODUCTION: { label: "Üretimde", variant: "warning" },
+  PRODUCTION_READY: { label: "Üretim Hazır", variant: "new" },
   SHIPPED: { label: "Kargoda", variant: "default" },
   DELIVERED: { label: "Teslim Edildi", variant: "success" },
   CANCELLED: { label: "İptal", variant: "discount" },
@@ -413,6 +419,8 @@ export default function AdminOrdersPage() {
               className="rounded-lg border px-3 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
             >
               <option value="PROCESSING">Hazırlanıyor</option>
+              <option value="PRODUCTION">Üretimde</option>
+              <option value="PRODUCTION_READY">Üretim Hazır</option>
               <option value="SHIPPED">Kargoda</option>
               <option value="DELIVERED">Teslim Edildi</option>
               <option value="CANCELLED">İptal</option>

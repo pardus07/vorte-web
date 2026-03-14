@@ -691,6 +691,49 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
 
   console.log("  ✓ Notifications created");
 
+  // ===== EMAIL TEMPLATES =====
+  await db.emailTemplate.upsert({
+    where: { name: "production-termin" },
+    update: {},
+    create: {
+      name: "production-termin",
+      subject: "Üretim Termin Bildirimi - #{{orderNumber}}",
+      body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+  <div style="text-align:center;padding:20px 0;">
+    <h1 style="margin:0;font-size:24px;color:#333;font-weight:bold;">VORTE</h1>
+    <p style="margin:4px 0 0;font-size:12px;color:#7AC143;letter-spacing:2px;">TEKSTİL</p>
+  </div>
+  <div style="background:white;border-radius:8px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <h2 style="color:#333;margin:0 0 16px;">Üretim Termin Bildirimi</h2>
+    <p style="color:#666;line-height:1.6;">Sayın {{companyName}},</p>
+    <p style="color:#666;line-height:1.6;">#{{orderNumber}} numaralı siparişiniz için üretim termin tarihi belirlenmiştir.</p>
+    <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:16px;margin:16px 0;">
+      <p style="margin:0;font-size:14px;color:#92400e;">Tahmini Teslim Tarihi: <strong style="color:#78350f;font-size:16px;">{{terminDate}}</strong></p>
+      <p style="margin:8px 0 0;font-size:14px;color:#92400e;">Sipariş Tutarı: <strong>{{totalAmount}}</strong></p>
+      <p style="margin:8px 0 0;font-size:13px;color:#92400e;">{{productionNote}}</p>
+    </div>
+    <p style="color:#666;font-size:14px;">Siparişinizi bayi panelinizden takip edebilirsiniz.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="https://vorte.com.tr/bayi/siparislerim" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Siparişlerimi Gör</a>
+    </div>
+  </div>
+  <div style="text-align:center;padding:20px;font-size:12px;color:#999;">
+    <p>Vorte Tekstil Ticaret Ltd. Şti. | Nilüfer, Bursa</p>
+  </div>
+</div>
+</body>
+</html>`,
+      fromAddress: "Vorte Bayi <bayi@vorte.com.tr>",
+      active: true,
+    },
+  });
+
+  console.log("  ✓ Email templates created");
+
   console.log("\n✅ Seed completed!");
   console.log("\n📋 Test Credentials:");
   console.log("  Admin:    admin@vorte.com.tr / 123456");
