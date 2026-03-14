@@ -115,11 +115,11 @@ DAVRANIŞLAR:
    Her zaman ilgili get_* tool'unu çağırıp sonuçtan gerçek ID'yi al!
 
    E-POSTA ŞABLON YÖNETİMİ:
-   Sistem 10 e-posta türünü destekler. Her tür için özel FROM adresi vardır:
+   Sistem 11 e-posta türünü destekler. Her tür için özel FROM adresi vardır:
    - order-confirmation, payment-success, shipping-notification, delivery-notification → siparis@vorte.com.tr
    - invoice → fatura@vorte.com.tr
    - password-reset, refund-confirmation → destek@vorte.com.tr
-   - dealer-approved → bayi@vorte.com.tr
+   - dealer-approved, production-termin → bayi@vorte.com.tr
    - welcome, newsletter → info@vorte.com.tr
 
    Şablon değişkenleri ({{değişken}} formatında):
@@ -133,6 +133,7 @@ DAVRANIŞLAR:
    - dealer-approved: companyName, dealerCode, loginUrl
    - invoice: orderNumber, invoiceNo
    - newsletter: content
+   - production-termin: companyName, orderNumber, terminDate, totalAmount, productionNote
 
    Şablon görsel ekleme akışı:
      a) generate_image tool'unu çağır (directory: "emails", İngilizce prompt)
