@@ -684,6 +684,37 @@ model ContactMessage {
   @@map("contact_messages")
 }
 
+// ============ ÜRETİM PLANLAMA ENUMLARİ ============
+
+enum ProductionStage {
+  PENDING           // Sipariş oluşturuldu, BOM bekleniyor
+  BOM_CALCULATED    // BOM hesaplandı, tedarik bekleniyor
+  MATERIALS_ORDERED // Tedarikçiye sipariş verildi
+  MATERIALS_RECEIVED // Malzeme teslim alındı
+  IN_PRODUCTION     // Fason atölyede üretimde
+  QUALITY_CHECK     // Kalite kontrol aşamasında
+  PACKAGING_STAGE   // Paketleniyor
+  PROD_SHIPPED      // Kargoya verildi
+  PROD_DELIVERED    // Teslim edildi
+  PROD_CANCELLED    // İptal
+}
+
+enum SupplierType {
+  FABRIC       // Kumaş tedarikçisi
+  ELASTIC      // Lastik tedarikçisi
+  THREAD       // İplik tedarikçisi
+  PACKAGING_MAT // Ambalaj tedarikçisi
+  LABEL        // Etiket tedarikçisi
+}
+
+enum QualityResult {
+  PASSED
+  FAILED
+  CONDITIONAL  // Şartlı kabul
+}
+
+// ============ MEVCUT ÜRETİM EMRİ (Basit — Kanban) ============
+
 model ProductionOrder {
   id              String    @id @default(cuid())
   orderNumber     String    @unique // ÜRT-2026-001
@@ -702,6 +733,10 @@ model ProductionOrder {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // İlişki: Tam üretim siparişine bağlantı (opsiyonel)
+  fullProductionOrderId String?
+  fullProductionOrder   FullProductionOrder? @relation(fields: [fullProductionOrderId], references: [id])
+
   logs ProductionLog[]
 
   @@map("production_orders")
@@ -718,6 +753,200 @@ model ProductionLog {
   createdAt         DateTime        @default(now())
 
   @@map("production_logs")
+}
+
+// ============ TAM OTONOM ÜRETİM PLANLAMA SİSTEMİ ============
+
+model FullProductionOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique // "PO-2026-001" formatı
+
+  // Bayi siparişinden geldiyse
+  dealerOrderId   String?
+  dealerId        String?
+
+  // Sipariş detayları
+  items           FullProductionOrderItem[]
+
+  // Durum
+  stage           ProductionStage @default(PENDING)
+  stageHistory    Json     @default("[]") // [{stage, date, note, changedBy}]
+
+  // BOM
+  bomCalculation  BOMCalculation?
+
+  // Termin
+  estimatedDelivery DateTime?
+  actualDelivery    DateTime?
+
+  // Takip
+  tracking        ProductionTracking[]
+  qualityChecks   QualityCheck[]
+  supplierOrders  SupplierOrder[]
+  simpleOrders    ProductionOrder[]
+
+  // Notlar & meta
+  notes           String?  @db.Text
+  priority        String   @default("normal") // low, normal, high, urgent
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("full_production_orders")
+}
+
+model FullProductionOrderItem {
+  id                String   @id @default(cuid())
+  productionOrderId String
+  productionOrder   FullProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  productId         String   // Mevcut Product modeline referans
+  sku               String   // "EB-S", "KK-T" vb.
+  productName       String   // "Erkek Boxer Siyah"
+  color             String
+
+  // Beden bazlı adetler
+  sizeS             Int      @default(0)
+  sizeM             Int      @default(0)
+  sizeL             Int      @default(0)
+  sizeXL            Int      @default(0)
+  sizeXXL           Int      @default(0)
+  totalQuantity     Int      // Toplam adet
+
+  createdAt         DateTime @default(now())
+
+  @@map("full_production_order_items")
+}
+
+model BOMCalculation {
+  id                String   @id @default(cuid())
+  productionOrderId String   @unique
+  productionOrder   FullProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  // Hesaplanmış malzeme ihtiyaçları (JSON)
+  materials         Json     // [{name, type, quantity, unit, perPiece, totalWeight}]
+
+  // Özet
+  totalFabricKg     Float    // Toplam ana kumaş (kg)
+  totalLiningKg     Float    // Toplam iç katman (kg)
+  totalElasticM     Float    // Toplam lastik (metre)
+  totalThreadM      Float    // Toplam iplik (metre)
+  totalLabels       Int      // Toplam etiket
+  totalPackaging    Int      // Toplam ambalaj
+
+  // Maliyet
+  estimatedCost     Float?
+
+  calculatedAt      DateTime @default(now())
+
+  @@map("bom_calculations")
+}
+
+model Supplier {
+  id          String       @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  type        SupplierType
+  address     String?
+  contactName String?
+
+  // Tedarik bilgileri
+  materials   Json?        // ["Ana Kumaş", "İç Katman"] gibi
+  leadTimeDays Int?        // Ortalama teslim süresi (gün)
+  minOrderQty String?      // "500 kg", "1000 m" gibi
+
+  orders      SupplierOrder[]
+  stocks      MaterialStock[]
+
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("suppliers")
+}
+
+model MaterialStock {
+  id          String   @id @default(cuid())
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+
+  name        String   // "Ana Kumaş Penye+Elastan", "Bel Lastiği 4cm" vb.
+  type        SupplierType
+  quantity    Float    // Mevcut miktar
+  unit        String   // "kg", "m", "adet"
+  minQuantity Float    // Minimum stok seviyesi (altına düşünce alarm)
+
+  lastRestocked DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("material_stocks")
+}
+
+model SupplierOrder {
+  id                String   @id @default(cuid())
+  supplierId        String
+  supplier          Supplier @relation(fields: [supplierId], references: [id])
+  productionOrderId String?
+  productionOrder   FullProductionOrder? @relation(fields: [productionOrderId], references: [id])
+
+  // Sipariş detayları
+  materials         Json     // [{name, quantity, unit}]
+  totalAmount       String?  // "50 kg Ana Kumaş + 200m Lastik" özet
+
+  // Durum
+  sentAt            DateTime?
+  confirmedAt       DateTime?
+  expectedDelivery  DateTime?
+  deliveredAt       DateTime?
+
+  // İletişim
+  emailSent         Boolean  @default(false)
+  emailContent      String?  @db.Text
+
+  notes             String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("supplier_orders")
+}
+
+model ProductionTracking {
+  id                String   @id @default(cuid())
+  productionOrderId String
+  productionOrder   FullProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  stage             ProductionStage
+  progress          Int      @default(0)  // 0-100 yüzde
+  notes             String?
+
+  createdAt         DateTime @default(now())
+
+  @@map("production_tracking")
+}
+
+model QualityCheck {
+  id                String   @id @default(cuid())
+  productionOrderId String
+  productionOrder   FullProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  result            QualityResult
+  inspectedQuantity Int      // Kontrol edilen adet
+  defectQuantity    Int      @default(0) // Hatalı adet
+  defectRate        Float?   // Hata oranı %
+
+  // Detaylar
+  defectDetails     Json?    // [{type: "dikiş hatası", count: 3}]
+  photos            Json?    // ["url1", "url2"]
+
+  inspectorNotes    String?
+
+  createdAt         DateTime @default(now())
+
+  @@map("quality_checks")
 }
 
 model Page {
