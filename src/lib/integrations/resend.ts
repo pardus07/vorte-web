@@ -48,6 +48,7 @@ const FROM_MAP: Record<string, string> = {
   "contact-reply": "Vorte Tekstil <info@vorte.com.tr>",
   "contact-notification": "Vorte İletişim <info@vorte.com.tr>",
   "production-termin": "Vorte Bayi <bayi@vorte.com.tr>",
+  "supplier-order": "Vorte Üretim <uretim@vorte.com.tr>",
 };
 
 const REPLY_TO_MAP: Record<string, string> = {
@@ -59,6 +60,7 @@ const REPLY_TO_MAP: Record<string, string> = {
   "refund-confirmation": "destek@vorte.com.tr",
   "dealer-approved": "bayi@vorte.com.tr",
   "production-termin": "bayi@vorte.com.tr",
+  "supplier-order": "uretim@vorte.com.tr",
 };
 
 function getFromAddress(templateName?: string, overrideFrom?: string): string {
@@ -104,6 +106,10 @@ const SAMPLE_VARS: Record<string, string> = {
   content: "<p>Bülten içeriği buraya gelecek.</p>",
   terminDate: "15 Nisan 2026",
   productionNote: "Üretim planına alındı, termin tarihi tahminidir.",
+  supplierName: "Test Tedarikçi",
+  materialsTable: "<tr><td>Ana Kumaş</td><td>50</td><td>kg</td></tr>",
+  expectedDeliveryDate: "22 Mart 2026",
+  productionOrderNumber: "URE-260315-0001",
 };
 
 // ─── SMTP Transporter (lazy init) ──────────────────────────
@@ -467,6 +473,17 @@ class ResendClient {
             vars.totalAmount || ""
           ),
         };
+      case "supplier-order":
+        return {
+          subject: `Malzeme Siparişi - ${vars.productionOrderNumber || "Vorte"}`,
+          html: supplierOrderTemplate(
+            vars.supplierName || "",
+            vars.materialsTable || "",
+            vars.expectedDeliveryDate || "",
+            vars.productionOrderNumber || "",
+            vars.notes || ""
+          ),
+        };
       case "newsletter":
         return {
           subject: "Vorte E-Bülten",
@@ -614,6 +631,33 @@ class ResendClient {
       templateName: "production-termin",
       to,
       variables: { companyName, orderNumber, terminDate, productionNote, totalAmount },
+    });
+  }
+
+  async sendSupplierOrder(
+    to: string,
+    supplierName: string,
+    materials: Array<{ name: string; quantity: number; unit: string }>,
+    expectedDeliveryDate: string,
+    productionOrderNumber: string,
+    notes?: string
+  ) {
+    const materialsTable = materials
+      .map(
+        (m) =>
+          `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">${m.name}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;">${m.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;">${m.unit}</td></tr>`
+      )
+      .join("");
+    return this.sendFromTemplate({
+      templateName: "supplier-order",
+      to,
+      variables: {
+        supplierName,
+        materialsTable,
+        expectedDeliveryDate,
+        productionOrderNumber,
+        notes: notes || "",
+      },
     });
   }
 
@@ -787,6 +831,38 @@ function productionTerminTemplate(
     <div style="text-align:center;margin:24px 0;">
       <a href="https://vorte.com.tr/bayi/siparislerim" style="display:inline-block;padding:12px 32px;background:#1A1A1A;color:white;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;">Siparişlerimi Gör</a>
     </div>
+  `);
+}
+
+function supplierOrderTemplate(
+  supplierName: string,
+  materialsTable: string,
+  expectedDeliveryDate: string,
+  productionOrderNumber: string,
+  notes: string
+): string {
+  return baseTemplate(`
+    <h2 style="color:#333;margin:0 0 16px;">Malzeme Siparişi</h2>
+    <p style="color:#666;line-height:1.6;">Sayın ${supplierName},</p>
+    <p style="color:#666;line-height:1.6;">Aşağıdaki malzemelerin siparişini vermek istiyoruz. Lütfen teyit ediniz.</p>
+    <div style="background:#f9fafb;border-radius:6px;padding:16px;margin:16px 0;">
+      <p style="margin:0 0 8px;font-size:13px;color:#999;">Üretim Sipariş No: <strong style="color:#333;">${productionOrderNumber}</strong></p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="padding:8px 12px;text-align:left;color:#666;font-weight:600;">Malzeme</th>
+            <th style="padding:8px 12px;text-align:right;color:#666;font-weight:600;">Miktar</th>
+            <th style="padding:8px 12px;text-align:left;color:#666;font-weight:600;">Birim</th>
+          </tr>
+        </thead>
+        <tbody>${materialsTable}</tbody>
+      </table>
+    </div>
+    ${expectedDeliveryDate ? `<p style="color:#666;font-size:14px;">Beklenen Teslim Tarihi: <strong style="color:#7AC143;">${expectedDeliveryDate}</strong></p>` : ""}
+    ${notes ? `<p style="color:#666;font-size:14px;">Not: ${notes}</p>` : ""}
+    <p style="color:#666;font-size:14px;margin-top:16px;">Siparişi teyit etmek veya sorularınız için lütfen bu e-postayı yanıtlayınız.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+    <p style="color:#999;font-size:12px;">Bu e-posta Vorte Tekstil üretim sistemi tarafından otomatik gönderilmiştir.</p>
   `);
 }
 

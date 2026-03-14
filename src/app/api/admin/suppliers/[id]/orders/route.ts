@@ -107,3 +107,85 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   return NextResponse.json(order, { status: 201 });
 }
+
+// PATCH — update supplier order (deliveredAt → auto advance to MATERIALS_RECEIVED)
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const admin = await requirePermission("products", "w");
+  if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+
+  const { id: supplierId } = await params;
+  const body = await req.json();
+  const { orderId, deliveredAt, confirmedAt, notes } = body as {
+    orderId: string;
+    deliveredAt?: string;
+    confirmedAt?: string;
+    notes?: string;
+  };
+
+  if (!orderId) {
+    return NextResponse.json({ error: "orderId gerekli" }, { status: 400 });
+  }
+
+  const supplierOrder = await db.supplierOrder.findFirst({
+    where: { id: orderId, supplierId },
+    include: { productionOrder: true, supplier: { select: { name: true } } },
+  });
+
+  if (!supplierOrder) {
+    return NextResponse.json({ error: "Tedarikçi siparişi bulunamadı" }, { status: 404 });
+  }
+
+  // Build update data
+  const updateData: Record<string, unknown> = {};
+  if (confirmedAt) updateData.confirmedAt = new Date(confirmedAt);
+  if (notes !== undefined) updateData.notes = notes;
+
+  // deliveredAt set → auto advance production order to MATERIALS_RECEIVED
+  if (deliveredAt) {
+    updateData.deliveredAt = new Date(deliveredAt);
+
+    if (supplierOrder.productionOrderId && supplierOrder.productionOrder) {
+      const prodOrder = supplierOrder.productionOrder;
+
+      // Only advance if currently in MATERIALS_ORDERED stage
+      if (prodOrder.stage === "MATERIALS_ORDERED") {
+        const history = (prodOrder.stageHistory as Array<Record<string, unknown>>) || [];
+        history.push({
+          stage: "MATERIALS_RECEIVED",
+          date: new Date().toISOString(),
+          note: `Malzeme teslim alındı: ${supplierOrder.supplier.name}`,
+          changedBy: admin.name || admin.email,
+        });
+
+        await db.fullProductionOrder.update({
+          where: { id: supplierOrder.productionOrderId },
+          data: {
+            stage: "MATERIALS_RECEIVED",
+            stageHistory: JSON.parse(JSON.stringify(history)),
+          },
+        });
+
+        // Create tracking entry
+        await db.productionTracking.create({
+          data: {
+            productionOrderId: supplierOrder.productionOrderId,
+            stage: "MATERIALS_RECEIVED",
+            progress: 30,
+            notes: `Malzeme teslim alındı: ${supplierOrder.supplier.name}`,
+          },
+        });
+      }
+    }
+  }
+
+  const updated = await db.supplierOrder.update({
+    where: { id: orderId },
+    data: updateData,
+    include: {
+      supplier: { select: { name: true } },
+      productionOrder: { select: { orderNumber: true, stage: true } },
+    },
+  });
+
+  return NextResponse.json(updated);
+}
