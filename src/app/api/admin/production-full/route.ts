@@ -74,6 +74,12 @@ export async function GET(req: NextRequest) {
     stats[s.stage] = s._count;
   }
 
+  // Total quantity across all orders
+  const totalQtyAgg = await db.fullProductionOrder.aggregate({
+    _sum: { totalQuantity: true },
+  });
+  stats.totalQuantity = totalQtyAgg._sum.totalQuantity || 0;
+
   return NextResponse.json({ orders, total, stats, page, limit });
 }
 
