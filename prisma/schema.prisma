@@ -533,6 +533,9 @@ model SiteSettings {
   resendApiKey          String?
   resendFromEmail       String?  @default("noreply@vorte.com.tr")
 
+  // Stand Paket Görselleri (JSON: { "A": "/uploads/stands/...", "B": "...", "C": "..." })
+  standPackageImages    Json?
+
   updatedAt             DateTime @updatedAt
 
   @@map("site_settings")

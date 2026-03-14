@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Package, Check, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { STAND_PACKAGES, type StandPackage } from "@/lib/stand-packages";
 
 interface StandPackageSectionProps {
   wholesalePrices: Record<string, number>; // productSlug → wholesalePrice
+  standImages?: Record<string, string>;    // packageId → imageUrl
 }
 
-export function StandPackageSection({ wholesalePrices }: StandPackageSectionProps) {
+export function StandPackageSection({ wholesalePrices, standImages = {} }: StandPackageSectionProps) {
   return (
     <div className="mb-10">
       <div className="mb-4 flex items-center gap-2">
@@ -24,6 +26,7 @@ export function StandPackageSection({ wholesalePrices }: StandPackageSectionProp
             key={pkg.id}
             pkg={pkg}
             wholesalePrices={wholesalePrices}
+            imageUrl={standImages[pkg.id]}
           />
         ))}
       </div>
@@ -34,9 +37,11 @@ export function StandPackageSection({ wholesalePrices }: StandPackageSectionProp
 function StandPackageCard({
   pkg,
   wholesalePrices,
+  imageUrl,
 }: {
   pkg: StandPackage;
   wholesalePrices: Record<string, number>;
+  imageUrl?: string;
 }) {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -111,13 +116,25 @@ function StandPackageCard({
         </div>
       </div>
 
-      {/* Placeholder görsel */}
-      <div className="flex h-32 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center">
-          <Package className="mx-auto h-10 w-10 text-gray-300" />
-          <p className="mt-1 text-xs text-gray-400">Stand görseli eklenecek</p>
+      {/* Stand görseli */}
+      {imageUrl ? (
+        <div className="relative h-40 w-full overflow-hidden bg-gray-50">
+          <Image
+            src={imageUrl}
+            alt={`${pkg.name} - ${pkg.subtitle}`}
+            fill
+            className="object-contain p-2"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
         </div>
-      </div>
+      ) : (
+        <div className="flex h-40 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="text-center">
+            <Package className="mx-auto h-10 w-10 text-gray-300" />
+            <p className="mt-1 text-xs text-gray-400">Stand görseli eklenecek</p>
+          </div>
+        </div>
+      )}
 
       {/* İçerik */}
       <div className="p-4">

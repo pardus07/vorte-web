@@ -7,6 +7,16 @@ export default async function DealerProductsPage() {
   const dealer = await getDealerSession();
   if (!dealer) return null;
 
+  // Stand paket görsellerini DB'den çek
+  const siteSettings = await db.siteSettings.findUnique({
+    where: { id: "main" },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const standImagesData = (siteSettings as any)?.standPackageImages;
+  const standImages: Record<string, string> = standImagesData && typeof standImagesData === "object"
+    ? standImagesData as Record<string, string>
+    : {};
+
   const products = await db.product.findMany({
     where: { active: true },
     include: {
@@ -59,7 +69,7 @@ export default async function DealerProductsPage() {
   return (
     <div>
       {/* Stand Paketleri */}
-      <StandPackageSection wholesalePrices={wholesalePricesBySlug} />
+      <StandPackageSection wholesalePrices={wholesalePricesBySlug} standImages={standImages} />
 
       {/* Tekil Ürünler */}
       <div className="flex items-center justify-between">

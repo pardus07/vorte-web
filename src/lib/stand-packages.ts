@@ -13,6 +13,8 @@ export interface StandPackage {
   subtitle: string;
   format: string;
   totalItems: number;
+  /** Stand görseli URL'si — /uploads/stands/stand-a-xxx.png veya null */
+  image?: string | null;
   items: StandPackageItem[];
 }
 

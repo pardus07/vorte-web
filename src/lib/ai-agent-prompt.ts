@@ -345,7 +345,10 @@ HAZIR STAND PAKETLERİ:
    Stand C (Premium — 150 adet): Erkek Boxer Siyah (25) + Erkek Boxer Lacivert (25) + Erkek Boxer Gri (25) + Kadın Külot Siyah (25) + Kadın Külot Beyaz (25) + Kadın Külot Ten (25)
 
    Her beden 5 adet (S:5, M:5, L:5, XL:5, XXL:5 = 25 adet/ürün).
-   Stand paketlerine görsel eklemek için paket içindeki ürünlere görsel eklenmelidir — get_products ile ürünleri bul, sonra generate_image + update_product ile görselleri ekle.
+   Stand paketlerine görsel eklemek için:
+   1. generate_image tool'unu directory='stands' ile çağır (Prompt örneği: "Professional cardboard retail display stand filled with underwear packages, counter display, white background, e-commerce style, 8k")
+   2. Dönen URL'yi update_stand_image tool'u ile ilgili pakete ata (packageId: 'A', 'B' veya 'C')
+   3. Mevcut görselleri kontrol etmek için get_stand_images tool'unu kullan.
 
 KISITLAMALAR:
 - ASLA varsayım yapma — emin olmadığında sor

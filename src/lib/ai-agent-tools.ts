@@ -243,7 +243,19 @@ export const TOOL_META: Record<string, ToolMeta> = {
     approvalLevel: 1,
     endpoint: "/api/admin/generate-image",
     method: "POST",
-    description: "AI ile görsel üret (blog, ürün, banner vb.)",
+    description: "AI ile görsel üret (blog, ürün, banner, stand vb.)",
+  },
+  get_stand_images: {
+    approvalLevel: 1,
+    endpoint: "/api/admin/stand-images",
+    method: "GET",
+    description: "Stand paket görsellerini getir",
+  },
+  update_stand_image: {
+    approvalLevel: 2,
+    endpoint: "/api/admin/stand-images",
+    method: "POST",
+    description: "Stand paketine görsel ata",
   },
 
   // ── Kategori 6: Blog ──
@@ -1475,10 +1487,43 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
         directory: {
           type: SchemaType.STRING,
           description:
-            "Kayıt dizini: 'products' (ürün görselleri), 'blog' (blog kapak görselleri), 'sliders' (slider görselleri) veya 'banners' (banner görselleri). Varsayılan: 'blog'",
+            "Kayıt dizini: 'products' (ürün görselleri), 'blog' (blog kapak görselleri), 'sliders' (slider görselleri), 'banners' (banner görselleri) veya 'stands' (stand paket görselleri). Varsayılan: 'blog'",
         },
       },
       required: ["prompt", "filename"],
+    },
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // STAND PAKET GÖRSELLERİ (2 tool)
+  // ════════════════════════════════════════════════════════════
+  {
+    name: "get_stand_images",
+    description:
+      "Stand paketlerinin (A, B, C) mevcut görsellerini getir. Bayi panelinde görünen stand paket kartlarının görsellerini kontrol etmek için kullan.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
+    },
+  },
+  {
+    name: "update_stand_image",
+    description:
+      "Stand paketine görsel ata. Önce generate_image tool'u ile directory='stands' olarak görsel üret, dönen URL'yi bu tool ile ilgili pakete ata. Akış: 1) generate_image(prompt, filename, directory='stands') → URL al, 2) update_stand_image(packageId, imageUrl) → görsel ata.",
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        packageId: {
+          type: SchemaType.STRING,
+          description: "Stand paketi ID'si: 'A' (Başlangıç, 50 adet), 'B' (Profesyonel, 100 adet) veya 'C' (Premium, 150 adet)",
+          enum: ["A", "B", "C"],
+        },
+        imageUrl: {
+          type: SchemaType.STRING,
+          description: "Atanacak görsel URL'si (generate_image'den dönen URL). Örnek: /uploads/stands/stand-a-123456.png",
+        },
+      },
+      required: ["packageId", "imageUrl"],
     },
   },
 
@@ -2064,6 +2109,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
             "dealer-approved",
             "invoice",
             "newsletter",
+            "production-termin",
           ],
         },
         subject: {
@@ -2122,6 +2168,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
             "dealer-approved",
             "invoice",
             "newsletter",
+            "production-termin",
           ],
         },
       },
