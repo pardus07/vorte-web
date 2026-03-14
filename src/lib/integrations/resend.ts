@@ -575,7 +575,7 @@ class ResendClient {
     password?: string
   ) {
     const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr"}/bayi-girisi`;
-    const result = await this.sendFromTemplate({
+    return this.sendFromTemplate({
       templateName: "dealer-approved",
       to,
       variables: {
@@ -585,14 +585,6 @@ class ResendClient {
         loginUrl,
       },
     });
-
-    // DB template'inde {{password}} yoksa, şifreyi HTML'e enjekte et
-    if (password && result.provider) {
-      // sendFromTemplate zaten gönderdi, ama şifre template'te yoksa
-      // bir sonraki sefere DB template'ini güncellememiz gerekecek
-    }
-
-    return result;
   }
 
   async sendNewsletter(to: string, subject: string, content: string) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDealerSession } from "@/lib/dealer-session";
 import { db } from "@/lib/db";
 
+const DOZEN = 12;
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +16,15 @@ export async function PATCH(
   const { id } = await params;
   const { quantity } = await req.json();
 
+  // Düzine kontrolü — 12'nin altına düşerse sil
+  if (quantity < DOZEN) {
+    await db.cartItem.delete({ where: { id } });
+    return NextResponse.json({ success: true, deleted: true });
+  }
+
+  // 12'nin katına yuvarla
+  const rounded = Math.max(DOZEN, Math.round(quantity / DOZEN) * DOZEN);
+
   // Verify ownership
   const item = await db.cartItem.findFirst({
     where: { id, dealerId: dealer.id },
@@ -24,7 +35,7 @@ export async function PATCH(
 
   const updated = await db.cartItem.update({
     where: { id },
-    data: { quantity },
+    data: { quantity: rounded },
   });
 
   return NextResponse.json(updated);
