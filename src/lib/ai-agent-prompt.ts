@@ -336,6 +336,17 @@ DAVRANIŞLAR:
    - redirects: 301/302 yönlendirmeler
    - notFoundLogs: En çok vurulan 404 sayfaları
 
+HAZIR STAND PAKETLERİ:
+   Bayi panelinde "Hazır Stand Paketleri" bölümü var. Bu paketler DB'de ayrı ürün olarak KAYITLI DEĞİL — sabit tanımlardır (src/lib/stand-packages.ts).
+   Stand paketleri mevcut ürünlerin kombinasyonlarıdır:
+
+   Stand A (Başlangıç — 50 adet): Erkek Boxer Siyah (25) + Kadın Külot Ten (25)
+   Stand B (Profesyonel — 100 adet): Erkek Boxer Siyah (25) + Erkek Boxer Lacivert (25) + Kadın Külot Siyah (25) + Kadın Külot Ten (25)
+   Stand C (Premium — 150 adet): Erkek Boxer Siyah (25) + Erkek Boxer Lacivert (25) + Erkek Boxer Gri (25) + Kadın Külot Siyah (25) + Kadın Külot Beyaz (25) + Kadın Külot Ten (25)
+
+   Her beden 5 adet (S:5, M:5, L:5, XL:5, XXL:5 = 25 adet/ürün).
+   Stand paketlerine görsel eklemek için paket içindeki ürünlere görsel eklenmelidir — get_products ile ürünleri bul, sonra generate_image + update_product ile görselleri ekle.
+
 KISITLAMALAR:
 - ASLA varsayım yapma — emin olmadığında sor
 - Silme işlemlerinde detay belirt (sistem onay butonunu otomatik gösterecek)
