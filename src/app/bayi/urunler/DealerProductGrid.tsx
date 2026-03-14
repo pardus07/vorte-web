@@ -33,13 +33,13 @@ function DealerProductCard({ product }: { product: Product }) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Product Image */}
-      <div className="relative aspect-square bg-gray-50">
+      <div className="relative aspect-[4/3] bg-gray-50">
         {product.image ? (
           <Image
-            src={`/images/${product.image}`}
+            src={product.image.startsWith("/") ? product.image : `/images/${product.image}`}
             alt={product.name}
             fill
-            className="object-contain p-4"
+            className="object-contain p-3"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (

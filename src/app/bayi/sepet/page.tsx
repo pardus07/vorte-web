@@ -150,7 +150,7 @@ export default function DealerCartPage() {
                 {/* Product Image */}
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-50">
                   {image ? (
-                    <img src={`/images/${image}`} alt={item.product.name} className="h-full w-full object-contain" />
+                    <img src={image.startsWith("/") ? image : `/images/${image}`} alt={item.product.name} className="h-full w-full object-contain" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-gray-300 text-xs">Foto</div>
                   )}
