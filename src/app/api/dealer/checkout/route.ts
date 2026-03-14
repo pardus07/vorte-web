@@ -1,9 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+
+// DEVRE DIŞI: Bayi siparişleri artık /api/dealer/payment/initialize üzerinden
+// iyzico ödeme ile oluşturuluyor. Ödeme yapılmadan sipariş oluşturulmaz.
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: "Bu endpoint devre dışı bırakılmıştır. Siparişler artık ödeme sistemi üzerinden oluşturulur.",
+      redirect: "/bayi/sepet",
+    },
+    { status: 410 }
+  );
+}
+
+/* ESKI KOD — Referans için saklanıyor
+import { NextRequest } from "next/server";
 import { getDealerSession } from "@/lib/dealer-session";
 import { db } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/utils";
 
-export async function POST(req: NextRequest) {
+async function POST_LEGACY(req: NextRequest) {
   const session = await getDealerSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -224,3 +239,4 @@ export async function POST(req: NextRequest) {
     totalAmount: cartTotal,
   });
 }
+*/

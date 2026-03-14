@@ -101,16 +101,24 @@ export default function DealerCartPage() {
     setCheckoutError("");
     setCheckoutLoading(true);
     try {
-      const res = await fetch("/api/dealer/checkout", {
+      const res = await fetch("/api/dealer/payment/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (res.ok && data.success) {
-        router.push(`/bayi/siparislerim`);
+      if (res.ok && data.checkoutFormContent) {
+        // iyzico form var — ödeme sayfasına yönlendir
+        const params = new URLSearchParams({
+          form: encodeURIComponent(data.checkoutFormContent),
+          orderNumber: data.orderNumber || "",
+          total: (total || 0).toFixed(2),
+        });
+        router.push(`/bayi/odeme?${params.toString()}`);
+      } else if (res.ok && data.orderId) {
+        // Dev mode — direkt sipariş oluştu
+        router.push(`/bayi/odeme/basarili?order=${data.orderId}`);
       } else {
-        setCheckoutError(data.error || "Sipariş oluşturulamadı");
+        setCheckoutError(data.error || "Ödeme başlatılamadı");
       }
     } catch {
       setCheckoutError("Bir hata oluştu. Lütfen tekrar deneyin.");
