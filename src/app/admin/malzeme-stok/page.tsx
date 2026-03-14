@@ -36,9 +36,9 @@ interface Material {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  fabric: "Kuma\u015f",
+  fabric: "Kumaş",
   elastic: "Lastik",
-  thread: "\u0130plik",
+  thread: "İplik",
   packaging: "Ambalaj",
   label: "Etiket",
 };
@@ -137,7 +137,7 @@ export default function MalzemeStokPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setError("Malzeme ad\u0131 zorunludur.");
+      setError("Malzeme adı zorunludur.");
       return;
     }
     setSaving(true);
@@ -161,18 +161,18 @@ export default function MalzemeStokPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Bir hata olu\u015ftu");
+        throw new Error(data.error || "Bir hata oluştu");
       }
       closeModal();
       fetchMaterials();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Bir hata olu\u015ftu");
+      setError(err instanceof Error ? err.message : "Bir hata oluştu");
     }
     setSaving(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu malzemeyi silmek istedi\u011finize emin misiniz?")) return;
+    if (!confirm("Bu malzemeyi silmek istediğinize emin misiniz?")) return;
     setDeleting(id);
     try {
       const res = await fetch(`/api/admin/materials/${id}`, {
@@ -181,7 +181,7 @@ export default function MalzemeStokPage() {
       if (!res.ok) throw new Error();
       fetchMaterials();
     } catch {
-      alert("Silme i\u015flemi ba\u015far\u0131s\u0131z oldu.");
+      alert("Silme işlemi başarısız oldu.");
     }
     setDeleting(null);
   };
@@ -206,7 +206,7 @@ export default function MalzemeStokPage() {
           {lowStockCount > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
               <AlertTriangle className="h-4 w-4" />
-              {lowStockCount} d\u00fc\u015f\u00fck stok
+              {lowStockCount} düşük stok
             </span>
           )}
         </div>
@@ -239,7 +239,7 @@ export default function MalzemeStokPage() {
               <TrendingDown className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">D\u00fc\u015f\u00fck Stok</p>
+              <p className="text-sm text-gray-500">Düşük Stok</p>
               <p className="text-xl font-bold text-red-600">{lowStockCount}</p>
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function MalzemeStokPage() {
               <DollarSign className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Toplam De\u011fer</p>
+              <p className="text-sm text-gray-500">Toplam Değer</p>
               <p className="text-xl font-bold text-gray-900">
                 {totalValue.toLocaleString("tr-TR", {
                   style: "currency",
@@ -279,7 +279,7 @@ export default function MalzemeStokPage() {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="form-input"
         >
-          <option value="all">T\u00fcm T\u00fcrler</option>
+          <option value="all">Tüm Türler</option>
           {TYPE_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -293,15 +293,15 @@ export default function MalzemeStokPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              <th className="px-4 py-3">Malzeme Ad\u0131</th>
-              <th className="px-4 py-3">T\u00fcr</th>
+              <th className="px-4 py-3">Malzeme Adı</th>
+              <th className="px-4 py-3">Tür</th>
               <th className="px-4 py-3">Miktar</th>
               <th className="px-4 py-3">Birim</th>
               <th className="px-4 py-3">Min. Miktar</th>
               <th className="px-4 py-3">Birim Fiyat</th>
-              <th className="px-4 py-3">Tedarik\u00e7i</th>
+              <th className="px-4 py-3">Tedarikçi</th>
               <th className="px-4 py-3">Son Stok Tarihi</th>
-              <th className="px-4 py-3">\u0130\u015flemler</th>
+              <th className="px-4 py-3">İşlemler</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -309,7 +309,7 @@ export default function MalzemeStokPage() {
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">Y\u00fckleniyor...</p>
+                  <p className="mt-2 text-sm text-gray-500">Yükleniyor...</p>
                 </td>
               </tr>
             ) : materials.length === 0 ? (
@@ -317,7 +317,7 @@ export default function MalzemeStokPage() {
                 <td colSpan={9} className="px-4 py-12 text-center">
                   <Package className="mx-auto h-8 w-8 text-gray-300" />
                   <p className="mt-2 text-sm text-gray-500">
-                    Malzeme bulunamad\u0131.
+                    Malzeme bulunamadı.
                   </p>
                 </td>
               </tr>
@@ -370,7 +370,7 @@ export default function MalzemeStokPage() {
                         <button
                           onClick={() => openEditModal(m)}
                           className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
-                          title="D\u00fczenle"
+                          title="Düzenle"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -402,7 +402,7 @@ export default function MalzemeStokPage() {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">
-                {editingId ? "Malzeme D\u00fczenle" : "Yeni Malzeme"}
+                {editingId ? "Malzeme Düzenle" : "Yeni Malzeme"}
               </h2>
               <button
                 onClick={closeModal}
@@ -422,7 +422,7 @@ export default function MalzemeStokPage() {
               {/* Name */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Malzeme Ad\u0131 *
+                  Malzeme Adı *
                 </label>
                 <input
                   type="text"
@@ -431,7 +431,7 @@ export default function MalzemeStokPage() {
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
                   className="form-input w-full"
-                  placeholder="\u00d6rn: Pamuklu Kuma\u015f"
+                  placeholder="Örn: Pamuklu Kumaş"
                 />
               </div>
 
@@ -439,7 +439,7 @@ export default function MalzemeStokPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    T\u00fcr
+                    Tür
                   </label>
                   <select
                     value={form.type}
@@ -536,7 +536,7 @@ export default function MalzemeStokPage() {
               {/* Supplier ID */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Tedarik\u00e7i ID
+                  Tedarikçi ID
                 </label>
                 <input
                   type="text"
@@ -572,7 +572,7 @@ export default function MalzemeStokPage() {
                 onClick={closeModal}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
               >
-                \u0130ptal
+                İptal
               </button>
               <button
                 onClick={handleSave}
@@ -581,7 +581,7 @@ export default function MalzemeStokPage() {
                 style={{ backgroundColor: "#7AC143" }}
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingId ? "G\u00fcncelle" : "Kaydet"}
+                {editingId ? "Güncelle" : "Kaydet"}
               </button>
             </div>
           </div>

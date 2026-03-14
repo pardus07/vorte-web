@@ -41,16 +41,16 @@ interface QualityCheck {
 }
 
 const RESULT_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PASSED: { label: "Ge\u00e7ti", color: "bg-green-100 text-green-700", icon: CheckSquare },
-  FAILED: { label: "Kald\u0131", color: "bg-red-100 text-red-700", icon: XCircle },
-  PARTIAL: { label: "K\u0131smi", color: "bg-yellow-100 text-yellow-700", icon: AlertTriangle },
+  PASSED: { label: "Geçti", color: "bg-green-100 text-green-700", icon: CheckSquare },
+  FAILED: { label: "Kaldı", color: "bg-red-100 text-red-700", icon: XCircle },
+  PARTIAL: { label: "Kısmi", color: "bg-yellow-100 text-yellow-700", icon: AlertTriangle },
 };
 
 const RESULT_TABS = [
-  { key: "", label: "T\u00fcm\u00fc" },
-  { key: "PASSED", label: "Ge\u00e7ti" },
-  { key: "FAILED", label: "Kald\u0131" },
-  { key: "PARTIAL", label: "K\u0131smi" },
+  { key: "", label: "Tümü" },
+  { key: "PASSED", label: "Geçti" },
+  { key: "FAILED", label: "Kaldı" },
+  { key: "PARTIAL", label: "Kısmi" },
 ];
 
 export default function AdminKalitePage() {
@@ -129,19 +129,19 @@ export default function AdminKalitePage() {
 
   const handleSubmit = async () => {
     if (!formProductionOrderId) {
-      setFormError("\u00dcretim emri se\u00e7iniz.");
+      setFormError("Üretim emri seçiniz.");
       return;
     }
     if (formInspectedQty <= 0) {
-      setFormError("Kontrol edilen miktar 0'dan b\u00fcy\u00fck olmal\u0131.");
+      setFormError("Kontrol edilen miktar 0'dan büyük olmalı.");
       return;
     }
     if (formPassedQty > formInspectedQty) {
-      setFormError("Ge\u00e7en miktar kontrol edilenden fazla olamaz.");
+      setFormError("Geçen miktar kontrol edilenden fazla olamaz.");
       return;
     }
     if (!formInspectedBy.trim()) {
-      setFormError("Kontrol eden ki\u015fi ad\u0131n\u0131 giriniz.");
+      setFormError("Kontrol eden kişi adını giriniz.");
       return;
     }
 
@@ -165,7 +165,7 @@ export default function AdminKalitePage() {
       });
 
       if (res.ok) {
-        setFormSuccess("Kalite kontrol kayd\u0131 olu\u015fturuldu.");
+        setFormSuccess("Kalite kontrol kaydı oluşturuldu.");
         fetchChecks();
         setTimeout(() => {
           setShowModal(false);
@@ -173,10 +173,10 @@ export default function AdminKalitePage() {
         }, 1200);
       } else {
         const data = await res.json();
-        setFormError(data.error || "Kaydetme ba\u015far\u0131s\u0131z oldu.");
+        setFormError(data.error || "Kaydetme başarısız oldu.");
       }
     } catch {
-      setFormError("Bir hata olu\u015ftu.");
+      setFormError("Bir hata oluştu.");
     }
     setSaving(false);
   };
@@ -220,7 +220,7 @@ export default function AdminKalitePage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Kalite Kontrol</h1>
             <p className="text-sm text-gray-500">
-              Toplam {total} kontrol kayd\u0131
+              Toplam {total} kontrol kaydı
             </p>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default function AdminKalitePage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Sipari\u015f no veya kontrol eden ara..."
+            placeholder="Sipariş no veya kontrol eden ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="form-input w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-[#7AC143] focus:outline-none sm:w-72"
@@ -281,12 +281,12 @@ export default function AdminKalitePage() {
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-gray-50">
             <tr>
-              <th className="px-4 py-3 font-medium text-gray-700">\u00dcretim Emri</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Üretim Emri</th>
               <th className="px-4 py-3 font-medium text-gray-700 text-right">Kontrol</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Ge\u00e7en</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Hatal\u0131</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Ba\u015far\u0131 %</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Sonu\u00e7</th>
+              <th className="px-4 py-3 font-medium text-gray-700 text-right">Geçen</th>
+              <th className="px-4 py-3 font-medium text-gray-700 text-right">Hatalı</th>
+              <th className="px-4 py-3 font-medium text-gray-700 text-right">Başarı %</th>
+              <th className="px-4 py-3 font-medium text-gray-700">Sonuç</th>
               <th className="px-4 py-3 font-medium text-gray-700">Kontrol Eden</th>
               <th className="px-4 py-3 font-medium text-gray-700">Tarih</th>
               <th className="px-4 py-3 font-medium text-gray-700">Not</th>
@@ -297,7 +297,7 @@ export default function AdminKalitePage() {
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                   <ClipboardCheck className="mx-auto h-10 w-10 text-gray-300" />
-                  <p className="mt-2">Kalite kontrol kayd\u0131 bulunamad\u0131.</p>
+                  <p className="mt-2">Kalite kontrol kaydı bulunamadı.</p>
                 </td>
               </tr>
             ) : (
@@ -342,7 +342,7 @@ export default function AdminKalitePage() {
                       {new Date(check.createdAt).toLocaleDateString("tr-TR")}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate">
-                      {check.defectNotes || check.notes || "\u2014"}
+                      {check.defectNotes || check.notes || "—"}
                     </td>
                   </tr>
                 );
@@ -366,7 +366,7 @@ export default function AdminKalitePage() {
 
             <h2 className="text-lg font-bold text-gray-900">Yeni Kalite Kontrol</h2>
             <p className="mt-1 text-sm text-gray-500">
-              \u00dcretim emri i\u00e7in kalite kontrol kayd\u0131 olu\u015fturun.
+              Üretim emri için kalite kontrol kaydı oluşturun.
             </p>
 
             {/* Form messages */}
@@ -382,17 +382,17 @@ export default function AdminKalitePage() {
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   <Hash className="h-4 w-4 text-gray-400" />
-                  \u00dcretim Emri
+                  Üretim Emri
                 </label>
                 <select
                   value={formProductionOrderId}
                   onChange={(e) => setFormProductionOrderId(e.target.value)}
                   className="form-input w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none"
                 >
-                  <option value="">\u00dcretim emri se\u00e7iniz...</option>
+                  <option value="">Üretim emri seçiniz...</option>
                   {productionOrders.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.orderNumber} \u2014 {o.stage}
+                      {o.orderNumber} — {o.stage}
                     </option>
                   ))}
                 </select>
@@ -414,7 +414,7 @@ export default function AdminKalitePage() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Ge\u00e7en Miktar
+                    Geçen Miktar
                   </label>
                   <input
                     type="number"
@@ -427,7 +427,7 @@ export default function AdminKalitePage() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Hatal\u0131 (Otomatik)
+                    Hatalı (Otomatik)
                   </label>
                   <input
                     type="number"
@@ -442,16 +442,16 @@ export default function AdminKalitePage() {
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   <CheckSquare className="h-4 w-4 text-gray-400" />
-                  Sonu\u00e7
+                  Sonuç
                 </label>
                 <select
                   value={formResult}
                   onChange={(e) => setFormResult(e.target.value as "PASSED" | "FAILED" | "PARTIAL")}
                   className="form-input w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none"
                 >
-                  <option value="PASSED">Ge\u00e7ti</option>
-                  <option value="FAILED">Kald\u0131</option>
-                  <option value="PARTIAL">K\u0131smi Ge\u00e7ti</option>
+                  <option value="PASSED">Geçti</option>
+                  <option value="FAILED">Kaldı</option>
+                  <option value="PARTIAL">Kısmi Geçti</option>
                 </select>
               </div>
 
@@ -465,7 +465,7 @@ export default function AdminKalitePage() {
                   type="text"
                   value={formInspectedBy}
                   onChange={(e) => setFormInspectedBy(e.target.value)}
-                  placeholder="Ad\u0131 Soyad\u0131"
+                  placeholder="Adı Soyadı"
                   className="form-input w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none"
                 />
               </div>
@@ -474,12 +474,12 @@ export default function AdminKalitePage() {
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
                   <AlertTriangle className="h-4 w-4 text-gray-400" />
-                  Hata Notlar\u0131
+                  Hata Notları
                 </label>
                 <textarea
                   value={formDefectNotes}
                   onChange={(e) => setFormDefectNotes(e.target.value)}
-                  placeholder="Tespit edilen hatalar\u0131 a\u00e7\u0131klay\u0131n\u0131z..."
+                  placeholder="Tespit edilen hataları açıklayınız..."
                   rows={2}
                   className="form-input w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none resize-none"
                 />
@@ -507,7 +507,7 @@ export default function AdminKalitePage() {
                 onClick={() => setShowModal(false)}
                 className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                \u0130ptal
+                İptal
               </button>
               <button
                 onClick={handleSubmit}

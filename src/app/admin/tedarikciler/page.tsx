@@ -33,9 +33,9 @@ interface Supplier {
 // --- Constants ---
 
 const TYPE_LABELS: Record<SupplierType, string> = {
-  FABRIC: "Kuma\u015f",
+  FABRIC: "Kumaş",
   ELASTIC: "Lastik",
-  THREAD: "\u0130plik",
+  THREAD: "İplik",
   PACKAGING: "Ambalaj",
   LABEL: "Etiket",
 };
@@ -49,10 +49,10 @@ const TYPE_COLORS: Record<SupplierType, string> = {
 };
 
 const TYPE_TABS: { value: string; label: string }[] = [
-  { value: "", label: "T\u00fcm\u00fc" },
-  { value: "FABRIC", label: "Kuma\u015f" },
+  { value: "", label: "Tümü" },
+  { value: "FABRIC", label: "Kumaş" },
   { value: "ELASTIC", label: "Lastik" },
-  { value: "THREAD", label: "\u0130plik" },
+  { value: "THREAD", label: "İplik" },
   { value: "PACKAGING", label: "Ambalaj" },
   { value: "LABEL", label: "Etiket" },
 ];
@@ -182,7 +182,7 @@ export default function AdminSuppliersPage() {
   };
 
   const handleDelete = async (supplier: Supplier) => {
-    if (!confirm(`"${supplier.name}" tedarik\u00e7isi devre d\u0131\u015f\u0131 b\u0131rak\u0131lacak. Emin misiniz?`)) return;
+    if (!confirm(`"${supplier.name}" tedarikçisi devre dışı bırakılacak. Emin misiniz?`)) return;
 
     try {
       const res = await fetch(`/api/admin/suppliers/${supplier.id}`, {
@@ -205,9 +205,9 @@ export default function AdminSuppliersPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tedarik\u00e7iler</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Tedarikçiler</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Toplam {total} tedarik\u00e7i
+            Toplam {total} tedarikçi
           </p>
         </div>
         <button
@@ -215,7 +215,7 @@ export default function AdminSuppliersPage() {
           className="inline-flex items-center gap-1.5 rounded-lg bg-[#7AC143] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6aad38]"
         >
           <Plus className="h-4 w-4" />
-          Yeni Tedarik\u00e7i
+          Yeni Tedarikçi
         </button>
       </div>
 
@@ -249,7 +249,7 @@ export default function AdminSuppliersPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tedarik\u00e7i ad\u0131, yetkili, e-posta, telefon..."
+              placeholder="Tedarikçi adı, yetkili, e-posta, telefon..."
               className="form-input w-full pl-10"
             />
           </div>
@@ -281,7 +281,7 @@ export default function AdminSuppliersPage() {
           }}
           className="form-input"
         >
-          <option value="">T\u00fcm Durum</option>
+          <option value="">Tüm Durum</option>
           <option value="true">Aktif</option>
           <option value="false">Pasif</option>
         </select>
@@ -297,13 +297,13 @@ export default function AdminSuppliersPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b bg-gray-50">
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-700">Tedarik\u00e7i Ad\u0131</th>
-                <th className="px-4 py-3 font-medium text-gray-700">T\u00fcr</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Yetkili Ki\u015fi</th>
+                <th className="px-4 py-3 font-medium text-gray-700">Tedarikçi Adı</th>
+                <th className="px-4 py-3 font-medium text-gray-700">Tür</th>
+                <th className="px-4 py-3 font-medium text-gray-700">Yetkili Kişi</th>
                 <th className="px-4 py-3 font-medium text-gray-700">E-posta</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Telefon</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Durum</th>
-                <th className="px-4 py-3 font-medium text-gray-700">\u0130\u015flemler</th>
+                <th className="px-4 py-3 font-medium text-gray-700">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -327,13 +327,13 @@ export default function AdminSuppliersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {supplier.contactPerson || "\u2014"}
+                    {supplier.contactPerson || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {supplier.email || "\u2014"}
+                    {supplier.email || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {supplier.phone || "\u2014"}
+                    {supplier.phone || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -351,7 +351,7 @@ export default function AdminSuppliersPage() {
                       <button
                         onClick={() => openEditModal(supplier)}
                         className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                        title="D\u00fczenle"
+                        title="Düzenle"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -370,8 +370,8 @@ export default function AdminSuppliersPage() {
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                     {search || typeFilter || activeFilter
-                      ? "E\u015fle\u015fen tedarik\u00e7i bulunamad\u0131"
-                      : "Hen\u00fcz tedarik\u00e7i eklenmemi\u015f"}
+                      ? "Eşleşen tedarikçi bulunamadı"
+                      : "Henüz tedarikçi eklenmemiş"}
                   </td>
                 </tr>
               )}
@@ -384,7 +384,7 @@ export default function AdminSuppliersPage() {
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-gray-500">
-            Sayfa {page} / {totalPages} \u00b7 Toplam {total} tedarik\u00e7i
+            Sayfa {page} / {totalPages} · Toplam {total} tedarikçi
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -433,7 +433,7 @@ export default function AdminSuppliersPage() {
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
                 <Truck className="h-5 w-5 text-[#7AC143]" />
-                {editingId ? "Tedarik\u00e7i D\u00fczenle" : "Yeni Tedarik\u00e7i"}
+                {editingId ? "Tedarikçi Düzenle" : "Yeni Tedarikçi"}
               </h2>
               <button
                 onClick={closeModal}
@@ -449,13 +449,13 @@ export default function AdminSuppliersPage() {
                 {/* Name */}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Tedarik\u00e7i Ad\u0131 <span className="text-red-500">*</span>
+                    Tedarikçi Adı <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Tedarik\u00e7i firma ad\u0131"
+                    placeholder="Tedarikçi firma adı"
                     className="form-input w-full"
                   />
                 </div>
@@ -463,7 +463,7 @@ export default function AdminSuppliersPage() {
                 {/* Type */}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    T\u00fcr <span className="text-red-500">*</span>
+                    Tür <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.type}
@@ -483,7 +483,7 @@ export default function AdminSuppliersPage() {
                 {/* Contact Person */}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Yetkili Ki\u015fi
+                    Yetkili Kişi
                   </label>
                   <input
                     type="text"
@@ -586,7 +586,7 @@ export default function AdminSuppliersPage() {
                 onClick={closeModal}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                \u0130ptal
+                İptal
               </button>
               <button
                 onClick={handleSave}
@@ -596,7 +596,7 @@ export default function AdminSuppliersPage() {
                 {saving ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : null}
-                {editingId ? "G\u00fcncelle" : "Kaydet"}
+                {editingId ? "Güncelle" : "Kaydet"}
               </button>
             </div>
           </div>
