@@ -5,59 +5,127 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Factory,
-  Save,
-  Scissors,
-  CheckCircle2,
-  Package,
-  ClipboardCheck,
-  Timer,
-  Trash2,
-  AlertTriangle,
   Clock,
+  Calculator,
+  ShoppingCart,
+  PackageCheck,
+  Factory,
+  CheckSquare,
+  Package,
+  Truck,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Loader2,
+  Save,
+  Trash2,
+  RefreshCw,
+  Send,
+  ClipboardList,
 } from "lucide-react";
 
-interface ProductionOrderDetail {
+/* ─── Types ─── */
+interface OrderItem {
   id: string;
-  orderNumber: string;
   productId: string;
-  product: {
-    name: string;
-    images: string[];
-    basePrice: number;
-    costPrice: number | null;
-    variants: { color: string; size: string; stock: number }[];
-  };
-  variants: { color: string; size: string; quantity: number }[];
+  sku: string;
+  productName: string;
+  color: string;
+  sizeS: number; sizeM: number; sizeL: number; sizeXL: number; sizeXXL: number;
   totalQuantity: number;
-  status: string;
-  priority: string;
-  startDate: string | null;
-  targetDate: string;
-  completedDate: string | null;
-  materialCost: number | null;
-  laborCost: number | null;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  logs: {
-    id: string;
-    fromStatus: string;
-    toStatus: string;
-    note: string | null;
-    changedBy: string | null;
-    createdAt: string;
-  }[];
 }
 
-const STATUS_FLOW = ["planned", "cutting", "sewing", "quality", "packaging", "completed"] as const;
-const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  planned: { label: "Planlanan", color: "bg-blue-100 text-blue-700 border-blue-300", icon: Timer },
-  cutting: { label: "Kesim", color: "bg-yellow-100 text-yellow-700 border-yellow-300", icon: Scissors },
-  sewing: { label: "Dikim", color: "bg-orange-100 text-orange-700 border-orange-300", icon: Factory },
-  quality: { label: "Kalite Kontrol", color: "bg-purple-100 text-purple-700 border-purple-300", icon: ClipboardCheck },
-  packaging: { label: "Paketleme", color: "bg-cyan-100 text-cyan-700 border-cyan-300", icon: Package },
-  completed: { label: "Tamamlandı", color: "bg-green-100 text-green-700 border-green-300", icon: CheckCircle2 },
+interface BOMData {
+  id: string;
+  totalFabricKg: number;
+  totalElasticM: number;
+  totalThreadM: number;
+  totalLabels: number;
+  totalPackaging: number;
+  totalWeightKg: number;
+  items: any[];
+  summary: any;
+}
+
+interface TrackingEntry {
+  id: string;
+  stage: string;
+  progress: number;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface QualityCheck {
+  id: string;
+  inspectedQuantity: number;
+  passedQuantity: number;
+  defectQuantity: number;
+  result: string;
+  notes: string | null;
+  inspectedBy: string | null;
+  createdAt: string;
+}
+
+interface SupplierOrder {
+  id: string;
+  supplier: { id: string; name: string };
+  materialType: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  status: string;
+  orderedAt: string;
+  deliveredAt: string | null;
+}
+
+interface StageHistoryEntry {
+  stage: string;
+  date: string;
+  note?: string;
+  changedBy?: string;
+}
+
+interface FullOrder {
+  id: string;
+  orderNumber: string;
+  stage: string;
+  priority: string;
+  totalQuantity: number;
+  targetDate: string | null;
+  estimatedDelivery: string | null;
+  actualDelivery: string | null;
+  notes: string | null;
+  stageHistory: StageHistoryEntry[];
+  createdAt: string;
+  updatedAt: string;
+  dealerOrderId: string | null;
+  dealerId: string | null;
+  items: OrderItem[];
+  bom: BOMData | null;
+  tracking: TrackingEntry[];
+  qualityChecks: QualityCheck[];
+  supplierOrders: SupplierOrder[];
+}
+
+/* ─── Constants ─── */
+const STAGE_FLOW = [
+  "PENDING", "BOM_CALCULATED", "MATERIALS_ORDERED", "MATERIALS_RECEIVED",
+  "IN_PRODUCTION", "QUALITY_CHECK", "PACKAGING_STAGE", "PROD_SHIPPED",
+  "PROD_DELIVERED",
+] as const;
+
+const STAGE_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  PENDING: { label: "Beklemede", color: "bg-gray-100 text-gray-700", icon: Clock },
+  BOM_CALCULATED: { label: "BOM Hazır", color: "bg-blue-100 text-blue-700", icon: Calculator },
+  MATERIALS_ORDERED: { label: "Malzeme Sipariş", color: "bg-indigo-100 text-indigo-700", icon: ShoppingCart },
+  MATERIALS_RECEIVED: { label: "Malzeme Teslim", color: "bg-teal-100 text-teal-700", icon: PackageCheck },
+  IN_PRODUCTION: { label: "Üretimde", color: "bg-orange-100 text-orange-700", icon: Factory },
+  QUALITY_CHECK: { label: "Kalite Kontrol", color: "bg-purple-100 text-purple-700", icon: CheckSquare },
+  PACKAGING_STAGE: { label: "Paketleme", color: "bg-cyan-100 text-cyan-700", icon: Package },
+  PROD_SHIPPED: { label: "Kargoda", color: "bg-amber-100 text-amber-700", icon: Truck },
+  PROD_DELIVERED: { label: "Teslim Edildi", color: "bg-green-100 text-green-700", icon: CheckCircle2 },
+  PROD_CANCELLED: { label: "İptal", color: "bg-red-100 text-red-700", icon: XCircle },
 };
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
@@ -67,123 +135,109 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   urgent: { label: "Acil", color: "bg-red-100 text-red-600" },
 };
 
+const QUALITY_RESULT_MAP: Record<string, { label: string; color: string }> = {
+  PASSED: { label: "Geçti", color: "bg-green-100 text-green-700" },
+  FAILED: { label: "Kaldı", color: "bg-red-100 text-red-700" },
+  PARTIAL: { label: "Kısmi", color: "bg-yellow-100 text-yellow-700" },
+};
+
+/* ─── Helpers ─── */
+const formatDate = (d: string | null) => {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("tr-TR");
+};
+
+const formatDateTime = (d: string) =>
+  new Date(d).toLocaleDateString("tr-TR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
+/* ─── Component ─── */
 export default function UretimDetayPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [order, setOrder] = useState<ProductionOrderDetail | null>(null);
+  const [order, setOrder] = useState<FullOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [statusNote, setStatusNote] = useState("");
   const [editMode, setEditMode] = useState(false);
-
-  // Editable fields
-  const [editData, setEditData] = useState({
-    priority: "",
-    targetDate: "",
-    materialCost: "",
-    laborCost: "",
-    notes: "",
-  });
+  const [statusNote, setStatusNote] = useState("");
+  const [bomLoading, setBomLoading] = useState(false);
+  const [editData, setEditData] = useState({ priority: "", targetDate: "", notes: "" });
 
   const fetchOrder = useCallback(async () => {
-    const res = await fetch(`/api/admin/production/${id}`);
+    const res = await fetch(`/api/admin/production-full/${id}`);
     if (res.ok) {
       const data = await res.json();
       setOrder(data);
       setEditData({
         priority: data.priority,
-        targetDate: data.targetDate.split("T")[0],
-        materialCost: data.materialCost?.toString() || "",
-        laborCost: data.laborCost?.toString() || "",
+        targetDate: data.targetDate?.split("T")[0] || "",
         notes: data.notes || "",
       });
     }
     setLoading(false);
   }, [id]);
 
-  useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+  useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  const handleStatusChange = async (newStatus: string) => {
+  /* ─── Actions ─── */
+  const handleStageChange = async (newStage: string) => {
     setSaving(true);
-    const res = await fetch(`/api/admin/production/${id}`, {
-      method: "PUT",
+    const res = await fetch(`/api/admin/production-full/${id}/status`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus, statusNote: statusNote || undefined }),
+      body: JSON.stringify({ stage: newStage, note: statusNote || undefined }),
     });
-    if (res.ok) {
-      setStatusNote("");
-      fetchOrder();
-    }
+    if (res.ok) { setStatusNote(""); fetchOrder(); }
+    else { const d = await res.json(); alert(d.error || "Hata"); }
     setSaving(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await fetch(`/api/admin/production/${id}`, {
-      method: "PUT",
+    const res = await fetch(`/api/admin/production-full/${id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         priority: editData.priority,
         targetDate: editData.targetDate,
-        materialCost: editData.materialCost ? parseFloat(editData.materialCost) : null,
-        laborCost: editData.laborCost ? parseFloat(editData.laborCost) : null,
         notes: editData.notes || null,
       }),
     });
-    if (res.ok) {
-      setEditMode(false);
-      fetchOrder();
-    }
+    if (res.ok) { setEditMode(false); fetchOrder(); }
     setSaving(false);
   };
 
+  const handleRecalcBOM = async () => {
+    setBomLoading(true);
+    const res = await fetch(`/api/admin/production-full/${id}/bom`, { method: "POST" });
+    if (res.ok) fetchOrder();
+    else { const d = await res.json(); alert(d.error || "BOM hesaplanamadı"); }
+    setBomLoading(false);
+  };
+
   const handleDelete = async () => {
-    if (!confirm("Bu üretim emrini silmek istediğinize emin misiniz?")) return;
-    const res = await fetch(`/api/admin/production/${id}`, { method: "DELETE" });
+    if (!confirm("Siparişi silmek istediğinize emin misiniz?")) return;
+    const res = await fetch(`/api/admin/production-full/${id}`, { method: "DELETE" });
     if (res.ok) router.push("/admin/uretim");
-    else {
-      const data = await res.json();
-      alert(data.error || "Silinemedi");
-    }
+    else { const d = await res.json(); alert(d.error || "Silinemedi"); }
   };
 
-  const formatDate = (d: string | null) => {
-    if (!d) return "-";
-    return new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  };
+  if (loading) return <div className="flex items-center justify-center py-20 text-gray-400"><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Yükleniyor...</div>;
+  if (!order) return <div className="py-20 text-center text-gray-400">Üretim siparişi bulunamadı</div>;
 
-  const formatDateTime = (d: string) => {
-    return new Date(d).toLocaleDateString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  if (loading) return <div className="py-20 text-center text-gray-400">Yükleniyor...</div>;
-  if (!order) return <div className="py-20 text-center text-gray-400">Üretim emri bulunamadı</div>;
-
-  const statusCfg = STATUS_MAP[order.status];
-  const priCfg = PRIORITY_MAP[order.priority];
-  const currentIdx = STATUS_FLOW.indexOf(order.status as typeof STATUS_FLOW[number]);
-  const nextStatus = currentIdx < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIdx + 1] : null;
-  const prevStatus = currentIdx > 0 ? STATUS_FLOW[currentIdx - 1] : null;
-  const totalCost = (order.materialCost || 0) + (order.laborCost || 0);
-  const unitCost = order.totalQuantity > 0 ? totalCost / order.totalQuantity : 0;
-  const isOverdue = order.status !== "completed" && new Date(order.targetDate) < new Date();
-
-  // Build variant matrix
-  const uniqueColors = [...new Set(order.variants.map((v) => v.color))];
-  const uniqueSizes = [...new Set(order.variants.map((v) => v.size))];
-  const variantMap = new Map(order.variants.map((v) => [`${v.color}|${v.size}`, v.quantity]));
+  const stageCfg = STAGE_MAP[order.stage] || STAGE_MAP.PENDING;
+  const priCfg = PRIORITY_MAP[order.priority] || PRIORITY_MAP.normal;
+  const currentIdx = STAGE_FLOW.indexOf(order.stage as any);
+  const nextStage = currentIdx >= 0 && currentIdx < STAGE_FLOW.length - 1 ? STAGE_FLOW[currentIdx + 1] : null;
+  const prevStage = currentIdx > 0 ? STAGE_FLOW[currentIdx - 1] : null;
+  const isOverdue = !["PROD_DELIVERED", "PROD_CANCELLED"].includes(order.stage) &&
+    (order.estimatedDelivery || order.targetDate) &&
+    new Date(order.estimatedDelivery || order.targetDate!) < new Date();
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ─── Header ─── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/admin/uretim" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
@@ -192,9 +246,7 @@ export default function UretimDetayPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">{order.orderNumber}</h1>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusCfg.color}`}>
-                {statusCfg.label}
-              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${stageCfg.color}`}>{stageCfg.label}</span>
               <span className={`rounded px-2 py-0.5 text-xs font-medium ${priCfg.color}`}>{priCfg.label}</span>
               {isOverdue && (
                 <span className="flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
@@ -202,28 +254,23 @@ export default function UretimDetayPage() {
                 </span>
               )}
             </div>
-            <p className="mt-1 text-sm text-gray-500">{order.product.name}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {order.totalQuantity.toLocaleString("tr-TR")} adet · Oluşturulma: {formatDate(order.createdAt)}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {!editMode ? (
-            <button
-              onClick={() => setEditMode(true)}
-              className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-            >
-              Düzenle
-            </button>
+            <button onClick={() => setEditMode(true)} className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Düzenle</button>
           ) : (
             <>
-              <button onClick={() => setEditMode(false)} className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-                İptal
-              </button>
+              <button onClick={() => setEditMode(false)} className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">İptal</button>
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-lg bg-[#7AC143] px-4 py-2 text-sm font-medium text-white hover:bg-[#6aad38] disabled:opacity-50">
                 <Save className="h-4 w-4" /> Kaydet
               </button>
             </>
           )}
-          {["planned", "completed"].includes(order.status) && (
+          {["PENDING", "PROD_CANCELLED"].includes(order.stage) && (
             <button onClick={handleDelete} className="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
               <Trash2 className="h-4 w-4" />
             </button>
@@ -231,25 +278,29 @@ export default function UretimDetayPage() {
         </div>
       </div>
 
-      {/* Status Progress */}
+      {/* ─── Stage Progress ─── */}
       <div className="rounded-lg border bg-white p-6">
-        <h3 className="mb-4 text-sm font-medium text-gray-500">Üretim Durumu</h3>
-        <div className="flex items-center gap-1">
-          {STATUS_FLOW.map((s, i) => {
-            const sCfg = STATUS_MAP[s];
+        <h3 className="mb-4 text-sm font-medium text-gray-500">Üretim Aşaması</h3>
+        <div className="flex items-center gap-0.5 overflow-x-auto pb-2">
+          {STAGE_FLOW.map((s, i) => {
+            const sCfg = STAGE_MAP[s];
             const Icon = sCfg.icon;
             const isActive = i <= currentIdx;
-            const isCurrent = s === order.status;
+            const isCurrent = s === order.stage;
             return (
-              <div key={s} className="flex flex-1 items-center">
-                <div className={`flex flex-col items-center gap-1 ${i > 0 ? "flex-1" : ""}`}>
-                  {i > 0 && (
-                    <div className={`h-0.5 w-full ${isActive ? "bg-[#7AC143]" : "bg-gray-200"}`} />
-                  )}
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${isCurrent ? "bg-[#7AC143] text-white ring-4 ring-[#7AC143]/20" : isActive ? "bg-[#7AC143] text-white" : "bg-gray-200 text-gray-400"}`}>
+              <div key={s} className="flex flex-1 items-center min-w-[80px]">
+                {i > 0 && <div className={`h-0.5 w-full ${isActive ? "bg-[#7AC143]" : "bg-gray-200"}`} />}
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    isCurrent ? "bg-[#7AC143] text-white ring-4 ring-[#7AC143]/20"
+                    : isActive ? "bg-[#7AC143] text-white"
+                    : "bg-gray-200 text-gray-400"
+                  }`}>
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className={`text-[10px] font-medium ${isCurrent ? "text-[#7AC143]" : isActive ? "text-gray-700" : "text-gray-400"}`}>
+                  <span className={`text-[10px] font-medium text-center whitespace-nowrap ${
+                    isCurrent ? "text-[#7AC143]" : isActive ? "text-gray-700" : "text-gray-400"
+                  }`}>
                     {sCfg.label}
                   </span>
                 </div>
@@ -257,8 +308,9 @@ export default function UretimDetayPage() {
             );
           })}
         </div>
-        {/* Status change */}
-        {order.status !== "completed" && (
+
+        {/* Stage change controls */}
+        {!["PROD_DELIVERED", "PROD_CANCELLED"].includes(order.stage) && (
           <div className="mt-4 flex items-center gap-3 border-t pt-4">
             <input
               type="text"
@@ -267,69 +319,87 @@ export default function UretimDetayPage() {
               className="form-input flex-1"
               placeholder="Durum değişikliği notu (isteğe bağlı)"
             />
-            {prevStatus && (
-              <button
-                onClick={() => handleStatusChange(prevStatus)}
-                disabled={saving}
-                className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-              >
-                ← {STATUS_MAP[prevStatus].label}
+            {prevStage && (
+              <button onClick={() => handleStageChange(prevStage)} disabled={saving}
+                className="rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                ← {STAGE_MAP[prevStage].label}
               </button>
             )}
-            {nextStatus && (
-              <button
-                onClick={() => handleStatusChange(nextStatus)}
-                disabled={saving}
-                className="rounded-lg bg-[#7AC143] px-4 py-2 text-sm font-medium text-white hover:bg-[#6aad38] disabled:opacity-50"
-              >
-                {STATUS_MAP[nextStatus].label} →
+            {nextStage && (
+              <button onClick={() => handleStageChange(nextStage)} disabled={saving}
+                className="rounded-lg bg-[#7AC143] px-4 py-2 text-sm font-medium text-white hover:bg-[#6aad38] disabled:opacity-50">
+                {STAGE_MAP[nextStage].label} →
               </button>
             )}
           </div>
         )}
       </div>
 
+      {/* ─── Action Buttons ─── */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={handleRecalcBOM} disabled={bomLoading}
+          className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+          {bomLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          BOM {order.bom ? "Yeniden Hesapla" : "Hesapla"}
+        </button>
+        {["BOM_CALCULATED", "PENDING"].includes(order.stage) && (
+          <Link href={`/admin/tedarikciler`}
+            className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Send className="h-4 w-4" /> Tedarikçiye Sipariş Ver
+          </Link>
+        )}
+        {order.stage === "QUALITY_CHECK" && (
+          <Link href={`/admin/kalite`}
+            className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <ClipboardList className="h-4 w-4" /> Kalite Kontrol Ekle
+          </Link>
+        )}
+        {order.stage === "PROD_CANCELLED" ? null : order.stage !== "PROD_DELIVERED" && (
+          <button onClick={() => handleStageChange("PROD_CANCELLED")}
+            className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-500 hover:bg-red-50">
+            <XCircle className="h-4 w-4" /> İptal Et
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column - Details */}
+        {/* ─── Left Column ─── */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Variant Matrix */}
+
+          {/* Items Table */}
           <div className="rounded-lg border bg-white p-6">
-            <h3 className="mb-4 text-sm font-medium text-gray-500">Varyasyon Detayları</h3>
+            <h3 className="mb-4 text-sm font-medium text-gray-500">Ürün Kalemleri ({order.items.length})</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Ürün</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Renk</th>
-                    {uniqueSizes.map((size) => (
-                      <th key={size} className="px-3 py-2 text-center text-xs font-medium text-gray-500">{size}</th>
-                    ))}
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">S</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">M</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">L</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">XL</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">XXL</th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Toplam</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {uniqueColors.map((color) => {
-                    const rowTotal = uniqueSizes.reduce((s, size) => s + (variantMap.get(`${color}|${size}`) || 0), 0);
-                    return (
-                      <tr key={color} className="border-b">
-                        <td className="px-3 py-2 font-medium text-gray-700">{color}</td>
-                        {uniqueSizes.map((size) => {
-                          const qty = variantMap.get(`${color}|${size}`);
-                          return (
-                            <td key={size} className="px-3 py-2 text-center">
-                              {qty ? <span className="font-medium">{qty}</span> : <span className="text-gray-300">—</span>}
-                            </td>
-                          );
-                        })}
-                        <td className="px-3 py-2 text-right font-medium text-gray-600">{rowTotal}</td>
-                      </tr>
-                    );
-                  })}
+                  {order.items.map((item) => (
+                    <tr key={item.id} className="border-b">
+                      <td className="px-3 py-2 font-medium text-gray-700">{item.productName}</td>
+                      <td className="px-3 py-2 text-gray-500">{item.sku}</td>
+                      <td className="px-3 py-2 text-gray-600">{item.color}</td>
+                      <td className="px-3 py-2 text-center">{item.sizeS || <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-center">{item.sizeM || <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-center">{item.sizeL || <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-center">{item.sizeXL || <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-center">{item.sizeXXL || <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-right font-bold text-[#7AC143]">{item.totalQuantity}</td>
+                    </tr>
+                  ))}
                   <tr className="bg-gray-50">
-                    <td className="px-3 py-2 font-medium text-gray-700">Toplam</td>
-                    {uniqueSizes.map((size) => {
-                      const colTotal = uniqueColors.reduce((s, color) => s + (variantMap.get(`${color}|${size}`) || 0), 0);
-                      return <td key={size} className="px-3 py-2 text-center font-medium">{colTotal || ""}</td>;
-                    })}
+                    <td colSpan={8} className="px-3 py-2 font-medium text-gray-700">Genel Toplam</td>
                     <td className="px-3 py-2 text-right font-bold text-[#7AC143]">{order.totalQuantity}</td>
                   </tr>
                 </tbody>
@@ -337,55 +407,204 @@ export default function UretimDetayPage() {
             </div>
           </div>
 
-          {/* Timeline */}
+          {/* BOM Table */}
           <div className="rounded-lg border bg-white p-6">
-            <h3 className="mb-4 text-sm font-medium text-gray-500">Durum Geçmişi</h3>
-            <div className="space-y-4">
-              {order.logs.map((log, i) => {
-                const toCfg = STATUS_MAP[log.toStatus];
-                const ToIcon = toCfg?.icon || Clock;
-                return (
-                  <div key={log.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${i === 0 ? "bg-[#7AC143] text-white" : "bg-gray-200 text-gray-500"}`}>
-                        <ToIcon className="h-4 w-4" />
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-500">BOM — Malzeme Listesi</h3>
+              {order.bom && (
+                <span className="text-xs text-gray-400">Hesaplandı: {formatDateTime(order.bom.id ? order.createdAt : order.createdAt)}</span>
+              )}
+            </div>
+            {order.bom ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                  <div className="rounded-lg bg-blue-50 p-3 text-center">
+                    <p className="text-xs text-blue-600">Kumaş</p>
+                    <p className="mt-1 text-lg font-bold text-blue-800">{order.bom.totalFabricKg.toFixed(2)} kg</p>
+                  </div>
+                  <div className="rounded-lg bg-purple-50 p-3 text-center">
+                    <p className="text-xs text-purple-600">Lastik</p>
+                    <p className="mt-1 text-lg font-bold text-purple-800">{order.bom.totalElasticM.toFixed(1)} m</p>
+                  </div>
+                  <div className="rounded-lg bg-orange-50 p-3 text-center">
+                    <p className="text-xs text-orange-600">İplik</p>
+                    <p className="mt-1 text-lg font-bold text-orange-800">{order.bom.totalThreadM.toFixed(1)} m</p>
+                  </div>
+                  <div className="rounded-lg bg-teal-50 p-3 text-center">
+                    <p className="text-xs text-teal-600">Etiket</p>
+                    <p className="mt-1 text-lg font-bold text-teal-800">{order.bom.totalLabels}</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 p-3 text-center">
+                    <p className="text-xs text-amber-600">Toplam Ağırlık</p>
+                    <p className="mt-1 text-lg font-bold text-amber-800">{order.bom.totalWeightKg.toFixed(2)} kg</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border-2 border-dashed p-8 text-center">
+                <Calculator className="mx-auto h-8 w-8 text-gray-300" />
+                <p className="mt-2 text-sm text-gray-400">BOM henüz hesaplanmadı</p>
+                <button onClick={handleRecalcBOM} disabled={bomLoading}
+                  className="mt-3 rounded-lg bg-[#7AC143] px-4 py-2 text-sm font-medium text-white hover:bg-[#6aad38] disabled:opacity-50">
+                  {bomLoading ? "Hesaplanıyor..." : "BOM Hesapla"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Supplier Orders */}
+          {order.supplierOrders.length > 0 && (
+            <div className="rounded-lg border bg-white p-6">
+              <h3 className="mb-4 text-sm font-medium text-gray-500">Tedarikçi Siparişleri ({order.supplierOrders.length})</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Tedarikçi</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Malzeme</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Miktar</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Tutar</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Durum</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Sipariş</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Teslim</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.supplierOrders.map(so => (
+                      <tr key={so.id} className="border-b">
+                        <td className="px-3 py-2 font-medium text-gray-700">{so.supplier.name}</td>
+                        <td className="px-3 py-2 text-gray-600">{so.materialType}</td>
+                        <td className="px-3 py-2 text-right">{so.quantity} {so.unit}</td>
+                        <td className="px-3 py-2 text-right">{so.totalPrice ? `₺${so.totalPrice.toLocaleString("tr-TR")}` : "-"}</td>
+                        <td className="px-3 py-2">
+                          <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+                            so.status === "delivered" ? "bg-green-100 text-green-700"
+                            : so.status === "shipped" ? "bg-amber-100 text-amber-700"
+                            : "bg-blue-100 text-blue-700"
+                          }`}>{so.status}</span>
+                        </td>
+                        <td className="px-3 py-2 text-gray-500">{formatDate(so.orderedAt)}</td>
+                        <td className="px-3 py-2 text-gray-500">{formatDate(so.deliveredAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Quality Checks */}
+          {order.qualityChecks.length > 0 && (
+            <div className="rounded-lg border bg-white p-6">
+              <h3 className="mb-4 text-sm font-medium text-gray-500">Kalite Kontrolleri ({order.qualityChecks.length})</h3>
+              <div className="space-y-3">
+                {order.qualityChecks.map(qc => {
+                  const resCfg = QUALITY_RESULT_MAP[qc.result] || { label: qc.result, color: "bg-gray-100 text-gray-700" };
+                  return (
+                    <div key={qc.id} className="flex items-center gap-4 rounded-lg border p-4">
+                      <span className={`rounded-full px-3 py-1 text-xs font-medium ${resCfg.color}`}>{resCfg.label}</span>
+                      <div className="flex-1 text-sm">
+                        <p className="text-gray-700">
+                          {qc.passedQuantity}/{qc.inspectedQuantity} geçti
+                          {qc.defectQuantity > 0 && <span className="text-red-500"> · {qc.defectQuantity} hatalı</span>}
+                        </p>
+                        {qc.notes && <p className="text-gray-500">{qc.notes}</p>}
                       </div>
-                      {i < order.logs.length - 1 && <div className="h-full w-0.5 bg-gray-200" />}
+                      <div className="text-right text-xs text-gray-400">
+                        {qc.inspectedBy && <p>{qc.inspectedBy}</p>}
+                        <p>{formatDateTime(qc.createdAt)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Stage History / Timeline */}
+          <div className="rounded-lg border bg-white p-6">
+            <h3 className="mb-4 text-sm font-medium text-gray-500">Aşama Geçmişi</h3>
+            <div className="space-y-4">
+              {(order.stageHistory || []).slice().reverse().map((entry, i, arr) => {
+                const sCfg = STAGE_MAP[entry.stage] || STAGE_MAP.PENDING;
+                const Icon = sCfg.icon;
+                return (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                        i === 0 ? "bg-[#7AC143] text-white" : "bg-gray-200 text-gray-500"
+                      }`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      {i < arr.length - 1 && <div className="h-full w-0.5 bg-gray-200" />}
                     </div>
                     <div className="flex-1 pb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {log.fromStatus ? `${STATUS_MAP[log.fromStatus]?.label || log.fromStatus} → ` : ""}
-                          {toCfg?.label || log.toStatus}
-                        </span>
-                        <span className="text-xs text-gray-400">{formatDateTime(log.createdAt)}</span>
+                        <span className="text-sm font-medium text-gray-900">{sCfg.label}</span>
+                        <span className="text-xs text-gray-400">{formatDateTime(entry.date)}</span>
                       </div>
-                      {log.changedBy && <p className="text-xs text-gray-400">{log.changedBy}</p>}
-                      {log.note && <p className="mt-1 text-sm text-gray-600">{log.note}</p>}
+                      {entry.changedBy && <p className="text-xs text-gray-400">{entry.changedBy}</p>}
+                      {entry.note && <p className="mt-1 text-sm text-gray-600">{entry.note}</p>}
                     </div>
                   </div>
                 );
               })}
-              {order.logs.length === 0 && (
-                <p className="text-sm text-gray-400">Henüz durum değişikliği yok</p>
+              {(!order.stageHistory || order.stageHistory.length === 0) && (
+                <p className="text-sm text-gray-400">Henüz aşama geçmişi yok</p>
               )}
             </div>
           </div>
+
+          {/* Tracking Log */}
+          {order.tracking.length > 0 && (
+            <div className="rounded-lg border bg-white p-6">
+              <h3 className="mb-4 text-sm font-medium text-gray-500">Takip Kayıtları ({order.tracking.length})</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Aşama</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">İlerleme</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Not</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Tarih</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.tracking.map(t => (
+                      <tr key={t.id} className="border-b">
+                        <td className="px-3 py-2">
+                          <span className={`rounded px-2 py-0.5 text-xs font-medium ${(STAGE_MAP[t.stage] || STAGE_MAP.PENDING).color}`}>
+                            {(STAGE_MAP[t.stage] || STAGE_MAP.PENDING).label}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-20 rounded-full bg-gray-200">
+                              <div className="h-2 rounded-full bg-[#7AC143]" style={{ width: `${t.progress}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-500">{t.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-gray-600">{t.notes || "-"}</td>
+                        <td className="px-3 py-2 text-gray-500">{formatDateTime(t.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right Column - Info & Cost */}
+        {/* ─── Right Column ─── */}
         <div className="space-y-6">
           {/* Order Info */}
           <div className="rounded-lg border bg-white p-6">
             <h3 className="mb-4 text-sm font-medium text-gray-500">Sipariş Bilgileri</h3>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <dt className="text-gray-500">Üretim No</dt>
+                <dt className="text-gray-500">Sipariş No</dt>
                 <dd className="font-medium text-gray-900">{order.orderNumber}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Ürün</dt>
-                <dd className="font-medium text-gray-900">{order.product.name}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">Toplam Adet</dt>
@@ -395,11 +614,7 @@ export default function UretimDetayPage() {
                 <dt className="text-gray-500">Öncelik</dt>
                 <dd>
                   {editMode ? (
-                    <select
-                      value={editData.priority}
-                      onChange={(e) => setEditData({ ...editData, priority: e.target.value })}
-                      className="form-input text-xs"
-                    >
+                    <select value={editData.priority} onChange={(e) => setEditData({ ...editData, priority: e.target.value })} className="form-input text-xs">
                       <option value="low">Düşük</option>
                       <option value="normal">Normal</option>
                       <option value="high">Yüksek</option>
@@ -415,87 +630,29 @@ export default function UretimDetayPage() {
                 <dd className="text-gray-700">{formatDate(order.createdAt)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-500">Başlangıç</dt>
-                <dd className="text-gray-700">{formatDate(order.startDate)}</dd>
-              </div>
-              <div className="flex justify-between">
                 <dt className="text-gray-500">Hedef Tarih</dt>
                 <dd>
                   {editMode ? (
-                    <input
-                      type="date"
-                      value={editData.targetDate}
-                      onChange={(e) => setEditData({ ...editData, targetDate: e.target.value })}
-                      className="form-input text-xs"
-                    />
+                    <input type="date" value={editData.targetDate} onChange={(e) => setEditData({ ...editData, targetDate: e.target.value })} className="form-input text-xs" />
                   ) : (
-                    <span className={isOverdue ? "font-medium text-red-500" : "text-gray-700"}>
-                      {formatDate(order.targetDate)}
-                    </span>
+                    <span className={isOverdue ? "font-medium text-red-500" : "text-gray-700"}>{formatDate(order.targetDate)}</span>
                   )}
                 </dd>
               </div>
-              {order.completedDate && (
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Tahmini Teslim</dt>
+                <dd className="text-gray-700">{formatDate(order.estimatedDelivery)}</dd>
+              </div>
+              {order.actualDelivery && (
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Tamamlanma</dt>
-                  <dd className="text-green-600 font-medium">{formatDate(order.completedDate)}</dd>
+                  <dt className="text-gray-500">Gerçek Teslim</dt>
+                  <dd className="font-medium text-green-600">{formatDate(order.actualDelivery)}</dd>
                 </div>
               )}
-            </dl>
-          </div>
-
-          {/* Cost Summary */}
-          <div className="rounded-lg border bg-white p-6">
-            <h3 className="mb-4 text-sm font-medium text-gray-500">Maliyet Özeti</h3>
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Malzeme</dt>
-                <dd>
-                  {editMode ? (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editData.materialCost}
-                      onChange={(e) => setEditData({ ...editData, materialCost: e.target.value })}
-                      className="form-input w-24 text-right text-xs"
-                      placeholder="0.00"
-                    />
-                  ) : (
-                    <span className="font-medium text-gray-900">
-                      {order.materialCost ? `₺${order.materialCost.toLocaleString("tr-TR")}` : "-"}
-                    </span>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">İşçilik</dt>
-                <dd>
-                  {editMode ? (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editData.laborCost}
-                      onChange={(e) => setEditData({ ...editData, laborCost: e.target.value })}
-                      className="form-input w-24 text-right text-xs"
-                      placeholder="0.00"
-                    />
-                  ) : (
-                    <span className="font-medium text-gray-900">
-                      {order.laborCost ? `₺${order.laborCost.toLocaleString("tr-TR")}` : "-"}
-                    </span>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between border-t pt-3">
-                <dt className="font-medium text-gray-700">Toplam</dt>
-                <dd className="font-bold text-gray-900">
-                  {totalCost > 0 ? `₺${totalCost.toLocaleString("tr-TR")}` : "-"}
-                </dd>
-              </div>
-              {totalCost > 0 && (
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Birim Maliyet</dt>
-                  <dd className="text-gray-700">₺{unitCost.toFixed(2)}/adet</dd>
+              {order.dealerOrderId && (
+                <div className="flex justify-between border-t pt-3">
+                  <dt className="text-gray-500">Bayi Siparişi</dt>
+                  <dd className="font-medium text-[#7AC143]">{order.dealerOrderId}</dd>
                 </div>
               )}
             </dl>
@@ -513,7 +670,7 @@ export default function UretimDetayPage() {
                 placeholder="Üretim notları..."
               />
             ) : (
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">
+              <p className="whitespace-pre-wrap text-sm text-gray-600">
                 {order.notes || "Not eklenmemiş."}
               </p>
             )}
