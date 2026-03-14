@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { resendClient } from "@/lib/integrations/resend";
+import { createNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -97,6 +99,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
+  // 3. Dealer notification — send email + in-app notification if dealerId exists
+  if (order.dealerId) {
+    notifyDealerStageChange(order.dealerId, order.orderNumber, newStage, order.stage, note).catch((err) =>
+      console.error("[DealerNotify] Error:", err)
+    );
+  }
+
   return NextResponse.json({
     order: updated,
     stageChange: {
@@ -104,6 +113,84 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       to: newStage,
       changedBy,
       date: now.toISOString(),
+    },
+  });
+}
+
+// ─── Dealer Stage Change Notification ────────────────────
+const STAGE_EMAIL_MAP: Record<string, { subject: string; message: string }> = {
+  BOM_CALCULATED: {
+    subject: "Üretim siparişiniz onaylandı",
+    message: "Üretim siparişiniz onaylandı, malzeme planlaması yapıldı.",
+  },
+  MATERIALS_ORDERED: {
+    subject: "Malzemeler sipariş edildi",
+    message: "Malzemeler tedarikçiye sipariş edildi.",
+  },
+  MATERIALS_RECEIVED: {
+    subject: "Malzemeler teslim alındı",
+    message: "Malzemeler teslim alındı, üretime hazırlanıyor.",
+  },
+  IN_PRODUCTION: {
+    subject: "Ürünleriniz üretimde",
+    message: "Ürünleriniz üretim hattında, imalat devam ediyor.",
+  },
+  QUALITY_CHECK: {
+    subject: "Kalite kontrol aşamasında",
+    message: "Ürünleriniz kalite kontrol aşamasına geçti.",
+  },
+  PACKAGING_STAGE: {
+    subject: "Paketleniyor",
+    message: "Kalite kontrol geçti, ürünleriniz paketleniyor.",
+  },
+  PROD_SHIPPED: {
+    subject: "Kargoya verildi",
+    message: "Siparişiniz kargoya verildi.",
+  },
+  PROD_DELIVERED: {
+    subject: "Teslim edildi",
+    message: "Siparişiniz teslim edildi.",
+  },
+  PROD_CANCELLED: {
+    subject: "Üretim iptal edildi",
+    message: "Üretim siparişiniz iptal edildi.",
+  },
+};
+
+async function notifyDealerStageChange(
+  dealerId: string,
+  orderNumber: string,
+  newStage: string,
+  _oldStage: string,
+  note?: string
+) {
+  const stageInfo = STAGE_EMAIL_MAP[newStage];
+  if (!stageInfo) return;
+
+  const dealer = await db.dealer.findUnique({
+    where: { id: dealerId },
+    select: { email: true, companyName: true },
+  });
+  if (!dealer?.email) return;
+
+  // In-app notification
+  await createNotification({
+    type: "PRODUCTION_TERMIN",
+    title: `${stageInfo.subject} — #${orderNumber}`,
+    message: `${stageInfo.message}${note ? ` Not: ${note}` : ""}`,
+  });
+
+  // Email notification
+  const prodNote = note || stageInfo.message;
+  await resendClient.sendFromTemplate({
+    templateName: "production-termin",
+    to: dealer.email,
+    variables: {
+      companyName: dealer.companyName,
+      orderNumber,
+      terminDate: stageInfo.subject,
+      productionNote: prodNote,
+      totalAmount: "",
     },
   });
 }
