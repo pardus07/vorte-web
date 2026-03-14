@@ -12,7 +12,11 @@ export async function GET() {
 
   const items = await db.cartItem.findMany({
     where: { dealerId: dealer.id },
-    include: {
+    select: {
+      id: true,
+      quantity: true,
+      standPackageId: true,
+      standPackageType: true,
       product: {
         select: {
           name: true,

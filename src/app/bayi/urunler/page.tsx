@@ -1,6 +1,7 @@
 import { getDealerSession } from "@/lib/dealer-session";
 import { db } from "@/lib/db";
 import { DealerProductGrid } from "./DealerProductGrid";
+import { StandPackageSection } from "./StandPackageSection";
 
 export default async function DealerProductsPage() {
   const dealer = await getDealerSession();
@@ -20,6 +21,9 @@ export default async function DealerProductsPage() {
     orderBy: { name: "asc" },
   });
 
+  // Wholesale prices by product slug — stand paketleri için
+  const wholesalePricesBySlug: Record<string, number> = {};
+
   // Serialize products for client component
   const serializedProducts = products.map((product) => {
     const dealerSpecific = product.dealerPrices.find((p) => p.dealerId === dealer.id);
@@ -28,6 +32,9 @@ export default async function DealerProductsPage() {
     const discount = wholesalePrice
       ? Math.round((1 - wholesalePrice / product.basePrice) * 100)
       : 0;
+
+    // Stand fiyat map'e ekle
+    wholesalePricesBySlug[product.slug] = wholesalePrice;
 
     // Group variants by color
     const colorGroups: Record<string, { color: string; colorHex: string; variants: { id: string; size: string; stock: number }[] }> = {};
@@ -51,6 +58,10 @@ export default async function DealerProductsPage() {
 
   return (
     <div>
+      {/* Stand Paketleri */}
+      <StandPackageSection wholesalePrices={wholesalePricesBySlug} />
+
+      {/* Tekil Ürünler */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ürün Kataloğu</h1>
