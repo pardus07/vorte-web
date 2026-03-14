@@ -31,6 +31,7 @@ export function middleware(request: NextRequest) {
     !pathname.startsWith("/api/admin/") && // Admin routes are session-authenticated
     !pathname.startsWith("/api/webhooks/") && // Webhooks come from external services
     !pathname.startsWith("/api/payment/callback") && // iyzico callback is a form POST from their server
+    !pathname.startsWith("/api/dealer/payment/callback") && // iyzico dealer callback
     !pathname.startsWith("/api/dealer-application") && // Mobile middleware proxy (server-to-server)
     ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)
   ) {
