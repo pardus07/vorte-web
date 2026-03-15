@@ -5,6 +5,8 @@ import { z } from "zod";
 import { logActivity } from "@/lib/audit";
 import { resendClient } from "@/lib/integrations/resend";
 import { formatPrice } from "@/lib/utils";
+import { calculateBOM, type BOMInput } from "@/lib/production/bom-calculator";
+import { calculateTermin } from "@/lib/production/termin-calculator";
 
 export async function GET(
   _req: NextRequest,
@@ -119,6 +121,154 @@ export async function PATCH(
         changedBy: admin.userId,
       },
     });
+
+    // PRODUCTION'a geçişte otomatik FullProductionOrder oluştur
+    if (status === "PRODUCTION" && currentOrder.isProduction) {
+      try {
+        // Mevcut üretim siparişi var mı kontrol et
+        const existingPO = await db.fullProductionOrder.findFirst({
+          where: { dealerOrderId: id },
+        });
+
+        if (!existingPO) {
+          const orderWithItems = await db.order.findUnique({
+            where: { id },
+            include: {
+              items: {
+                include: {
+                  product: { select: { name: true } },
+                  variant: { select: { color: true, size: true, sku: true } },
+                },
+              },
+            },
+          });
+
+          if (orderWithItems && orderWithItems.items.length > 0) {
+            // Ürün+renk bazında grupla (bedenler ayrı satır olarak geliyor)
+            const grouped: Record<string, {
+              productId: string; sku: string; productName: string; color: string;
+              sizeS: number; sizeM: number; sizeL: number; sizeXL: number; sizeXXL: number;
+            }> = {};
+
+            for (const item of orderWithItems.items) {
+              const key = `${item.productId}-${item.variant?.color || "default"}`;
+              if (!grouped[key]) {
+                const baseSku = item.variant?.sku?.replace(/-[SMLX]+$/i, "") || item.productId.slice(0, 6);
+                grouped[key] = {
+                  productId: item.productId,
+                  sku: baseSku,
+                  productName: item.product?.name || "Ürün",
+                  color: item.variant?.color || "Standart",
+                  sizeS: 0, sizeM: 0, sizeL: 0, sizeXL: 0, sizeXXL: 0,
+                };
+              }
+              const size = item.variant?.size?.toUpperCase() || "";
+              if (size === "S") grouped[key].sizeS += item.quantity;
+              else if (size === "M") grouped[key].sizeM += item.quantity;
+              else if (size === "L") grouped[key].sizeL += item.quantity;
+              else if (size === "XL") grouped[key].sizeXL += item.quantity;
+              else if (size === "XXL") grouped[key].sizeXXL += item.quantity;
+              else grouped[key].sizeM += item.quantity; // fallback
+            }
+
+            const prodItems = Object.values(grouped);
+            const totalQuantity = prodItems.reduce(
+              (sum, i) => sum + i.sizeS + i.sizeM + i.sizeL + i.sizeXL + i.sizeXXL, 0
+            );
+
+            // Sipariş numarası oluştur
+            const year = new Date().getFullYear();
+            const lastPO = await db.fullProductionOrder.findFirst({
+              where: { orderNumber: { startsWith: `PO-${year}` } },
+              orderBy: { orderNumber: "desc" },
+            });
+            const nextNum = lastPO ? parseInt(lastPO.orderNumber.split("-")[2]) + 1 : 1;
+            const poNumber = `PO-${year}-${String(nextNum).padStart(3, "0")}`;
+
+            // Termin hesapla
+            const termin = calculateTermin(totalQuantity);
+
+            // FullProductionOrder oluştur
+            const prodOrder = await db.fullProductionOrder.create({
+              data: {
+                orderNumber: poNumber,
+                dealerOrderId: id,
+                dealerId: currentOrder.dealerId || undefined,
+                priority: "normal",
+                notes: `Sipariş #${currentOrder.orderNumber} için otomatik oluşturuldu`,
+                estimatedDelivery: termin.estimatedDelivery,
+                stageHistory: JSON.parse(JSON.stringify([
+                  { stage: "PENDING", date: new Date().toISOString(), note: "Sipariş üretime alındı", changedBy: admin.name || admin.email },
+                ])),
+                items: {
+                  create: prodItems.map((item) => ({
+                    productId: item.productId,
+                    sku: item.sku,
+                    productName: item.productName,
+                    color: item.color,
+                    sizeS: item.sizeS,
+                    sizeM: item.sizeM,
+                    sizeL: item.sizeL,
+                    sizeXL: item.sizeXL,
+                    sizeXXL: item.sizeXXL,
+                    totalQuantity: item.sizeS + item.sizeM + item.sizeL + item.sizeXL + item.sizeXXL,
+                  })),
+                },
+              },
+            });
+
+            // BOM otomatik hesapla
+            const bomInputs: BOMInput[] = prodItems.map((item) => ({
+              sku: item.sku,
+              productName: item.productName,
+              color: item.color,
+              sizeS: item.sizeS, sizeM: item.sizeM, sizeL: item.sizeL,
+              sizeXL: item.sizeXL, sizeXXL: item.sizeXXL,
+            }));
+            const bomResult = calculateBOM(bomInputs);
+
+            await db.bOMCalculation.create({
+              data: {
+                productionOrderId: prodOrder.id,
+                materials: JSON.parse(JSON.stringify(bomResult.materials)),
+                totalFabricKg: bomResult.summary.totalFabricKg,
+                totalLiningKg: bomResult.summary.totalLiningKg,
+                totalElasticM: bomResult.summary.totalElasticM,
+                totalThreadM: bomResult.summary.totalThreadM,
+                totalLabels: bomResult.summary.totalLabels,
+                totalPackaging: bomResult.summary.totalPackaging,
+              },
+            });
+
+            // Stage → BOM_CALCULATED
+            const newHistory = [
+              { stage: "PENDING", date: new Date().toISOString(), note: "Sipariş üretime alındı", changedBy: admin.name || admin.email },
+              { stage: "BOM_CALCULATED", date: new Date().toISOString(), note: `BOM otomatik hesaplandı — ${bomResult.summary.totalFabricKg} kg kumaş`, changedBy: "Sistem" },
+            ];
+
+            await db.fullProductionOrder.update({
+              where: { id: prodOrder.id },
+              data: { stage: "BOM_CALCULATED", stageHistory: JSON.parse(JSON.stringify(newHistory)) },
+            });
+
+            // Tracking kaydı
+            await db.productionTracking.create({
+              data: {
+                productionOrderId: prodOrder.id,
+                stage: "BOM_CALCULATED",
+                progress: 10,
+                notes: `Sipariş #${currentOrder.orderNumber} → otomatik BOM hesaplandı`,
+              },
+            });
+
+            console.log(`[admin orders] Auto-created FullProductionOrder ${poNumber} for order ${currentOrder.orderNumber}`);
+          }
+        }
+      } catch (prodErr) {
+        console.error("[admin orders] Auto production order error:", prodErr);
+        // Hata üretim siparişi oluşturmayı engellemez, ana sipariş güncellenir
+      }
+    }
 
     // PRODUCTION_READY'e geçişte stok düş
     if (status === "PRODUCTION_READY" && currentOrder.isProduction) {
