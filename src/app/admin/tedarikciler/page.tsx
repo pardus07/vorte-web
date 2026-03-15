@@ -20,7 +20,7 @@ type SupplierType = "FABRIC" | "ELASTIC" | "THREAD" | "PACKAGING" | "LABEL";
 interface Supplier {
   id: string;
   name: string;
-  contactPerson: string | null;
+  contactName: string | null;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -59,7 +59,7 @@ const TYPE_TABS: { value: string; label: string }[] = [
 
 const EMPTY_FORM = {
   name: "",
-  contactPerson: "",
+  contactName: "",
   email: "",
   phone: "",
   address: "",
@@ -129,7 +129,7 @@ export default function AdminSuppliersPage() {
     setEditingId(supplier.id);
     setForm({
       name: supplier.name,
-      contactPerson: supplier.contactPerson || "",
+      contactName: supplier.contactName || "",
       email: supplier.email || "",
       phone: supplier.phone || "",
       address: supplier.address || "",
@@ -161,7 +161,7 @@ export default function AdminSuppliersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
-          contactPerson: form.contactPerson.trim() || null,
+          contactName: form.contactName.trim() || null,
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
@@ -327,7 +327,7 @@ export default function AdminSuppliersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {supplier.contactPerson || "—"}
+                    {supplier.contactName || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
                     {supplier.email || "—"}
@@ -487,9 +487,9 @@ export default function AdminSuppliersPage() {
                   </label>
                   <input
                     type="text"
-                    value={form.contactPerson}
+                    value={form.contactName}
                     onChange={(e) =>
-                      setForm({ ...form, contactPerson: e.target.value })
+                      setForm({ ...form, contactName: e.target.value })
                     }
                     placeholder="Ad Soyad"
                     className="form-input w-full"
