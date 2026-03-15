@@ -278,7 +278,22 @@ export function calculateBOM(items: BOMInput[]): BOMResult {
   const threadTotal = { gr: 0, m: 0 };
 
   for (const item of items) {
-    const productType = SKU_PRODUCT_TYPE[item.sku];
+    // SKU eşleştirme: önce direkt, sonra kısa kod çıkart (VRT-EB-GRI → EB-G)
+    let productType = SKU_PRODUCT_TYPE[item.sku];
+    if (!productType) {
+      // SKU'dan kısa kodu çıkart: VRT-EB-GRI → EB-GRI → EB-G (ilk 4 karakter)
+      const parts = item.sku.replace(/^VRT-/, "").split("-");
+      if (parts.length >= 2) {
+        const shortSku = `${parts[0]}-${parts[1].charAt(0)}`;
+        productType = SKU_PRODUCT_TYPE[shortSku];
+      }
+    }
+    if (!productType) {
+      // Ürün adından tahmin et
+      const name = (item.productName || "").toLowerCase();
+      if (name.includes("boxer") || name.includes("erkek")) productType = "MALE_BOXER";
+      else if (name.includes("külot") || name.includes("kadın") || name.includes("panty")) productType = "FEMALE_PANTY";
+    }
     if (!productType) {
       console.warn(`Bilinmeyen SKU: ${item.sku}, atlanıyor.`);
       continue;
