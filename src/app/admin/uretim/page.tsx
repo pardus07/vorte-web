@@ -335,7 +335,7 @@ export default function UretimPage() {
                       <td className="px-4 py-3 max-w-[200px]">
                         <span className="text-gray-700 truncate block">{productNames}</span>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">{order.totalQuantity.toLocaleString("tr-TR")}</td>
+                      <td className="px-4 py-3 text-right font-medium">{(order.totalQuantity || order.items?.reduce((s, i) => s + i.totalQuantity, 0) || 0).toLocaleString("tr-TR")}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${stageCfg.color}`}>
                           {stageCfg.label}
