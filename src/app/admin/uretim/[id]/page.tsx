@@ -168,6 +168,10 @@ export default function UretimDetayPage() {
     const res = await fetch(`/api/admin/production-full/${id}`);
     if (res.ok) {
       const data = await res.json();
+      // totalQuantity alanı modelde yok, items'tan hesapla
+      if (!data.totalQuantity && data.items?.length) {
+        data.totalQuantity = data.items.reduce((s: number, i: { totalQuantity: number }) => s + i.totalQuantity, 0);
+      }
       setOrder(data);
       setEditData({
         priority: data.priority,
