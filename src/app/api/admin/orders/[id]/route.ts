@@ -262,6 +262,101 @@ export async function PATCH(
             });
 
             console.log(`[admin orders] Auto-created FullProductionOrder ${poNumber} for order ${currentOrder.orderNumber}`);
+
+            // ─── Otomatik Tedarikçi Siparişleri + Anlık Mail ───
+            try {
+              const materialTypeMap: Record<string, { type: string; quantity: number; unit: string; name: string }> = {};
+              if (bomResult.summary.totalFabricKg > 0) materialTypeMap.FABRIC = { type: "FABRIC", quantity: bomResult.summary.totalFabricKg, unit: "kg", name: "Ana Kumaş" };
+              if (bomResult.summary.totalLiningKg > 0) materialTypeMap.FABRIC_LINING = { type: "FABRIC", quantity: bomResult.summary.totalLiningKg, unit: "kg", name: "Astar Kumaş" };
+              if (bomResult.summary.totalElasticM > 0) materialTypeMap.ELASTIC = { type: "ELASTIC", quantity: bomResult.summary.totalElasticM, unit: "m", name: "Lastik" };
+              if (bomResult.summary.totalThreadM > 0) materialTypeMap.THREAD = { type: "THREAD", quantity: bomResult.summary.totalThreadM, unit: "m", name: "İplik" };
+              if (bomResult.summary.totalLabels > 0) materialTypeMap.LABEL = { type: "LABEL", quantity: bomResult.summary.totalLabels, unit: "adet", name: "Etiket" };
+              if (bomResult.summary.totalPackaging > 0) materialTypeMap.PACKAGING_MAT = { type: "PACKAGING_MAT", quantity: bomResult.summary.totalPackaging, unit: "adet", name: "Ambalaj" };
+
+              const supplierTypes = [...new Set(Object.values(materialTypeMap).map(m => m.type))];
+              const suppliers = await db.supplier.findMany({
+                where: { type: { in: supplierTypes as any[] }, isActive: true },
+              });
+
+              const estimatedDelivery = new Date();
+              estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
+
+              let supplierOrderCount = 0;
+
+              for (const [key, mat] of Object.entries(materialTypeMap)) {
+                const supplier = suppliers.find(s => s.type === mat.type);
+                if (!supplier) {
+                  console.log(`[admin orders] ${mat.type} türünde aktif tedarikçi bulunamadı, atlanıyor`);
+                  continue;
+                }
+
+                const materials = [{ name: mat.name, quantity: mat.quantity, unit: mat.unit }];
+
+                // SupplierOrder oluştur
+                const supplierOrder = await db.supplierOrder.create({
+                  data: {
+                    productionOrderId: prodOrder.id,
+                    supplierId: supplier.id,
+                    materials: JSON.parse(JSON.stringify(materials)),
+                    totalAmount: `${mat.quantity} ${mat.unit} ${mat.name}`,
+                    expectedDelivery: estimatedDelivery,
+                    notes: `PO ${poNumber} için otomatik oluşturuldu`,
+                    emailSent: false,
+                  },
+                });
+
+                // Anlık mail gönder
+                if (supplier.email) {
+                  try {
+                    const expectedDateStr = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", year: "numeric" }).format(estimatedDelivery);
+                    await resendClient.sendSupplierOrder(
+                      supplier.email,
+                      supplier.contactName || supplier.name,
+                      materials,
+                      expectedDateStr,
+                      poNumber,
+                      `Sipariş #${currentOrder.orderNumber} için malzeme siparişi`
+                    );
+                    await db.supplierOrder.update({
+                      where: { id: supplierOrder.id },
+                      data: {
+                        emailSent: true,
+                        sentAt: new Date(),
+                        emailContent: `Mail gönderildi: ${supplier.email} — ${mat.quantity} ${mat.unit} ${mat.name}`,
+                      },
+                    });
+                    console.log(`[admin orders] Tedarikçi maili gönderildi: ${supplier.name} (${supplier.email})`);
+                  } catch (emailErr) {
+                    console.error(`[admin orders] Tedarikçi mail hatası (${supplier.name}):`, emailErr);
+                  }
+                }
+                supplierOrderCount++;
+              }
+
+              // Tedarikçi siparişi varsa stage'i MATERIALS_ORDERED'a ilerlet
+              if (supplierOrderCount > 0) {
+                newHistory.push({
+                  stage: "MATERIALS_ORDERED",
+                  date: new Date().toISOString(),
+                  note: `${supplierOrderCount} tedarikçiye malzeme siparişi gönderildi`,
+                  changedBy: "Sistem",
+                });
+                await db.fullProductionOrder.update({
+                  where: { id: prodOrder.id },
+                  data: { stage: "MATERIALS_ORDERED", stageHistory: JSON.parse(JSON.stringify(newHistory)) },
+                });
+                await db.productionTracking.create({
+                  data: {
+                    productionOrderId: prodOrder.id,
+                    stage: "MATERIALS_ORDERED",
+                    progress: 20,
+                    notes: `${supplierOrderCount} tedarikçiye otomatik sipariş oluşturuldu ve mail gönderildi`,
+                  },
+                });
+              }
+            } catch (supplierErr) {
+              console.error("[admin orders] Auto supplier order error:", supplierErr);
+            }
           }
         }
       } catch (prodErr) {
