@@ -15,7 +15,7 @@ import {
 
 // --- Types ---
 
-type SupplierType = "FABRIC" | "ELASTIC" | "THREAD" | "PACKAGING" | "LABEL";
+type SupplierType = "FABRIC" | "ELASTIC" | "THREAD" | "PACKAGING_MAT" | "LABEL";
 
 interface Supplier {
   id: string;
@@ -36,7 +36,7 @@ const TYPE_LABELS: Record<SupplierType, string> = {
   FABRIC: "Kumaş",
   ELASTIC: "Lastik",
   THREAD: "İplik",
-  PACKAGING: "Ambalaj",
+  PACKAGING_MAT: "Ambalaj",
   LABEL: "Etiket",
 };
 
@@ -44,7 +44,7 @@ const TYPE_COLORS: Record<SupplierType, string> = {
   FABRIC: "bg-blue-100 text-blue-700",
   ELASTIC: "bg-purple-100 text-purple-700",
   THREAD: "bg-orange-100 text-orange-700",
-  PACKAGING: "bg-cyan-100 text-cyan-700",
+  PACKAGING_MAT: "bg-cyan-100 text-cyan-700",
   LABEL: "bg-teal-100 text-teal-700",
 };
 
@@ -53,7 +53,7 @@ const TYPE_TABS: { value: string; label: string }[] = [
   { value: "FABRIC", label: "Kumaş" },
   { value: "ELASTIC", label: "Lastik" },
   { value: "THREAD", label: "İplik" },
-  { value: "PACKAGING", label: "Ambalaj" },
+  { value: "PACKAGING_MAT", label: "Ambalaj" },
   { value: "LABEL", label: "Etiket" },
 ];
 
