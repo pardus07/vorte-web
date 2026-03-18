@@ -1,0 +1,22 @@
+# LiveKit SIP Bridge — Netgsm 0850 305 86 35 Trunk Configuration
+# Docs: https://docs.livekit.io/sip/
+
+# SIP trunk definition for Netgsm
+trunks:
+  - name: netgsm-vorte
+    # Netgsm SIP gateway addresses (get from Netgsm support)
+    # addresses:
+    #   - sip.netgsm.com.tr:5060
+    transport: udp
+    # Netgsm SIP credentials (if required)
+    # username: "your-sip-username"
+    # password: "your-sip-password"
+
+# Dispatch rules — route incoming calls to Pipecat agent
+dispatch_rules:
+  - name: vorte-voice-ai
+    # Match all incoming calls to 0850 number
+    trunk: netgsm-vorte
+    # Create a LiveKit room for each call
+    room_prefix: "call-"
+    # Pipecat agent will auto-join rooms with this prefix

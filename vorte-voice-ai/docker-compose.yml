@@ -1,0 +1,38 @@
+services:
+  livekit-server:
+    image: livekit/livekit-server:latest
+    network_mode: host
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+
+  livekit-sip:
+    image: livekit/sip:latest
+    network_mode: host  # ZORUNLU — SIP UDP Docker bridge arkasında çalışmaz
+    volumes:
+      - ./livekit-sip-config.yaml:/etc/livekit-sip.yaml
+    depends_on:
+      - livekit-server
+    environment:
+      - LIVEKIT_URL=ws://localhost:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-secret}
+    restart: unless-stopped
+
+  vorte-voice-ai:
+    build: .
+    network_mode: host  # LiveKit localhost:7880'e erişim için zorunlu
+    depends_on:
+      - livekit-server
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LIVEKIT_URL=ws://localhost:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-secret}
+      - VORTE_API_URL=${VORTE_API_URL:-https://www.vorte.com.tr}
+      - VORTE_API_KEY=${VORTE_API_KEY}
+      - AGENT_VOICE=${AGENT_VOICE:-Kore}
+      - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT_MINUTES:-15}
+      - TRANSFER_PHONE=${TRANSFER_PHONE:-+905376220694}
+    restart: unless-stopped
