@@ -173,24 +173,22 @@ export default async function RootLayout({
               "iç giyim üretimi",
               "yapay zeka destekli tekstil",
             ],
-            makesOffer: [
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Product",
-                  name: "Vorte Premium Penye Erkek Boxer",
-                  category: "Erkek İç Giyim",
+            hasOfferCatalog: {
+              "@type": "OfferCatalog",
+              name: "Vorte İç Giyim Ürünleri",
+              itemListElement: [
+                {
+                  "@type": "OfferCatalog",
+                  name: "Erkek İç Giyim",
+                  url: "https://www.vorte.com.tr/erkek",
                 },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Product",
-                  name: "Vorte Premium Penye Kadın Külot",
-                  category: "Kadın İç Giyim",
+                {
+                  "@type": "OfferCatalog",
+                  name: "Kadın İç Giyim",
+                  url: "https://www.vorte.com.tr/kadin",
                 },
-              },
-            ],
+              ],
+            },
             contactPoint: [
               {
                 "@type": "ContactPoint",
