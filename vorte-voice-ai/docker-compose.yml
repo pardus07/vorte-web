@@ -10,8 +10,7 @@ services:
   livekit-sip:
     image: livekit/sip:latest
     network_mode: host  # ZORUNLU — SIP UDP Docker bridge arkasında çalışmaz
-    volumes:
-      - ./livekit-sip-config.yaml:/etc/livekit-sip.yaml
+    # SIP trunk tanımları API ile yapılır (scripts/setup_sip.py)
     depends_on:
       - livekit-server
     environment:

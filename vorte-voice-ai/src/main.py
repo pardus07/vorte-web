@@ -6,14 +6,12 @@ Telefon üzerinden 7/24 sesli AI müşteri hizmeti.
 """
 
 import asyncio
-import json
 import logging
 
-from livekit import agents, rtc
+from livekit import agents
 from livekit.agents import (
     AgentSession,
     Agent,
-    RoomInputOptions,
     function_tool,
     RunContext,
 )
@@ -143,15 +141,21 @@ async def entrypoint(ctx: agents.JobContext):
     # Create agent session
     agent = VorteVoiceAgent()
     session = AgentSession(
-        llm=gemini_model,
+        model=gemini_model,
     )
 
-    # Session manager for 15-minute timeout
-    session_manager = SessionManager(
-        on_warning=lambda: session.say(
+    # Session manager for 15-minute timeout — explicit async callbacks
+    async def _on_warning():
+        await session.say(
             "Başka sorunuz var mı? Yardımcı olabileceğim bir konu kaldıysa buyurun."
-        ),
-        on_timeout=lambda: _end_call(session, ctx),
+        )
+
+    async def _on_timeout():
+        await _end_call(session, ctx)
+
+    session_manager = SessionManager(
+        on_warning=_on_warning,
+        on_timeout=_on_timeout,
     )
 
     # Start session
