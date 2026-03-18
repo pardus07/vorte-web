@@ -173,15 +173,50 @@ Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır
     },
   });
 
+  const GTIN_MAP: Record<string, string> = {
+    "VRT-MBX-SYH-S": "8685094180009",
+    "VRT-MBX-SYH-M": "8685094180016",
+    "VRT-MBX-SYH-L": "8685094180023",
+    "VRT-MBX-SYH-XL": "8685094180030",
+    "VRT-MBX-SYH-XXL": "8685094180047",
+    "VRT-MBX-LCV-S": "8685094180054",
+    "VRT-MBX-LCV-M": "8685094180061",
+    "VRT-MBX-LCV-L": "8685094180078",
+    "VRT-MBX-LCV-XL": "8685094180085",
+    "VRT-MBX-LCV-XXL": "8685094180092",
+    "VRT-MBX-GRI-S": "8685094180108",
+    "VRT-MBX-GRI-M": "8685094180115",
+    "VRT-MBX-GRI-L": "8685094180122",
+    "VRT-MBX-GRI-XL": "8685094180139",
+    "VRT-MBX-GRI-XXL": "8685094180146",
+    "VRT-MKL-SYH-S": "8685094180153",
+    "VRT-MKL-SYH-M": "8685094180160",
+    "VRT-MKL-SYH-L": "8685094180177",
+    "VRT-MKL-SYH-XL": "8685094180184",
+    "VRT-MKL-SYH-XXL": "8685094180191",
+    "VRT-MKL-BYZ-S": "8685094180207",
+    "VRT-MKL-BYZ-M": "8685094180214",
+    "VRT-MKL-BYZ-L": "8685094180221",
+    "VRT-MKL-BYZ-XL": "8685094180238",
+    "VRT-MKL-BYZ-XXL": "8685094180245",
+    "VRT-MKL-TEN-S": "8685094180252",
+    "VRT-MKL-TEN-M": "8685094180269",
+    "VRT-MKL-TEN-L": "8685094180276",
+    "VRT-MKL-TEN-XL": "8685094180283",
+    "VRT-MKL-TEN-XXL": "8685094180290",
+  };
+
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MBX-SYH-${size}`;
     await db.variant.create({
       data: {
         productId: erkekBoxerSiyah.id,
         color: "Siyah",
         colorHex: "#000000",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MBX-SYH-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
@@ -258,14 +293,16 @@ Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MBX-LCV-${size}`;
     await db.variant.create({
       data: {
         productId: erkekBoxerLacivert.id,
         color: "Lacivert",
         colorHex: "#1B2A4A",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MBX-LCV-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
@@ -342,14 +379,16 @@ Taranmış penye pamuk, normal (karde) pamuktan daha pürüzsüz ve yumuşaktır
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MBX-GRI-${size}`;
     await db.variant.create({
       data: {
         productId: erkekBoxerGri.id,
         color: "Gri",
         colorHex: "#808080",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MBX-GRI-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
@@ -427,14 +466,16 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MKL-SYH-${size}`;
     await db.variant.create({
       data: {
         productId: kadinKulotSiyah.id,
         color: "Siyah",
         colorHex: "#000000",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MKL-SYH-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
@@ -512,14 +553,16 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MKL-BYZ-${size}`;
     await db.variant.create({
       data: {
         productId: kadinKulotBeyaz.id,
         color: "Beyaz",
         colorHex: "#FFFFFF",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MKL-BYZ-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
@@ -597,14 +640,16 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
   });
 
   for (const size of ["S", "M", "L", "XL", "XXL"]) {
+    const sku = `VRT-MKL-TEN-${size}`;
     await db.variant.create({
       data: {
         productId: kadinKulotTen.id,
         color: "Ten",
         colorHex: "#D4A574",
         size: size as "S" | "M" | "L" | "XL" | "XXL",
-        sku: `VRT-MKL-TEN-${size}`,
+        sku,
         stock: 50,
+        gtinBarcode: GTIN_MAP[sku],
       },
     });
   }
