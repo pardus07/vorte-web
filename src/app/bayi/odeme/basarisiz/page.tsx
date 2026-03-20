@@ -34,7 +34,7 @@ export default function DealerPaymentFailedPage() {
       </div>
 
       <p className="mt-6 text-xs text-gray-400">
-        Sorun devam ederse lütfen bizimle iletişime geçin: +90 537 622 0694
+        Sorun devam ederse lütfen bizimle iletişime geçin: 0850 305 86 35
       </p>
     </div>
   );

@@ -128,7 +128,7 @@ const faqData: FAQSection[] = [
       {
         question: "Bayilik başvurusu nasıl yapılır?",
         answer:
-          "Bayilik başvurunuzu iletişim sayfamızdan veya doğrudan 0537 622 06 94 numarasını arayarak yapabilirsiniz. Başvurunuz değerlendirilip onaylandıktan sonra özel bayi kodunuz ve giriş bilgileriniz tarafınıza iletilir.",
+          "Bayilik başvurunuzu iletişim sayfamızdan veya doğrudan 0850 305 86 35 numarasını arayarak yapabilirsiniz. Başvurunuz değerlendirilip onaylandıktan sonra özel bayi kodunuz ve giriş bilgileriniz tarafınıza iletilir.",
       },
       {
         question: "Bayi olarak hangi avantajlardan yararlanabilirim?",
@@ -275,10 +275,10 @@ export default function FAQPage() {
             İletişime Geçin
           </Link>
           <a
-            href="tel:+905376220694"
+            href="tel:+908503058635"
             className="inline-block rounded-lg border border-white/30 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
           >
-            0537 622 06 94
+            0850 305 86 35
           </a>
         </div>
       </div>

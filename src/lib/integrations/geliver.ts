@@ -79,7 +79,7 @@ async function getSenderAddressId(client: GeliverClient): Promise<string> {
   const sender = await client.addresses.createSender({
     name: "Vorte Tekstil",
     email: "info@vorte.com.tr",
-    phone: "+905376220694",
+    phone: "+908503058635",
     address1: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
     countryCode: "TR",
     cityName: "Bursa",

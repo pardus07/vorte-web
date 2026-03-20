@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       orderNumber: order.orderNumber,
       sender: {
         fullName: "Vorte Tekstil",
-        phone: "+905376220694",
+        phone: "+908503058635",
         address: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
         city: "Bursa",
         district: "Nilüfer",

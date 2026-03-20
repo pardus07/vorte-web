@@ -69,7 +69,7 @@ export function Footer() {
               </p>
               <p className="flex items-center gap-1.5">
                 <Phone className="h-3 w-3 shrink-0 text-[#7AC143]" />
-                <a href="tel:+905376220694" className="hover:text-[#1A1A1A]">0537 622 06 94</a>
+                <a href="tel:+908503058635" className="hover:text-[#1A1A1A]">0850 305 86 35</a>
               </p>
               <p className="flex items-center gap-1.5">
                 <Mail className="h-3 w-3 shrink-0 text-[#7AC143]" />

@@ -167,7 +167,7 @@ export default async function DealerProfilePage() {
       <div className="mt-6 rounded-lg bg-blue-50 p-4">
         <p className="text-sm text-blue-700">
           <strong>Not:</strong> Firma bilgilerinizdeki değişiklikler için lütfen{" "}
-          <a href="tel:+905376220694" className="font-medium underline">0537 622 06 94</a>{" "}
+          <a href="tel:+908503058635" className="font-medium underline">0850 305 86 35</a>{" "}
           numaralı telefondan veya{" "}
           <a href="mailto:info@vorte.com.tr" className="font-medium underline">info@vorte.com.tr</a>{" "}
           adresinden bizimle iletişime geçin.

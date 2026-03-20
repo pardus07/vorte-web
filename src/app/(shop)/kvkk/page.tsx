@@ -50,7 +50,7 @@ export default function KVKKPage() {
               <strong>E-posta:</strong> info@vorte.com.tr
             </p>
             <p>
-              <strong>Telefon:</strong> 0537 622 06 94
+              <strong>Telefon:</strong> 0850 305 86 35
             </p>
             <p>
               <strong>Web Sitesi:</strong> vorte.com.tr
@@ -547,7 +547,7 @@ export default function KVKKPage() {
             </p>
             <p>Dumlupınar Mah., Kayabaşı Sok., 17BG, Nilüfer/Bursa</p>
             <p>E-posta: info@vorte.com.tr</p>
-            <p>Telefon: 0537 622 06 94</p>
+            <p>Telefon: 0850 305 86 35</p>
           </div>
         </section>
       </div>

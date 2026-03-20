@@ -577,10 +577,10 @@ export default function PrivacyPage() {
             <p>
               Telefon:{" "}
               <a
-                href="tel:+905376220694"
+                href="tel:+908503058635"
                 className="text-green-600 underline hover:text-green-700"
               >
-                0537 622 06 94
+                0850 305 86 35
               </a>
             </p>
             <p>

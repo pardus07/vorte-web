@@ -138,7 +138,7 @@ export default async function RootLayout({
               "@type": "Place",
               name: "İstanbul, Türkiye",
             },
-            telephone: settings.contactPhone || "+90-537-622-0694",
+            telephone: settings.contactPhone || "+90-850-305-8635",
             email: settings.contactEmail || "info@vorte.com.tr",
             address: {
               "@type": "PostalAddress",
@@ -192,13 +192,13 @@ export default async function RootLayout({
             contactPoint: [
               {
                 "@type": "ContactPoint",
-                telephone: settings.contactPhone || "+90-537-622-0694",
+                telephone: settings.contactPhone || "+90-850-305-8635",
                 contactType: "customer service",
                 availableLanguage: "Turkish",
               },
               {
                 "@type": "ContactPoint",
-                telephone: settings.contactPhone || "+90-537-622-0694",
+                telephone: settings.contactPhone || "+90-850-305-8635",
                 contactType: "sales",
                 availableLanguage: "Turkish",
                 description: "Toptan satış ve bayilik başvuruları",

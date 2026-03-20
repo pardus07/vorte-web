@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "İletişim — Vorte Tekstil | Nilüfer, Bursa",
   description:
-    "Vorte Tekstil iletişim bilgileri. Adres: Dumlupınar Mah., Nilüfer/Bursa. Tel: 0537 622 06 94. E-posta: info@vorte.com.tr. Toptan satış ve bayilik başvuruları.",
+    "Vorte Tekstil iletişim bilgileri. Adres: Dumlupınar Mah., Nilüfer/Bursa. Tel: 0850 305 86 35. E-posta: info@vorte.com.tr. Toptan satış ve bayilik başvuruları.",
   alternates: { canonical: "/iletisim" },
 };
 
@@ -30,7 +30,7 @@ export default function ContactPage() {
           ],
           description:
             "35 yıllık tekstil deneyimiyle erkek boxer ve kadın külot üreten, yapay zeka destekli üretim süreçleriyle çalışan Türkiye merkezli iç giyim markası. Toptan ve perakende satış.",
-          telephone: "+90-537-622-0694",
+          telephone: "+90-850-305-8635",
           email: "info@vorte.com.tr",
           address: {
             "@type": "PostalAddress",
@@ -127,7 +127,7 @@ export default function ContactPage() {
             </div>
             <div className="flex items-start gap-3">
               <Phone className="mt-0.5 h-5 w-5 text-[#7AC143]" />
-              <div><p className="font-medium">Telefon</p><p className="text-sm text-gray-600"><a href="tel:+905376220694" className="hover:text-[#7AC143]">0537 622 06 94</a></p></div>
+              <div><p className="font-medium">Telefon</p><p className="text-sm text-gray-600"><a href="tel:+908503058635" className="hover:text-[#7AC143]">0850 305 86 35</a></p></div>
             </div>
             <div className="flex items-start gap-3">
               <Mail className="mt-0.5 h-5 w-5 text-[#7AC143]" />

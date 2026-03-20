@@ -73,7 +73,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
     siteDescription: null,
     siteUrl: "https://www.vorte.com.tr",
     contactEmail: "info@vorte.com.tr",
-    contactPhone: "+90 537 622 0694",
+    contactPhone: "+90 850 305 8635",
     contactAddress: null,
     logoUrl: null,
     logoDarkUrl: null,

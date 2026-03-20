@@ -51,7 +51,7 @@ export async function POST(
       orderNumber: order.orderNumber,
       sender: {
         fullName: "Vorte Tekstil",
-        phone: "+90 537 622 0694",
+        phone: "+90 850 305 8635",
         address: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
         city: "Bursa",
         district: "Nilüfer",

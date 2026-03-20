@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
         siteName: "Vorte Tekstil",
         siteUrl: "https://www.vorte.com.tr",
         contactEmail: "info@vorte.com.tr",
-        contactPhone: "+90 537 622 0694",
+        contactPhone: "+90 850 305 8635",
         contactAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG, Nilüfer/Bursa",
         freeShippingThreshold: 300,
         defaultShippingCost: 90,
