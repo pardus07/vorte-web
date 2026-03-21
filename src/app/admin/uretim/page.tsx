@@ -111,40 +111,40 @@ const STAND_PACKAGES: Record<"standA" | "standB" | "standC", { label: string; ic
   standA: {
     label: "Stand A Paketi",
     icon: "\u{1F4E6}",
-    subtitle: "50 Adet \u00B7 Tek Y\u00F6nl\u00FC",
-    description: "Erkek Boxer Siyah (25) + Kad\u0131n K\u00FClot Ten (25)",
+    subtitle: "50 Adet · Tek Yönlü",
+    description: "Erkek Boxer Siyah (25) + Kadın Külot Ten (25)",
     borderColor: "border-[#7AC143]",
     products: [
       { nameMatch: "Boxer Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
     ],
   },
   standB: {
     label: "Stand B Paketi",
     icon: "\u{1F4E6}\u{1F4E6}",
-    subtitle: "100 Adet \u00B7 \u00C7ift Y\u00F6nl\u00FC Ada",
-    description: "Erkek Boxer Siyah+Lacivert, Kad\u0131n K\u00FClot Siyah+Ten",
+    subtitle: "100 Adet · Çift Yönlü Ada",
+    description: "Erkek Boxer Siyah+Lacivert, Kadın Külot Siyah+Ten",
     borderColor: "border-blue-500",
     products: [
       { nameMatch: "Boxer Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
       { nameMatch: "Boxer Lacivert", color: "Lacivert", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
     ],
   },
   standC: {
     label: "Stand C Paketi",
     icon: "\u{1F4E6}\u{1F4E6}\u{1F4E6}",
-    subtitle: "150 Adet \u00B7 Tam Boy \u00C7ift Y\u00F6nl\u00FC",
-    description: "T\u00FCm renkler: 3 Boxer + 3 K\u00FClot",
+    subtitle: "150 Adet · Tam Boy Çift Yönlü",
+    description: "Tüm renkler: 3 Boxer + 3 Külot",
     borderColor: "border-orange-500",
     products: [
       { nameMatch: "Boxer Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
       { nameMatch: "Boxer Lacivert", color: "Lacivert", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
       { nameMatch: "Boxer Gri", color: "Gri", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Beyaz", color: "Beyaz", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
-      { nameMatch: "K\u00FClot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Siyah", color: "Siyah", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Beyaz", color: "Beyaz", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
+      { nameMatch: "Külot Ten", color: "Ten Rengi", sizeS: 5, sizeM: 5, sizeL: 5, sizeXL: 5, sizeXXL: 5 },
     ],
   },
 };
@@ -291,7 +291,7 @@ export default function UretimPage() {
   };
 
   const handleSubmit = async () => {
-    if (formItems.length === 0) { setFormError("En az bir \u00FCr\u00FCn ekleyin."); return; }
+    if (formItems.length === 0) { setFormError("En az bir ürün ekleyin."); return; }
     if (!formData.targetDate) { setFormError("Hedef tarih zorunludur."); return; }
 
     const hasQty = formItems.some(item =>
@@ -326,13 +326,13 @@ export default function UretimPage() {
       fetchOrders();
     } else {
       const data = await res.json();
-      setFormError(data.error || "Hata olu\u015Ftu");
+      setFormError(data.error || "Hata oluştu");
     }
     setSaving(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu \u00FCretim sipari\u015Fini silmek istedi\u011Finize emin misiniz?")) return;
+    if (!confirm("Bu üretim siparişini silmek istediğinize emin misiniz?")) return;
     setDeleting(id);
     const res = await fetch(`/api/admin/production-full/${id}`, { method: "DELETE" });
     if (res.ok) fetchOrders();
@@ -376,16 +376,16 @@ export default function UretimPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{"\u00DC"}retim Sipari\u015Fleri</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Üretim Siparişleri</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Toplam {total} sipari\u015F \u00B7 {(stats.totalQuantity || 0).toLocaleString("tr-TR")} adet
+            Toplam {total} sipariş · {(stats.totalQuantity || 0).toLocaleString("tr-TR")} adet
           </p>
         </div>
         <button
           onClick={handleOpenForm}
           className="flex items-center gap-2 rounded-lg bg-[#7AC143] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6aad38]"
         >
-          <Plus className="h-4 w-4" /> Yeni {"\u00DC"}retim Sipari\u015Fi
+          <Plus className="h-4 w-4" /> Yeni Üretim Siparişi
         </button>
       </div>
 
@@ -410,7 +410,7 @@ export default function UretimPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Sipari\u015F no, \u00FCr\u00FCn ad\u0131 ara..."
+            placeholder="Sipariş no, ürün adı ara..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="form-input w-full pl-10"
@@ -421,7 +421,7 @@ export default function UretimPage() {
           onChange={(e) => { setStageFilter(e.target.value); setPage(1); }}
           className="form-input"
         >
-          <option value="all">T{"\u00FC"}m A\u015Famalar</option>
+          <option value="all">Tüm Aşamalar</option>
           {Object.entries(STAGE_MAP).map(([key, cfg]) => (
             <option key={key} value={key}>{cfg.label}</option>
           ))}
@@ -431,11 +431,11 @@ export default function UretimPage() {
           onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
           className="form-input"
         >
-          <option value="all">T{"\u00FC"}m {"\u00D6"}ncelikler</option>
+          <option value="all">Tüm Öncelikler</option>
           <option value="urgent">Acil</option>
-          <option value="high">Y{"\u00FC"}ksek</option>
+          <option value="high">Yüksek</option>
           <option value="normal">Normal</option>
-          <option value="low">D{"\u00FC"}\u015F{"\u00FC"}k</option>
+          <option value="low">Düşük</option>
         </select>
       </div>
 
@@ -446,14 +446,14 @@ export default function UretimPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">Sipari\u015F No</th>
-                  <th className="px-4 py-3 font-medium">{"\u00DC"}r{"\u00FC"}nler</th>
+                  <th className="px-4 py-3 font-medium">Sipariş No</th>
+                  <th className="px-4 py-3 font-medium">Ürünler</th>
                   <th className="px-4 py-3 font-medium text-right">Adet</th>
-                  <th className="px-4 py-3 font-medium">A\u015Fama</th>
-                  <th className="px-4 py-3 font-medium">{"\u00D6"}ncelik</th>
+                  <th className="px-4 py-3 font-medium">Aşama</th>
+                  <th className="px-4 py-3 font-medium">Öncelik</th>
                   <th className="px-4 py-3 font-medium">Hedef</th>
                   <th className="px-4 py-3 font-medium">Tahmini Teslim</th>
-                  <th className="px-4 py-3 font-medium text-right">{"\u0130"}\u015Flem</th>
+                  <th className="px-4 py-3 font-medium text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody>
@@ -516,7 +516,7 @@ export default function UretimPage() {
                 {orders.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-gray-400">
-                      Hen{"\u00FC"}z {"\u00FC"}retim sipari\u015Fi bulunmuyor
+                      Henüz üretim siparişi bulunmuyor
                     </td>
                   </tr>
                 )}
@@ -525,7 +525,7 @@ export default function UretimPage() {
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-gray-500">Sayfa {page} / {totalPages} {"\u00B7"} Toplam {total}</p>
+              <p className="text-sm text-gray-500">Sayfa {page} / {totalPages} · Toplam {total}</p>
               <div className="flex gap-1">
                 <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="rounded p-1 hover:bg-gray-100 disabled:opacity-50">
                   <ChevronLeft className="h-5 w-5" />
@@ -541,7 +541,7 @@ export default function UretimPage() {
       ) : (
         <div className="py-20 text-center text-gray-400">
           <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2">Y{"\u00FC"}kleniyor...</p>
+          <p className="mt-2">Yükleniyor...</p>
         </div>
       )}
 
@@ -552,8 +552,8 @@ export default function UretimPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b px-6 py-4 shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-[#333333]">Yeni {"\u00DC"}retim Sipari\u015Fi</h2>
-                <p className="mt-0.5 text-sm text-gray-500">BOM otomatik hesaplan\u0131r, termin tahmini yap\u0131l\u0131r</p>
+                <h2 className="text-xl font-bold text-[#333333]">Yeni Üretim Siparişi</h2>
+                <p className="mt-0.5 text-sm text-gray-500">BOM otomatik hesaplanır, termin tahmini yapılır</p>
               </div>
               <button onClick={() => setShowForm(false)} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                 <X className="h-5 w-5" />
@@ -566,7 +566,7 @@ export default function UretimPage() {
 
               {/* SECTION 1: Siparis Turu Secimi */}
               <div>
-                <label className="mb-3 block text-sm font-semibold text-[#333333]">Sipari\u015F T{"\u00FC"}r{"\u00FC"}</label>
+                <label className="mb-3 block text-sm font-semibold text-[#333333]">Sipariş Türü</label>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                   {/* Stand A */}
                   <button
@@ -578,9 +578,9 @@ export default function UretimPage() {
                   >
                     <div className="text-2xl mb-2">{"\u{1F4E6}"}</div>
                     <div className="text-sm font-bold text-[#333333]">Stand A Paketi</div>
-                    <div className="mt-1 text-xs font-medium text-gray-500">50 Adet {"\u00B7"} Tek Y{"\u00F6"}nl{"\u00FC"}</div>
+                    <div className="mt-1 text-xs font-medium text-gray-500">50 Adet · Tek Yönlü</div>
                     <div className="mt-2 text-[11px] text-gray-400 leading-relaxed">
-                      Erkek Boxer Siyah (25) + Kad{"\u0131"}n K{"\u00FC"}lot Ten (25)
+                      Erkek Boxer Siyah (25) + Kadın Külot Ten (25)
                     </div>
                   </button>
 
@@ -594,9 +594,9 @@ export default function UretimPage() {
                   >
                     <div className="text-2xl mb-2">{"\u{1F4E6}\u{1F4E6}"}</div>
                     <div className="text-sm font-bold text-[#333333]">Stand B Paketi</div>
-                    <div className="mt-1 text-xs font-medium text-gray-500">100 Adet {"\u00B7"} {"\u00C7"}ift Y{"\u00F6"}nl{"\u00FC"} Ada</div>
+                    <div className="mt-1 text-xs font-medium text-gray-500">100 Adet · Çift Yönlü Ada</div>
                     <div className="mt-2 text-[11px] text-gray-400 leading-relaxed">
-                      Erkek Boxer Siyah+Lacivert, Kad{"\u0131"}n K{"\u00FC"}lot Siyah+Ten
+                      Erkek Boxer Siyah+Lacivert, Kadın Külot Siyah+Ten
                     </div>
                   </button>
 
@@ -610,9 +610,9 @@ export default function UretimPage() {
                   >
                     <div className="text-2xl mb-2">{"\u{1F4E6}\u{1F4E6}\u{1F4E6}"}</div>
                     <div className="text-sm font-bold text-[#333333]">Stand C Paketi</div>
-                    <div className="mt-1 text-xs font-medium text-gray-500">150 Adet {"\u00B7"} Tam Boy {"\u00C7"}ift Y{"\u00F6"}nl{"\u00FC"}</div>
+                    <div className="mt-1 text-xs font-medium text-gray-500">150 Adet · Tam Boy Çift Yönlü</div>
                     <div className="mt-2 text-[11px] text-gray-400 leading-relaxed">
-                      T{"\u00FC"}m renkler: 3 Boxer + 3 K{"\u00FC"}lot
+                      Tüm renkler: 3 Boxer + 3 Külot
                     </div>
                   </button>
 
@@ -625,10 +625,10 @@ export default function UretimPage() {
                     }`}
                   >
                     <div className="text-2xl mb-2">{"\u270F\uFE0F"}</div>
-                    <div className="text-sm font-bold text-[#333333]">{"\u00D6"}zel Sipari\u015F</div>
-                    <div className="mt-1 text-xs font-medium text-gray-500">Manuel Sipari\u015F</div>
+                    <div className="text-sm font-bold text-[#333333]">Özel Sipariş</div>
+                    <div className="mt-1 text-xs font-medium text-gray-500">Manuel Sipariş</div>
                     <div className="mt-2 text-[11px] text-gray-400 leading-relaxed">
-                      {"\u00DC"}r{"\u00FC"}n ve adetleri kendiniz belirleyin
+                      Ürün ve adetleri kendiniz belirleyin
                     </div>
                   </button>
                 </div>
@@ -639,9 +639,9 @@ export default function UretimPage() {
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <label className="text-sm font-semibold text-[#333333]">
-                      {"\u00DC"}r{"\u00FC"}n Kalemleri
+                      Ürün Kalemleri
                       {isStandType && (
-                        <span className="ml-2 text-xs font-normal text-gray-400">(Paket i{"\u00E7"}eri\u011Fi otomatik dolduruldu)</span>
+                        <span className="ml-2 text-xs font-normal text-gray-400">(Paket içeriği otomatik dolduruldu)</span>
                       )}
                     </label>
                     {orderType === "manuel" && (
@@ -649,7 +649,7 @@ export default function UretimPage() {
                         onClick={addFormItem}
                         className="flex items-center gap-1.5 rounded-lg bg-[#7AC143] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#6aad38] transition-colors"
                       >
-                        <Plus className="h-3.5 w-3.5" /> {"\u00DC"}r{"\u00FC"}n Ekle
+                        <Plus className="h-3.5 w-3.5" /> Ürün Ekle
                       </button>
                     )}
                   </div>
@@ -696,7 +696,7 @@ export default function UretimPage() {
                                 onChange={(e) => updateFormItem(idx, "productId", e.target.value)}
                                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-[#333333] shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                               >
-                                <option value="">{"\u00DC"}r{"\u00FC"}n se{"\u00E7"}in...</option>
+                                <option value="">Ürün seçin...</option>
                                 {products.map(p => (
                                   <option key={p.id} value={p.id}>
                                     {p.name} ({p.sku})
@@ -751,13 +751,13 @@ export default function UretimPage() {
                         <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
                           <Package className="mx-auto h-8 w-8 text-gray-300 mb-2" />
                           <p className="text-sm text-gray-400">
-                            Hen{"\u00FC"}z {"\u00FC"}r{"\u00FC"}n eklenmedi.
+                            Henüz ürün eklenmedi.
                           </p>
                           <button
                             onClick={addFormItem}
                             className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
                           >
-                            <Plus className="h-3.5 w-3.5" /> {"\u00DC"}r{"\u00FC"}n Ekle
+                            <Plus className="h-3.5 w-3.5" /> Ürün Ekle
                           </button>
                         </div>
                       )}
@@ -769,7 +769,7 @@ export default function UretimPage() {
               {/* SECTION 3: Siparis Bilgileri */}
               {orderType && (
                 <div>
-                  <label className="mb-3 block text-sm font-semibold text-[#333333]">Sipari\u015F Bilgileri</label>
+                  <label className="mb-3 block text-sm font-semibold text-[#333333]">Sipariş Bilgileri</label>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-medium text-gray-600">Hedef Tarih *</label>
@@ -781,15 +781,15 @@ export default function UretimPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-medium text-gray-600">{"\u00D6"}ncelik</label>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-600">Öncelik</label>
                       <select
                         value={formData.priority}
                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                         className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                       >
-                        <option value="low">D{"\u00FC"}\u015F{"\u00FC"}k</option>
+                        <option value="low">Düşük</option>
                         <option value="normal">Normal</option>
-                        <option value="high">Y{"\u00FC"}ksek</option>
+                        <option value="high">Yüksek</option>
                         <option value="urgent">Acil</option>
                       </select>
                     </div>
@@ -801,7 +801,7 @@ export default function UretimPage() {
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                       rows={2}
-                      placeholder="{"\u00DC"}retim notlar\u0131..."
+                      placeholder="Üretim notları..."
                     />
                   </div>
                 </div>
@@ -815,11 +815,11 @@ export default function UretimPage() {
                 <div className="text-sm text-gray-600">
                   {orderType && formItems.length > 0 ? (
                     <span className="font-medium">
-                      Toplam: <span className="text-[#7AC143]">{totalItemCount} {"\u00FC"}r{"\u00FC"}n</span> {"\u00B7"}{" "}
+                      Toplam: <span className="text-[#7AC143]">{totalItemCount} ürün</span> ·{" "}
                       <span className="text-[#7AC143]">{totalPieceCount.toLocaleString("tr-TR")} adet</span>
                     </span>
                   ) : (
-                    <span className="text-gray-400">Sipari\u015F t{"\u00FC"}r{"\u00FC"} se{"\u00E7"}in</span>
+                    <span className="text-gray-400">Sipariş türü seçin</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
@@ -827,7 +827,7 @@ export default function UretimPage() {
                     onClick={() => setShowForm(false)}
                     className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                   >
-                    {"\u0130"}ptal
+                    İptal
                   </button>
                   <button
                     onClick={handleSubmit}
@@ -835,7 +835,7 @@ export default function UretimPage() {
                     className="flex items-center gap-2 rounded-lg bg-[#7AC143] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#6aad38] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {saving ? "Olu\u015Fturuluyor..." : "Olu\u015Ftur (BOM + Termin Otomatik)"}
+                    {saving ? "Oluşturuluyor..." : "Oluştur (BOM + Termin Otomatik)"}
                   </button>
                 </div>
               </div>
