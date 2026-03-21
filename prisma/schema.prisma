@@ -84,6 +84,7 @@ enum NotificationType {
   PRODUCTION_TERMIN
   STOCK_ALERT
   NEW_DEALER
+  VOICE_CALL
 }
 
 // ==================== MODELS ====================
@@ -1074,6 +1075,29 @@ model ReturnRequest {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("return_requests")
+}
+
+model CallLog {
+  id              String    @id @default(cuid())
+  callId          String    @unique
+  callerNumber    String
+  callDirection   String    @default("inbound")
+  status          String    @default("completed")
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationSeconds Int       @default(0)
+  topics          String[]
+  summary         String?
+  sentiment       String?
+  transcript      Json?
+  audioUrl        String?
+  transferredTo   String?
+  isRead          Boolean   @default(false)
+  notes           String?
+  emailSent       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@map("call_logs")
 }
 
 model NewsletterSubscriber {

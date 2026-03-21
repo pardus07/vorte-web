@@ -8,7 +8,7 @@ load_dotenv()
 
 # ─── Gemini AI ───────────────────────────────────────────────
 GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-GEMINI_MODEL = "gemini-2.5-flash-native-audio"
+GEMINI_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
 
 # ─── LiveKit ─────────────────────────────────────────────────
 LIVEKIT_URL = os.getenv("LIVEKIT_URL", "ws://localhost:7880")
@@ -23,6 +23,9 @@ VORTE_API_KEY = os.getenv("VORTE_API_KEY", "")
 AGENT_VOICE = os.getenv("AGENT_VOICE", "Kore")
 SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "15"))
 TRANSFER_PHONE = os.getenv("TRANSFER_PHONE", "+905376220694")
+
+# ─── Notification ────────────────────────────────────────────
+NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL", "vortekurumsal@gmail.com")
 
 # ─── Netgsm (Phase 2 — SMS OTP) ─────────────────────────────
 NETGSM_USERCODE = os.getenv("NETGSM_USERCODE", "")

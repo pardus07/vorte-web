@@ -1,8 +1,11 @@
 """Vorte Voice AI — Company Info Tools"""
 
 import logging
+import os
 
 logger = logging.getLogger("vorte-voice-ai.tools.company")
+
+TRANSFER_PHONE = os.getenv("TRANSFER_PHONE", "+905376220694")
 
 # ─── Tool Definitions ────────────────────────────────────────
 
@@ -53,9 +56,9 @@ COMPANY_DATA = {
         "Vorte Tekstil Toptan"
     ),
     "telefon": (
-        "Telefon: 0537 622 06 94\n"
-        "WhatsApp: 0537 622 06 94\n"
-        "Sabit Hat: 0850 305 86 35"
+        "İletişim için vorte.com.tr/iletisim sayfamızı ziyaret edebilirsiniz.\n"
+        "E-posta: info@vorte.com.tr\n"
+        "Web: www.vorte.com.tr"
     ),
     "email": (
         "E-posta: info@vorte.com.tr\n"
@@ -64,9 +67,9 @@ COMPANY_DATA = {
     "genel": (
         "Vorte Tekstil Toptan\n"
         "Nilüfer, Bursa / Türkiye\n"
-        "Telefon: 0537 622 06 94\n"
         "E-posta: info@vorte.com.tr\n"
         "Web: www.vorte.com.tr\n"
+        "İletişim: vorte.com.tr/iletisim\n"
         "Çalışma Saatleri: Pazartesi-Cumartesi 09:00-18:00\n"
         "Ürünler: Erkek Boxer, Kadın Külot\n"
         "Kumaş: %95 Taranmış Penye Pamuk, %5 Elastan"

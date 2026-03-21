@@ -158,20 +158,22 @@ async def get_size_chart(gender: str) -> str:
     if gender.lower() == "erkek":
         return (
             "Erkek Boxer Beden Tablosu:\n"
-            "S: Bel 72-80 cm, Kalça 88-96 cm\n"
-            "M: Bel 80-88 cm, Kalça 96-104 cm\n"
-            "L: Bel 88-96 cm, Kalça 104-112 cm\n"
-            "XL: Bel 96-104 cm, Kalça 112-120 cm\n"
-            "XXL: Bel 104-112 cm, Kalça 120-128 cm"
+            "S: Bel 76-82 cm (Pantolon 36-38)\n"
+            "M: Bel 83-89 cm (Pantolon 38-40)\n"
+            "L: Bel 90-96 cm (Pantolon 40-42)\n"
+            "XL: Bel 97-105 cm (Pantolon 42-44)\n"
+            "XXL: Bel 106-116 cm (Pantolon 44-46)\n"
+            "Ölçüm: Göbek hizasından bel çevresini ölçün. İki beden arasındaysanız bir üst bedeni tercih edin."
         )
     else:
         return (
             "Kadın Külot Beden Tablosu:\n"
-            "S: Bel 62-70 cm, Kalça 86-94 cm\n"
-            "M: Bel 70-78 cm, Kalça 94-102 cm\n"
-            "L: Bel 78-86 cm, Kalça 102-110 cm\n"
-            "XL: Bel 86-94 cm, Kalça 110-118 cm\n"
-            "XXL: Bel 94-102 cm, Kalça 118-126 cm"
+            "S: Bel 64-70 cm, Kalça 88-94 cm (Beden 36-38)\n"
+            "M: Bel 70-76 cm, Kalça 94-100 cm (Beden 38-40)\n"
+            "L: Bel 76-82 cm, Kalça 100-106 cm (Beden 40-42)\n"
+            "XL: Bel 82-88 cm, Kalça 106-112 cm (Beden 42-44)\n"
+            "XXL: Bel 88-94 cm, Kalça 112-118 cm (Beden 44-46)\n"
+            "Ölçüm: En dar yerden bel, en geniş yerden kalça çevresi. İki beden arasındaysanız bir üst bedeni tercih edin."
         )
 
 
