@@ -17,11 +17,16 @@ class CallLogger:
         self.end_time: Optional[datetime] = None
         self.transcript: list[dict] = []
         self.topics: set[str] = set()
+        self.audio_path: Optional[str] = None
+        headers = {"X-Voice-AI-Source": "vorte-voice-ai"}
+        if VORTE_API_KEY:
+            headers["X-Server-Api-Key"] = VORTE_API_KEY
         self._client = httpx.AsyncClient(
             base_url=VORTE_API_URL,
-            headers={"X-Server-Api-Key": VORTE_API_KEY} if VORTE_API_KEY else {},
+            headers=headers,
             timeout=15.0,
         )
+        self._sent = False  # Prevent double-send
 
     def add_message(self, role: str, text: str):
         """Konusma mesaji ekle (role: 'assistant' veya 'caller')"""
@@ -40,6 +45,10 @@ class CallLogger:
 
     async def end_call(self, status: str = "completed", summary: str = None, sentiment: str = None):
         """Cagriyi bitir ve Vorte API'ye gonder"""
+        if self._sent:
+            logger.info("Call log already sent, skipping")
+            return
+        self._sent = True
         self.end_time = datetime.now()
         duration = int((self.end_time - self.start_time).total_seconds())
 
@@ -55,6 +64,7 @@ class CallLogger:
             "summary": summary,
             "sentiment": sentiment or "neutral",
             "transcript": self.transcript,
+            "audioUrl": self.audio_path,
         }
 
         try:

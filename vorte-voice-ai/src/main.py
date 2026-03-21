@@ -8,7 +8,7 @@ Telefon üzerinden 7/24 sesli AI müşteri hizmeti.
 import asyncio
 import logging
 
-from livekit import agents
+from livekit import agents, api as lkapi
 from livekit.agents import (
     AgentSession,
     Agent,
@@ -146,18 +146,22 @@ async def entrypoint(ctx: agents.JobContext):
 
     logger.info(f"New call session: room={ctx.room.name}")
 
-    # Determine caller number from SIP participant
+    # Extract caller number from room name
+    # Room format: vorte-call-_05427313425_JP54G7F8VrL6
+    room_name = ctx.room.name or ""
     caller_number = "Bilinmiyor"
-    for participant in ctx.room.remote_participants.values():
-        caller_number = participant.identity or "Bilinmiyor"
-        break
+    if "vorte-call-" in room_name:
+        suffix = room_name.split("vorte-call-")[-1].lstrip("_")
+        parts = suffix.split("_")
+        if parts and parts[0].isdigit():
+            caller_number = parts[0]
 
     # Create call logger
     call_logger = CallLogger(
-        call_id=ctx.room.name,
+        call_id=room_name,
         caller_number=caller_number,
     )
-    logger.info(f"Call logger created: caller={caller_number}")
+    logger.info(f"Call logger created: room={room_name}, caller={caller_number}")
 
     # Create Gemini Realtime model
     gemini_model = google_beta.realtime.RealtimeModel(
@@ -205,6 +209,59 @@ async def entrypoint(ctx: agents.JobContext):
 
     logger.info("Agent session started, greeting sent")
 
+    # Start audio recording via LiveKit Egress
+    egress_id = None
+    try:
+        lk_api = lkapi.LiveKitAPI(
+            url=LIVEKIT_URL.replace("ws://", "http://").replace("wss://", "https://"),
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        )
+        from livekit.protocol.egress import RoomCompositeEgressRequest, EncodedFileOutput, EncodedFileType
+        recording_path = f"/recordings/{room_name}.ogg"
+        egress_req = RoomCompositeEgressRequest(
+            room_name=room_name,
+            file_outputs=[EncodedFileOutput(
+                file_type=EncodedFileType.OGG,
+                filepath=recording_path,
+            )],
+            audio_only=True,
+        )
+        egress_result = await lk_api.egress.start_room_composite_egress(egress_req)
+        egress_id = egress_result.egress_id
+        call_logger.audio_path = recording_path
+        logger.info(f"Recording started: {egress_id} -> {recording_path}")
+        await lk_api.aclose()
+    except Exception as e:
+        logger.warning(f"Recording not available: {e}")
+
+    # Update caller number from participant identity when they connect
+    @ctx.room.on("participant_connected")
+    def on_participant_connected(participant, *args):
+        identity = participant.identity or ""
+        if identity.startswith("sip_"):
+            number = identity.replace("sip_", "")
+            call_logger.caller_number = number
+            logger.info(f"Caller number updated from participant: {number}")
+
+    # Wait for session to end (participant disconnect triggers this)
+    # The entrypoint function stays alive until the job ends
+    # Use shutdown callback to send call log
+    @ctx.add_shutdown_callback
+    async def on_shutdown():
+        logger.info("Job shutdown — sending call log")
+        try:
+            # Update caller from participants one more time
+            for p in ctx.room.remote_participants.values():
+                identity = p.identity or ""
+                if identity.startswith("sip_"):
+                    call_logger.caller_number = identity.replace("sip_", "")
+                    break
+            await call_logger.end_call(status="completed")
+            logger.info("Call log sent successfully")
+        except Exception as e:
+            logger.error(f"Failed to send call log: {e}")
+
 
 async def _end_call(
     session: AgentSession,
@@ -220,12 +277,12 @@ async def _end_call(
     # Brief pause for TTS to finish
     await asyncio.sleep(3)
 
-    # Send call log to Vorte API
-    if call_logger:
-        await call_logger.end_call(status=status)
-
-    # Disconnect all participants
+    # Disconnect first, then send log in background (don't block new calls)
     await ctx.room.disconnect()
+
+    # Fire-and-forget: send call log to Vorte API after disconnect
+    if call_logger:
+        asyncio.create_task(call_logger.end_call(status=status))
 
 
 # ─── Main ────────────────────────────────────────────────────
@@ -236,6 +293,16 @@ if __name__ == "__main__":
     logger.info(f"Voice: {AGENT_VOICE}")
     logger.info(f"LiveKit: {LIVEKIT_URL}")
 
+    # Ensure SIP trunk + dispatch rule exist at startup
+    import sys
+    sys.path.insert(0, "/app")
+    try:
+        from scripts.ensure_sip import ensure_sip_setup
+        asyncio.run(ensure_sip_setup())
+        logger.info("SIP setup verified at startup")
+    except Exception as e:
+        logger.warning(f"SIP auto-setup skipped: {e}")
+
     # Run the LiveKit agent worker
     agents.cli.run_app(
         agents.WorkerOptions(
@@ -243,5 +310,6 @@ if __name__ == "__main__":
             api_key=LIVEKIT_API_KEY,
             api_secret=LIVEKIT_API_SECRET,
             ws_url=LIVEKIT_URL,
+            num_idle_processes=1,  # Sunucu kaynağı sınırlı, 1 yeterli
         ),
     )

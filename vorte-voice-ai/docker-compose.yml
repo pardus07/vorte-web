@@ -1,18 +1,32 @@
 services:
+  redis:
+    image: redis:7-alpine
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --save 60 1
+
   livekit-server:
     image: livekit/livekit-server:latest
     network_mode: host
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
+      - recordings:/recordings
     command: --config /etc/livekit.yaml
+    depends_on:
+      - redis
     restart: unless-stopped
 
   livekit-sip:
     image: livekit/sip:latest
-    network_mode: host  # ZORUNLU — SIP UDP Docker bridge arkasında çalışmaz
-    # SIP trunk tanımları API ile yapılır (scripts/setup_sip.py)
+    network_mode: host
     depends_on:
       - livekit-server
+      - redis
+    volumes:
+      - ./sip.yaml:/etc/sip.yaml
+    command: --config /etc/sip.yaml
     environment:
       - LIVEKIT_URL=ws://localhost:7880
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
@@ -21,9 +35,11 @@ services:
 
   vorte-voice-ai:
     build: .
-    network_mode: host  # LiveKit localhost:7880'e erişim için zorunlu
+    network_mode: host
     depends_on:
       - livekit-server
+    volumes:
+      - recordings:/recordings
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - LIVEKIT_URL=ws://localhost:7880
@@ -31,7 +47,13 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-secret}
       - VORTE_API_URL=${VORTE_API_URL:-https://www.vorte.com.tr}
       - VORTE_API_KEY=${VORTE_API_KEY}
+      - NETGSM_SIP_PASSWORD=${NETGSM_SIP_PASSWORD}
       - AGENT_VOICE=${AGENT_VOICE:-Kore}
       - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT_MINUTES:-15}
       - TRANSFER_PHONE=${TRANSFER_PHONE:-+905376220694}
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL:-vortekurumsal@gmail.com}
     restart: unless-stopped
+
+volumes:
+  redis-data:
+  recordings:

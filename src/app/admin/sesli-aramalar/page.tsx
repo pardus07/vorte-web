@@ -28,15 +28,16 @@ interface VoiceCall {
   id: string;
   callerNumber: string;
   status: "completed" | "missed" | "failed";
-  duration: number; // seconds
+  durationSeconds: number;
   topics: string[];
-  summary: string;
-  sentiment: "positive" | "neutral" | "negative";
+  summary: string | null;
+  sentiment: "positive" | "neutral" | "negative" | null;
   isRead: boolean;
+  startedAt: string;
   createdAt: string;
-  transcript: TranscriptMessage[];
-  adminNote: string;
-  audioUrl: string;
+  transcript: TranscriptMessage[] | null;
+  notes: string | null;
+  audioUrl: string | null;
 }
 
 interface TranscriptMessage {
@@ -183,7 +184,7 @@ export default function AdminVoiceCallsPage() {
 
   const openDetail = (call: VoiceCall) => {
     setSelectedCall(call);
-    setAdminNote(call.adminNote || "");
+    setAdminNote(call.notes || "");
     setIsPlaying(false);
 
     // Mark as read
@@ -221,9 +222,9 @@ export default function AdminVoiceCallsPage() {
         body: JSON.stringify({ note: adminNote }),
       });
       setCalls((prev) =>
-        prev.map((c) => (c.id === selectedCall.id ? { ...c, adminNote } : c))
+        prev.map((c) => (c.id === selectedCall.id ? { ...c, notes: adminNote } : c))
       );
-      setSelectedCall({ ...selectedCall, adminNote });
+      setSelectedCall({ ...selectedCall, notes: adminNote });
     } catch {
       // silent
     }
@@ -417,13 +418,13 @@ export default function AdminVoiceCallsPage() {
                     className={`hover:bg-gray-50 ${!call.isRead ? "bg-[#7AC143]/5" : ""}`}
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                      {formatDate(call.createdAt)}
+                      {formatDate(call.startedAt)}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {call.callerNumber}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-600">
-                      {call.status === "missed" ? "—" : formatDuration(call.duration)}
+                      {call.status === "missed" ? "—" : formatDuration(call.durationSeconds)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -528,7 +529,7 @@ export default function AdminVoiceCallsPage() {
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Arama Detayı</h2>
                 <p className="mt-0.5 text-sm text-gray-500">
-                  {selectedCall.callerNumber} &middot; {formatDate(selectedCall.createdAt)}
+                  {selectedCall.callerNumber} &middot; {formatDate(selectedCall.startedAt)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -572,7 +573,7 @@ export default function AdminVoiceCallsPage() {
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Volume2 className="h-4 w-4" />
-                      {formatDuration(selectedCall.duration)}
+                      {formatDuration(selectedCall.durationSeconds)}
                     </div>
                   </div>
                 </div>
