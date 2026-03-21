@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
-import { calculateBOM, type BOMInput } from "@/lib/production/bom-calculator";
+import { calculateBOM, calculateCostEstimate, type BOMInput } from "@/lib/production/bom-calculator";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -59,6 +59,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
   // Calculate BOM
   const bomResult = calculateBOM(bomInputs);
 
+  // Calculate cost estimate
+  const costEstimate = calculateCostEstimate(bomResult, bomInputs);
+  const totalWeightKg = bomResult.summary.totalWeightKg;
+  const estimatedCost = costEstimate.totalCost;
+
   // Upsert — aynı sipariş için tekrar çağrılırsa mevcut BOM'u güncelle
   const bom = await db.bOMCalculation.upsert({
     where: { productionOrderId: id },
@@ -71,6 +76,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
       totalThreadM: bomResult.summary.totalThreadM,
       totalLabels: bomResult.summary.totalLabels,
       totalPackaging: bomResult.summary.totalPackaging,
+      totalWeightKg,
+      estimatedCost,
     },
     update: {
       materials: JSON.parse(JSON.stringify(bomResult.materials)),
@@ -80,6 +87,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
       totalThreadM: bomResult.summary.totalThreadM,
       totalLabels: bomResult.summary.totalLabels,
       totalPackaging: bomResult.summary.totalPackaging,
+      totalWeightKg,
+      estimatedCost,
       calculatedAt: new Date(),
     },
   });

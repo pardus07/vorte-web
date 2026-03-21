@@ -9,6 +9,7 @@ const createSchema = z.object({
   dealerOrderId: z.string().optional(),
   dealerId: z.string().optional(),
   priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+  targetDate: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(
     z.object({
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz veri", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { items, priority, notes, dealerOrderId, dealerId, autoBOM } = parsed.data;
+  const { items, priority, notes, dealerOrderId, dealerId, autoBOM, targetDate } = parsed.data;
 
   try {
     // Generate order number: PO-YYYY-NNN
@@ -125,6 +126,8 @@ export async function POST(req: NextRequest) {
         dealerId,
         priority,
         notes,
+        targetDate: targetDate ? new Date(targetDate) : undefined,
+        totalQuantity,
         estimatedDelivery: termin.estimatedDelivery,
         stageHistory: JSON.parse(JSON.stringify([
           {

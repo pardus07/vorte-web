@@ -786,6 +786,10 @@ model FullProductionOrder {
   supplierOrders  SupplierOrder[]
   simpleOrders    ProductionOrder[]
 
+  // Hedef tarih & toplam adet
+  targetDate      DateTime?
+  totalQuantity   Int      @default(0)
+
   // Notlar & meta
   notes           String?  @db.Text
   priority        String   @default("normal") // low, normal, high, urgent
@@ -834,6 +838,9 @@ model BOMCalculation {
   totalThreadM      Float    // Toplam iplik (metre)
   totalLabels       Int      // Toplam etiket
   totalPackaging    Int      // Toplam ambalaj
+
+  // Toplam ağırlık
+  totalWeightKg     Float?
 
   // Maliyet
   estimatedCost     Float?
@@ -938,6 +945,8 @@ model QualityCheck {
   inspectedQuantity Int      // Kontrol edilen adet
   defectQuantity    Int      @default(0) // Hatalı adet
   defectRate        Float?   // Hata oranı %
+
+  passedQuantity    Int?     // Geçen adet (inspected - defect)
 
   // Detaylar
   defectDetails     Json?    // [{type: "dikiş hatası", count: 3}]

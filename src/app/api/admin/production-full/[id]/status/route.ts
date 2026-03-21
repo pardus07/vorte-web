@@ -58,6 +58,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Sipariş zaten bu aşamada" }, { status: 400 });
   }
 
+  // Aşama geçiş kontrolü — sadece bir sonraki/önceki aşamaya veya PROD_CANCELLED'a geçilebilir
+  const VALID_TRANSITIONS: Record<string, string[]> = {
+    PENDING: ["BOM_CALCULATED", "PROD_CANCELLED"],
+    BOM_CALCULATED: ["PENDING", "MATERIALS_ORDERED", "PROD_CANCELLED"],
+    MATERIALS_ORDERED: ["BOM_CALCULATED", "MATERIALS_RECEIVED", "PROD_CANCELLED"],
+    MATERIALS_RECEIVED: ["MATERIALS_ORDERED", "IN_PRODUCTION", "PROD_CANCELLED"],
+    IN_PRODUCTION: ["MATERIALS_RECEIVED", "QUALITY_CHECK", "PROD_CANCELLED"],
+    QUALITY_CHECK: ["IN_PRODUCTION", "PACKAGING_STAGE", "PROD_CANCELLED"],
+    PACKAGING_STAGE: ["QUALITY_CHECK", "PROD_SHIPPED", "PROD_CANCELLED"],
+    PROD_SHIPPED: ["PACKAGING_STAGE", "PROD_DELIVERED", "PROD_CANCELLED"],
+    PROD_DELIVERED: ["PROD_SHIPPED"],
+    PROD_CANCELLED: ["PENDING"], // İptalden sadece PENDING'e dönülebilir
+  };
+
+  const allowedTransitions = VALID_TRANSITIONS[order.stage] || [];
+  if (!allowedTransitions.includes(newStage)) {
+    return NextResponse.json(
+      { error: `Geçersiz aşama geçişi: ${order.stage} → ${newStage}. İzin verilen geçişler: ${allowedTransitions.join(", ")}` },
+      { status: 400 },
+    );
+  }
+
   const changedBy = admin.name || admin.email;
   const now = new Date();
 

@@ -29,7 +29,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Üretim siparişi bulunamadı" }, { status: 404 });
   }
 
-  return NextResponse.json(order);
+  // bomCalculation alanını bom olarak da ekle (frontend uyumu)
+  const response = { ...order, bom: order.bomCalculation };
+
+  return NextResponse.json(response);
 }
 
 // PATCH — update production order fields (priority, notes, dates)
@@ -50,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   if (body.priority) updateData.priority = body.priority;
   if (body.notes !== undefined) updateData.notes = body.notes;
+  if (body.targetDate !== undefined) updateData.targetDate = body.targetDate ? new Date(body.targetDate) : null;
   if (body.estimatedDelivery) updateData.estimatedDelivery = new Date(body.estimatedDelivery);
   if (body.actualDelivery) updateData.actualDelivery = new Date(body.actualDelivery);
 

@@ -58,25 +58,24 @@ interface TrackingEntry {
 interface QualityCheck {
   id: string;
   inspectedQuantity: number;
-  passedQuantity: number;
+  passedQuantity: number | null;
   defectQuantity: number;
+  defectRate: number | null;
   result: string;
-  notes: string | null;
-  inspectedBy: string | null;
+  inspectorNotes: string | null;
   createdAt: string;
 }
 
 interface SupplierOrder {
   id: string;
-  supplier: { id: string; name: string };
-  materialType: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number | null;
-  totalPrice: number | null;
-  status: string;
-  orderedAt: string;
+  supplier: { name: string };
+  materials: any; // JSON array
+  totalAmount: string | null;
+  sentAt: string | null;
+  confirmedAt: string | null;
+  expectedDelivery: string | null;
   deliveredAt: string | null;
+  emailSent: boolean;
 }
 
 interface StageHistoryEntry {
@@ -440,7 +439,7 @@ export default function UretimDetayPage() {
                   </div>
                   <div className="rounded-lg bg-amber-50 p-3 text-center">
                     <p className="text-xs text-amber-600">Toplam Ağırlık</p>
-                    <p className="mt-1 text-lg font-bold text-amber-800">{order.bom.totalWeightKg.toFixed(2)} kg</p>
+                    <p className="mt-1 text-lg font-bold text-amber-800">{order.bom?.totalWeightKg?.toFixed(2) ?? "—"} kg</p>
                   </div>
                 </div>
               </div>
@@ -474,23 +473,30 @@ export default function UretimDetayPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {order.supplierOrders.map(so => (
-                      <tr key={so.id} className="border-b">
-                        <td className="px-3 py-2 font-medium text-gray-700">{so.supplier.name}</td>
-                        <td className="px-3 py-2 text-gray-600">{so.materialType}</td>
-                        <td className="px-3 py-2 text-right">{so.quantity} {so.unit}</td>
-                        <td className="px-3 py-2 text-right">{so.totalPrice ? `₺${so.totalPrice.toLocaleString("tr-TR")}` : "-"}</td>
-                        <td className="px-3 py-2">
-                          <span className={`rounded px-2 py-0.5 text-xs font-medium ${
-                            so.status === "delivered" ? "bg-green-100 text-green-700"
-                            : so.status === "shipped" ? "bg-amber-100 text-amber-700"
-                            : "bg-blue-100 text-blue-700"
-                          }`}>{so.status}</span>
-                        </td>
-                        <td className="px-3 py-2 text-gray-500">{formatDate(so.orderedAt)}</td>
-                        <td className="px-3 py-2 text-gray-500">{formatDate(so.deliveredAt)}</td>
-                      </tr>
-                    ))}
+                    {order.supplierOrders.map(so => {
+                      const mats = Array.isArray(so.materials) ? so.materials : [];
+                      const firstMat = mats[0];
+                      const matName = firstMat?.name || "-";
+                      const matQty = firstMat ? `${firstMat.quantity} ${firstMat.unit || ""}` : "-";
+                      const status = so.deliveredAt ? "Teslim" : so.confirmedAt ? "Onaylı" : so.sentAt ? "Gönderildi" : "Bekliyor";
+                      const statusColor = so.deliveredAt ? "bg-green-100 text-green-700"
+                        : so.confirmedAt ? "bg-teal-100 text-teal-700"
+                        : so.sentAt ? "bg-amber-100 text-amber-700"
+                        : "bg-blue-100 text-blue-700";
+                      return (
+                        <tr key={so.id} className="border-b">
+                          <td className="px-3 py-2 font-medium text-gray-700">{so.supplier.name}</td>
+                          <td className="px-3 py-2 text-gray-600">{matName}{mats.length > 1 ? ` (+${mats.length - 1})` : ""}</td>
+                          <td className="px-3 py-2 text-right">{matQty}</td>
+                          <td className="px-3 py-2 text-right">{so.totalAmount || "-"}</td>
+                          <td className="px-3 py-2">
+                            <span className={`rounded px-2 py-0.5 text-xs font-medium ${statusColor}`}>{status}</span>
+                          </td>
+                          <td className="px-3 py-2 text-gray-500">{formatDate(so.sentAt)}</td>
+                          <td className="px-3 py-2 text-gray-500">{formatDate(so.deliveredAt)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -509,13 +515,12 @@ export default function UretimDetayPage() {
                       <span className={`rounded-full px-3 py-1 text-xs font-medium ${resCfg.color}`}>{resCfg.label}</span>
                       <div className="flex-1 text-sm">
                         <p className="text-gray-700">
-                          {qc.passedQuantity}/{qc.inspectedQuantity} geçti
+                          {qc.passedQuantity ?? (qc.inspectedQuantity - qc.defectQuantity)}/{qc.inspectedQuantity} geçti
                           {qc.defectQuantity > 0 && <span className="text-red-500"> · {qc.defectQuantity} hatalı</span>}
                         </p>
-                        {qc.notes && <p className="text-gray-500">{qc.notes}</p>}
+                        {qc.inspectorNotes && <p className="text-gray-500">{qc.inspectorNotes}</p>}
                       </div>
                       <div className="text-right text-xs text-gray-400">
-                        {qc.inspectedBy && <p>{qc.inspectedBy}</p>}
                         <p>{formatDateTime(qc.createdAt)}</p>
                       </div>
                     </div>
