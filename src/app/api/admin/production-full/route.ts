@@ -14,9 +14,9 @@ const createSchema = z.object({
   items: z.array(
     z.object({
       productId: z.string().min(1),
-      sku: z.string().min(1),
+      sku: z.string().default(""),
       productName: z.string().min(1),
-      color: z.string().min(1),
+      color: z.string().default(""),
       sizeS: z.number().int().min(0).default(0),
       sizeM: z.number().int().min(0).default(0),
       sizeL: z.number().int().min(0).default(0),
