@@ -52,7 +52,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [callLogs, total] = await Promise.all([
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [calls, total, todayCalls, missedCalls, allDurations] = await Promise.all([
       db.callLog.findMany({
         where,
         orderBy: { startedAt: "desc" },
@@ -60,10 +63,20 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       db.callLog.count({ where }),
+      db.callLog.count({ where: { startedAt: { gte: today } } }),
+      db.callLog.count({ where: { status: "missed" } }),
+      db.callLog.aggregate({ _sum: { durationSeconds: true }, _avg: { durationSeconds: true } }),
     ]);
 
     return NextResponse.json({
-      callLogs,
+      calls,
+      total,
+      stats: {
+        todayCalls,
+        totalDuration: allDurations._sum.durationSeconds || 0,
+        avgDuration: Math.round(allDurations._avg.durationSeconds || 0),
+        missedCalls,
+      },
       pagination: {
         page,
         limit,
