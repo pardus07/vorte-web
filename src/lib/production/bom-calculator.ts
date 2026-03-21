@@ -45,6 +45,43 @@ export const PRODUCTION_CONSTANTS = {
   LABEL_WEIGHT: 1,            // gr — yıkama talimat etiketi
   PACKAGING_WEIGHT_MALE: 7,   // gr — ambalaj poşet (2) + karton insert (5)
   PACKAGING_WEIGHT_FEMALE: 5.5, // gr — ambalaj poşet (1.5) + karton insert (4)
+
+  // ─── MALİYET SABİTLERİ (2026 Mart piyasa araştırması) ───
+  COST: {
+    // Kumaş — %95 Pamuk / %5 Elastan Süprem Likralı, Ring Combed (Penye) Ne 30/1
+    FABRIC_PER_KG_TL: 420,                // TL/kg toptan (350-500 aralığı, orta kalite penye)
+    INNER_LINING_PER_KG_TL: 320,          // TL/kg — %100 pamuk iç katman
+
+    // Lastik
+    MALE_WAIST_ELASTIC_PER_M_TL: 1.50,    // TL/m — 4cm Jakarlı VORTE logolu
+    FEMALE_WAIST_ELASTIC_PER_M_TL: 0.80,  // TL/m — 1.5cm ince elastik
+    LEG_ELASTIC_PER_M_TL: 0.60,           // TL/m — bacak/paça lastiği
+
+    // İplik — Polyester dikiş ipliği
+    THREAD_PER_CONE_TL: 35,               // TL/konik (5000m)
+    THREAD_METERS_PER_CONE: 5000,          // metre/konik
+
+    // Etiket ve Barkod
+    WOVEN_LABEL_TL: 0.25,                 // TL/adet — dokuma ana etiket + beden
+    CARE_LABEL_TL: 0.15,                  // TL/adet — yıkama talimatı etiketi
+    BARCODE_LABEL_TL: 0.08,               // TL/adet — GTIN barkod etiketi
+
+    // Ambalaj
+    POLYBAG_TL: 0.45,                     // TL/adet — OPP şeffaf poşet
+    CARTON_INSERT_TL: 0.80,               // TL/adet — karton insert/kartela
+    HANG_TAG_TL: 0.30,                    // TL/adet — askılı karton etiket
+
+    // İşçilik (Fason Dikim)
+    MALE_SEWING_LABOR_TL: 15.00,          // TL/adet — boxer fason dikim
+    FEMALE_SEWING_LABOR_TL: 12.00,        // TL/adet — külot fason dikim
+
+    // Kalite Kontrol + Fire
+    QC_COST_PER_PIECE_TL: 1.00,           // TL/adet — kalite kontrol işçiliği
+    WASTE_COST_RATE: 0.03,                // %3 fire/zayi oranı (maliyet üzerinden)
+
+    // Genel Giderler
+    OVERHEAD_RATE: 0.15,                  // %15 genel gider oranı (kira, enerji, idari)
+  },
 } as const;
 
 // ─── BEDEN LOOKUP TABLOLARI ────────────────────────────────
@@ -516,6 +553,148 @@ export function calculateBOM(items: BOMInput[]): BOMResult {
       totalWeightKg: round(totalWeightGr / 1000, 3),
     },
     breakdown,
+  };
+}
+
+// ─── MALİYET HESAPLAMA ────────────────────────────────────
+
+/** Maliyet hesabı sonucu */
+export interface CostEstimate {
+  /** Malzeme maliyetleri */
+  materials: {
+    fabric: number;        // Ana kumaş
+    lining: number;        // İç katman (kadın)
+    elastic: number;       // Lastik (bel + bacak/paça)
+    thread: number;        // Dikiş ipliği
+    labels: number;        // Etiketler (dokuma + yıkama + barkod)
+    packaging: number;     // Ambalaj (poşet + kartela + askılı etiket)
+  };
+  /** İşçilik maliyeti */
+  labor: {
+    sewing: number;        // Fason dikim
+    qualityControl: number; // Kalite kontrol
+  };
+  /** Direkt maliyet toplamı */
+  directCost: number;
+  /** Fire/zayi maliyeti */
+  wasteCost: number;
+  /** Genel giderler */
+  overheadCost: number;
+  /** Toplam üretim maliyeti */
+  totalCost: number;
+  /** Adet başına maliyet */
+  costPerPiece: number;
+  /** Adet başına kırılım */
+  perPiece: {
+    fabric: number;
+    elastic: number;
+    thread: number;
+    labels: number;
+    packaging: number;
+    sewing: number;
+    qc: number;
+    overhead: number;
+    total: number;
+  };
+}
+
+/**
+ * BOM sonucundan maliyet tahmini hesaplar
+ * 2026 Mart piyasa araştırmasına dayalı gerçekçi fiyatlar
+ */
+export function calculateCostEstimate(bom: BOMResult, items: BOMInput[]): CostEstimate {
+  const { COST } = PRODUCTION_CONSTANTS;
+  const totalPieces = bom.summary.totalPieces;
+
+  // Erkek/kadın adet sayılarını bul
+  let malePieces = 0;
+  let femalePieces = 0;
+  for (const item of items) {
+    let productType = SKU_PRODUCT_TYPE[item.sku];
+    if (!productType) {
+      const parts = item.sku.replace(/^VRT-/, "").split("-");
+      if (parts.length >= 2) {
+        const shortSku = `${parts[0]}-${parts[1].charAt(0)}`;
+        productType = SKU_PRODUCT_TYPE[shortSku];
+      }
+    }
+    if (!productType) {
+      const name = (item.productName || "").toLowerCase();
+      if (name.includes("boxer") || name.includes("erkek")) productType = "MALE_BOXER";
+      else if (name.includes("külot") || name.includes("kadın") || name.includes("panty")) productType = "FEMALE_PANTY";
+    }
+    const qty = item.sizeS + item.sizeM + item.sizeL + item.sizeXL + item.sizeXXL;
+    if (productType === "MALE_BOXER") malePieces += qty;
+    else if (productType === "FEMALE_PANTY") femalePieces += qty;
+  }
+
+  // Malzeme maliyetleri
+  const fabricCost = bom.summary.totalFabricKg * COST.FABRIC_PER_KG_TL;
+  const liningCost = bom.summary.totalLiningKg * COST.INNER_LINING_PER_KG_TL;
+
+  // Lastik — erkek ve kadın ayrı hesapla
+  let elasticCost = 0;
+  for (const mat of bom.materials) {
+    if (mat.type !== "ELASTIC") continue;
+    if (mat.name.includes("Bel") && mat.name.includes("Erkek")) {
+      elasticCost += mat.quantity * COST.MALE_WAIST_ELASTIC_PER_M_TL;
+    } else if (mat.name.includes("Bel") && mat.name.includes("Kadın")) {
+      elasticCost += mat.quantity * COST.FEMALE_WAIST_ELASTIC_PER_M_TL;
+    } else {
+      elasticCost += mat.quantity * COST.LEG_ELASTIC_PER_M_TL;
+    }
+  }
+
+  // İplik
+  const threadCones = bom.summary.totalThreadM / COST.THREAD_METERS_PER_CONE;
+  const threadCost = threadCones * COST.THREAD_PER_CONE_TL;
+
+  // Etiket (3 tip × adet)
+  const labelsCost = totalPieces * (COST.WOVEN_LABEL_TL + COST.CARE_LABEL_TL + COST.BARCODE_LABEL_TL);
+
+  // Ambalaj (poşet + kartela + askılı etiket)
+  const packagingCost = totalPieces * (COST.POLYBAG_TL + COST.CARTON_INSERT_TL + COST.HANG_TAG_TL);
+
+  // İşçilik
+  const sewingCost = (malePieces * COST.MALE_SEWING_LABOR_TL) + (femalePieces * COST.FEMALE_SEWING_LABOR_TL);
+  const qcCost = totalPieces * COST.QC_COST_PER_PIECE_TL;
+
+  // Toplamlar
+  const directCost = fabricCost + liningCost + elasticCost + threadCost + labelsCost + packagingCost + sewingCost + qcCost;
+  const wasteCost = directCost * COST.WASTE_COST_RATE;
+  const overheadCost = (directCost + wasteCost) * COST.OVERHEAD_RATE;
+  const totalCost = directCost + wasteCost + overheadCost;
+  const costPerPiece = totalPieces > 0 ? totalCost / totalPieces : 0;
+
+  return {
+    materials: {
+      fabric: round(fabricCost, 2),
+      lining: round(liningCost, 2),
+      elastic: round(elasticCost, 2),
+      thread: round(threadCost, 2),
+      labels: round(labelsCost, 2),
+      packaging: round(packagingCost, 2),
+    },
+    labor: {
+      sewing: round(sewingCost, 2),
+      qualityControl: round(qcCost, 2),
+    },
+    directCost: round(directCost, 2),
+    wasteCost: round(wasteCost, 2),
+    overheadCost: round(overheadCost, 2),
+    totalCost: round(totalCost, 2),
+    costPerPiece: round(costPerPiece, 2),
+    perPiece: {
+      fabric: totalPieces > 0 ? round((fabricCost + liningCost) / totalPieces, 2) : 0,
+      elastic: totalPieces > 0 ? round(elasticCost / totalPieces, 2) : 0,
+      thread: totalPieces > 0 ? round(threadCost / totalPieces, 2) : 0,
+      labels: totalPieces > 0 ? round(labelsCost / totalPieces, 2) : 0,
+      packaging: totalPieces > 0 ? round(packagingCost / totalPieces, 2) : 0,
+      sewing: totalPieces > 0 ? round(sewingCost / totalPieces, 2) : 0,
+      qc: totalPieces > 0 ? round(qcCost / totalPieces, 2) : 0,
+      overhead: totalPieces > 0 ? round(overheadCost / totalPieces, 2) : 0,
+      total: round(costPerPiece, 2),
+    },
   };
 }
 

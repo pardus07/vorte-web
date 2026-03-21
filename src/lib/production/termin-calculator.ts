@@ -20,18 +20,31 @@ interface StageTime {
   note: string;
 }
 
+/**
+ * Üretim aşama süreleri — 2026 Mart piyasa araştırmasına dayalı
+ *
+ * Kaynaklar:
+ * - Kumaş temin: Bursa örmecilerden 2-3 hafta (boyama dahil), stokta varsa 1 hafta
+ * - Jakarlı lastik: 2-3 hafta (kalıp açılması gerekirse +1 hafta)
+ * - Fason dikim: 1.000 adet parti 4-7 iş günü, 5.000+ adet 15-20 iş günü
+ * - Kalite kontrol: End-line %100 kontrol 30-60 sn/adet + AQL örnekleme
+ * - Etiketleme + paketleme: 1-2 dk/adet (ütü + katlama + etiket + polybag)
+ */
 export const PRODUCTION_STAGES: StageTime[] = [
-  { name: "Sipariş Onay + BOM",       minDays: 0,  maxDays: 1,  avgDays: 0.5,  note: "Otonom" },
-  { name: "Tedarikçi Sipariş Bekleme", minDays: 1,  maxDays: 3,  avgDays: 2,    note: "Haftalık toplu" },
-  { name: "Malzeme Temin",            minDays: 3,  maxDays: 7,  avgDays: 5,    note: "Stok durumu" },
-  { name: "Malzeme Sevk",             minDays: 1,  maxDays: 2,  avgDays: 1.5,  note: "Kargo" },
-  { name: "Üretim (Fason)",           minDays: 5,  maxDays: 15, avgDays: 10,   note: "Kapasite bağlı" },
-  { name: "Kalite Kontrol",           minDays: 1,  maxDays: 2,  avgDays: 1.5,  note: "AQL" },
-  { name: "Paketleme",                minDays: 1,  maxDays: 2,  avgDays: 1.5,  note: "Etiket+ambalaj" },
-  { name: "Kargo (Bayiye)",           minDays: 1,  maxDays: 3,  avgDays: 2,    note: "Geliver" },
+  { name: "Sipariş Onay + BOM Hesaplama",  minDays: 0,  maxDays: 1,  avgDays: 0.5,  note: "Otomatik BOM, admin onayı" },
+  { name: "Tedarikçi Sipariş Verme",       minDays: 1,  maxDays: 3,  avgDays: 2,    note: "Haftalık toplu sipariş, Pazartesi e-posta" },
+  { name: "Kumaş Temin (Bursa Örmeci)",    minDays: 5,  maxDays: 15, avgDays: 10,   note: "Boyama dahil 2-3 hft, stokta 1 hft" },
+  { name: "Aksesuar Temin (Lastik+Etiket)", minDays: 3,  maxDays: 10, avgDays: 7,    note: "Jakarlı lastik 2-3 hft, etiket 1 hft" },
+  { name: "Malzeme Sevk + Teslim Alma",    minDays: 1,  maxDays: 2,  avgDays: 1.5,  note: "Bursa içi kargo/kurye" },
+  { name: "Kesim (Serim + CNC/Dik Bıçak)", minDays: 0.5, maxDays: 2, avgDays: 1,    note: "60-80 kat serim, %10-15 fire" },
+  { name: "Fason Dikim",                   minDays: 5,  maxDays: 20, avgDays: 10,   note: "Boxer 3-5 dk/adet, hat kapasitesi 800-1200/gün" },
+  { name: "Kalite Kontrol (AQL 2.5)",      minDays: 1,  maxDays: 3,  avgDays: 1.5,  note: "End-line %100 + AQL örnekleme + metal dedektör" },
+  { name: "Ütü + Katlama + Etiketleme",    minDays: 0.5, maxDays: 2, avgDays: 1,    note: "Buhar ütü, etiket takma, beden+yıkama+GTIN" },
+  { name: "Paketleme + Kolileme",          minDays: 0.5, maxDays: 2, avgDays: 1,    note: "OPP poşet, kartela, koli hazırlama" },
+  { name: "Kargo Sevkiyat (Bayiye/Depoya)", minDays: 1,  maxDays: 3, avgDays: 2,    note: "Geliver multi-carrier, 1-3 gün" },
 ];
 
-// Toplam: min 13, max 35, ort 24 iş günü
+// Toplam: min ~15.5, max ~63, ort ~37.5 iş günü (~6-10 hafta araştırma ile uyumlu)
 export const SAFETY_MARGIN = 1.2; // %20 güvenlik marjı
 
 // ─── TERMİN HESAPLAMA ──────────────────────────────────────
@@ -56,14 +69,20 @@ export interface TerminResult {
 }
 
 /**
- * Adet bazlı mod seçimi:
- *   <50 adet  → min (en kısa süre)
- *   50–500    → avg (ortalama süre)
- *   >500      → max (en uzun süre)
+ * Adet bazlı mod seçimi (araştırma verileriyle güncellenmiş):
+ *   <100 adet   → min (numune/küçük parti, stoktan malzeme)
+ *   100–1.000   → avg (standart üretim partisi)
+ *   >1.000 adet → max (büyük parti, tam tedarik zinciri)
+ *
+ * Kaynak: Fason dikim süreleri lot büyüklüğüne göre:
+ *   500-1.000 adet: 1-2 hafta
+ *   1.000-3.000 adet: 2-3 hafta
+ *   3.000-5.000 adet: 3-4 hafta
+ *   5.000-10.000 adet: 4-6 hafta
  */
 function getMode(totalQuantity: number): TerminMode {
-  if (totalQuantity < 50) return "min";
-  if (totalQuantity <= 500) return "avg";
+  if (totalQuantity < 100) return "min";
+  if (totalQuantity <= 1000) return "avg";
   return "max";
 }
 
