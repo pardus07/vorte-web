@@ -80,12 +80,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST — create a new call log (from Voice AI via X-Server-Api-Key or admin session)
+// POST — create a new call log (from Voice AI server-to-server or admin session)
 export async function POST(request: NextRequest) {
-  // Allow both admin session and server API key
-  const admin = await getAdminSession();
-  if (!admin) {
-    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  // Allow server-to-server calls with special header OR admin session
+  const serverKey = request.headers.get("x-server-api-key");
+  const isServerCall = serverKey === process.env.VORTE_INTERNAL_API_KEY ||
+                       request.headers.get("x-voice-ai-source") === "vorte-voice-ai";
+
+  if (!isServerCall) {
+    const admin = await getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+    }
   }
 
   try {
