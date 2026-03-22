@@ -284,6 +284,21 @@ function VideoHeroSlider() {
         })}
       </div>
 
+      {/* Giant VORTE text — Zara style brand watermark */}
+      <div
+        className="absolute bottom-0 right-0 z-15 select-none pointer-events-none overflow-hidden"
+        style={{
+          fontFamily: "var(--font-baron)",
+          fontSize: "clamp(180px, 25vw, 450px)",
+          lineHeight: 0.85,
+          letterSpacing: "-0.02em",
+          color: "rgba(255,255,255,0.12)",
+          transform: "translateX(5%) translateY(15%)",
+        }}
+      >
+        VORTE
+      </div>
+
       {/* Navigation dots — Zara style thin bars */}
       <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-10">
         {videoSlides.map((_, i) => (

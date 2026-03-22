@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Search, Heart, User, ShoppingBag, X } from "lucide-react";
 import { MobileMenu } from "./MobileMenu";
 import { SearchBar } from "./SearchBar";
@@ -99,18 +98,15 @@ export function Header() {
             </nav>
           </div>
 
-          {/* Center: Logo */}
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Vorte Tekstil"
-              width={110}
-              height={36}
-              className={`h-9 w-auto object-contain transition-all duration-300 ${
-                scrolled ? "" : "brightness-0 invert"
-              }`}
-              priority
-            />
+          {/* Center: VORTE text logo (Baron/Bebas Neue style) */}
+          <Link
+            href="/"
+            className={`absolute left-1/2 -translate-x-1/2 flex-shrink-0 font-[var(--font-baron)] text-2xl tracking-[0.15em] transition-colors duration-300 ${
+              scrolled ? "text-[#1A1A1A]" : "text-white"
+            }`}
+            style={{ fontFamily: "var(--font-baron)" }}
+          >
+            VORTE
           </Link>
 
           {/* Right: Icons */}
