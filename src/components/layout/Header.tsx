@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Search, Heart, User, ShoppingBag, X } from "lucide-react";
 import { MobileMenu } from "./MobileMenu";
 import { SearchBar } from "./SearchBar";
@@ -98,20 +97,6 @@ export function Header() {
               </Link>
             </nav>
           </div>
-
-          {/* Center: Logo */}
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Vorte Tekstil"
-              width={100}
-              height={32}
-              className={`h-8 w-auto object-contain transition-all duration-300 ${
-                scrolled ? "" : "brightness-0 invert"
-              }`}
-              priority
-            />
-          </Link>
 
           {/* Right: Icons */}
           <div className="flex items-center gap-2 flex-1 justify-end">
