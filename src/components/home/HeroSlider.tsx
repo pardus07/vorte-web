@@ -284,19 +284,15 @@ function VideoHeroSlider() {
         })}
       </div>
 
-      {/* Giant VORTE text — Zara style brand watermark */}
-      <div
-        className="absolute bottom-0 right-0 z-15 select-none pointer-events-none overflow-hidden"
-        style={{
-          fontFamily: "var(--font-baron)",
-          fontSize: "clamp(180px, 25vw, 450px)",
-          lineHeight: 0.85,
-          letterSpacing: "-0.02em",
-          color: "rgba(255,255,255,0.12)",
-          transform: "translateX(5%) translateY(15%)",
-        }}
-      >
-        VORTE
+      {/* Giant VORTE logo — right-aligned vertical, Zara style */}
+      <div className="absolute right-0 top-0 z-[15] h-full select-none pointer-events-none flex items-end justify-end">
+        <img
+          src="/images/vorte-logo-white.png"
+          alt=""
+          className="h-[75%] w-auto object-contain object-right-bottom opacity-50 mr-2 mb-16 md:h-[80%] md:mr-6 md:mb-20 lg:mr-10"
+          aria-hidden="true"
+          draggable={false}
+        />
       </div>
 
       {/* Navigation dots — Zara style thin bars */}
