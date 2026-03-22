@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import { useState, useEffect, useCallback, useRef, TouchEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 
+// ---- Legacy interface (DB slides backward compat) ----
 export interface SlideData {
   imageDesktop: string;
   imageMobile: string;
@@ -20,62 +18,317 @@ export interface SlideData {
   altText?: string | null;
 }
 
-const fallbackSlides: SlideData[] = [
+// ---- Video slide type ----
+interface VideoSlide {
+  video: string;
+  poster: string;
+  subtitle: string;
+  title: string;
+  buttonText: string;
+  buttonLink: string;
+}
+
+const videoSlides: VideoSlide[] = [
   {
-    imageDesktop: "/images/hero-1.jpg",
-    imageMobile: "/images/hero-mobile-1.jpg",
-    subtitle: "Yeni Sezon 2026",
-    title: "Kaliteli İç Giyim,",
-    highlight: "Uygun Fiyat",
-    description:
-      "Vorte Tekstil - Erkek boxer ve kadın iç giyim koleksiyonu. Premium kumaş kalitesi ile konfor ve şıklık bir arada.",
-    buttonText: "Erkek Koleksiyonu",
+    video: "/videos/hero/optimized/cotton-field.mp4",
+    poster: "/videos/hero/optimized/cotton-field-poster.webp",
+    subtitle: "%100 Saf Pamuk",
+    title: "Doğadan Teninize",
+    buttonText: "Koleksiyonu Keşfet",
     buttonLink: "/erkek-ic-giyim",
-    secondaryButtonText: "Kadın Koleksiyonu",
-    secondaryButtonLink: "/kadin-ic-giyim",
   },
   {
-    imageDesktop: "/images/hero-2.jpg",
-    imageMobile: "/images/hero-mobile-2.jpg",
-    subtitle: "Kadın Koleksiyonu",
-    title: "Zarif Tasarım,",
-    highlight: "Üstün Konfor",
-    description:
-      "Premium modal kumaş ile üretilen kadın iç giyim koleksiyonumuz. Günlük konfor ve şıklığı bir arada sunuyor.",
-    buttonText: "Kadın Koleksiyonu",
+    video: "/videos/hero/optimized/textile-production.mp4",
+    poster: "/videos/hero/optimized/textile-production-poster.webp",
+    subtitle: "Bursa'dan Türkiye'ye",
+    title: "35 Yıllık Deneyim",
+    buttonText: "Hakkımızda",
+    buttonLink: "/hakkimizda",
+  },
+  {
+    video: "/videos/hero/optimized/fabric-texture.mp4",
+    poster: "/videos/hero/optimized/fabric-texture-poster.webp",
+    subtitle: "Eşsiz Konfor",
+    title: "Premium Penye",
+    buttonText: "Ürünleri İncele",
+    buttonLink: "/erkek-ic-giyim",
+  },
+  {
+    video: "/videos/hero/optimized/cotton-macro.mp4",
+    poster: "/videos/hero/optimized/cotton-macro-poster.webp",
+    subtitle: "Ring İplik Teknolojisi",
+    title: "Taranmış Pamuk",
+    buttonText: "Detaylı Bilgi",
+    buttonLink: "/hakkimizda",
+  },
+  {
+    video: "/videos/hero/optimized/water-pure.mp4",
+    poster: "/videos/hero/optimized/water-pure-poster.webp",
+    subtitle: "OEKO-TEX Sertifikalı",
+    title: "Doğal Saflık",
+    buttonText: "Sertifikalarımız",
+    buttonLink: "/hakkimizda",
+  },
+  {
+    video: "/videos/hero/optimized/golden-hour.mp4",
+    poster: "/videos/hero/optimized/golden-hour-poster.webp",
+    subtitle: "2026 Koleksiyonu",
+    title: "Yeni Sezon",
+    buttonText: "Yeni Ürünler",
     buttonLink: "/kadin-ic-giyim",
-    secondaryButtonText: "Erkek Koleksiyonu",
-    secondaryButtonLink: "/erkek-ic-giyim",
   },
   {
-    imageDesktop: "/images/hero-3.jpg",
-    imageMobile: "/images/hero-mobile-3.jpg",
-    subtitle: "Toptan Satış",
-    title: "Bayilik Fırsatı,",
-    highlight: "%45'e Varan İndirim",
-    description:
-      "Perakende satış noktaları için özel toptan fiyatlardan yararlanın.",
-    buttonText: "Toptan Satış",
+    video: "/videos/hero/optimized/cotton-harvest.mp4",
+    poster: "/videos/hero/optimized/cotton-harvest-poster.webp",
+    subtitle: "Bayilik Fırsatları",
+    title: "Toptan Satış",
+    buttonText: "Bayi Başvurusu",
     buttonLink: "/toptan",
-    secondaryButtonText: "Bayi Girişi",
-    secondaryButtonLink: "/bayi-girisi",
   },
 ];
 
+// ---- Props ----
 interface HeroSliderProps {
   slides?: SlideData[];
 }
 
+// ---- Component ----
 export function HeroSlider({ slides: propSlides }: HeroSliderProps) {
-  const slides = propSlides && propSlides.length > 0 ? propSlides : fallbackSlides;
+  // If DB slides provided, render legacy image slider
+  const hasDbSlides = propSlides && propSlides.length > 0;
+
+  if (hasDbSlides) {
+    return <LegacyImageSlider slides={propSlides} />;
+  }
+
+  return <VideoHeroSlider />;
+}
+
+// =========================================================================
+// VIDEO HERO SLIDER (Zara style)
+// =========================================================================
+function VideoHeroSlider() {
+  const [current, setCurrent] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const total = videoSlides.length;
+
+  // Detect prefers-reduced-motion
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  // Go to slide
+  const goTo = useCallback(
+    (index: number) => {
+      if (isTransitioning || index === current) return;
+      setIsTransitioning(true);
+      setCurrent(index);
+      setTimeout(() => setIsTransitioning(false), 1000);
+    },
+    [current, isTransitioning]
+  );
+
+  const next = useCallback(() => {
+    goTo((current + 1) % total);
+  }, [current, total, goTo]);
+
+  const prev = useCallback(() => {
+    goTo((current - 1 + total) % total);
+  }, [current, total, goTo]);
+
+  // Auto-advance every 8 seconds
+  useEffect(() => {
+    timerRef.current = setTimeout(next, 8000);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [current, next]);
+
+  // Play/pause videos based on active slide
+  useEffect(() => {
+    videoRefs.current.forEach((video, i) => {
+      if (!video) return;
+      if (i === current) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, [current]);
+
+  // Touch handlers
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Only trigger if horizontal swipe is dominant and > 50px
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) next();
+      else prev();
+    }
+  };
+
+  return (
+    <section
+      className="relative h-[100svh] w-full overflow-hidden bg-[#1A1A1A] md:h-screen"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Video layers */}
+      {videoSlides.map((slide, i) => {
+        const isActive = i === current;
+        const isFirst = i === 0;
+        return (
+          <div
+            key={i}
+            className="absolute inset-0 will-change-[opacity]"
+            style={{
+              opacity: isActive ? 1 : 0,
+              transition: "opacity 1s ease-in-out",
+              zIndex: isActive ? 2 : 1,
+            }}
+            aria-hidden={!isActive}
+          >
+            {reducedMotion ? (
+              /* Static poster for reduced motion */
+              <img
+                src={slide.poster}
+                alt=""
+                className="h-full w-full object-cover"
+                loading={isFirst ? "eager" : "lazy"}
+              />
+            ) : (
+              <video
+                ref={(el) => {
+                  videoRefs.current[i] = el;
+                }}
+                src={isFirst || isActive ? slide.video : undefined}
+                poster={slide.poster}
+                autoPlay={isFirst}
+                muted
+                loop
+                playsInline
+                preload={isFirst ? "auto" : "none"}
+                className="h-full w-full object-cover"
+              />
+            )}
+          </div>
+        );
+      })}
+
+      {/* Gradient overlay */}
+      <div
+        className="absolute inset-0 z-10"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.05) 70%, transparent 100%)",
+        }}
+      />
+
+      {/* Content — centered bottom area, Zara style */}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-end pb-28 md:pb-32 lg:pb-36">
+        {videoSlides.map((slide, i) => {
+          const isActive = i === current;
+          return (
+            <div
+              key={i}
+              className="absolute inset-0 flex flex-col items-center justify-end pb-28 md:pb-32 lg:pb-36 will-change-[opacity,transform]"
+              style={{
+                opacity: isActive ? 1 : 0,
+                transform: isActive ? "translateY(0)" : "translateY(12px)",
+                transition: "opacity 0.8s ease-in-out 0.2s, transform 0.8s ease-in-out 0.2s",
+                pointerEvents: isActive ? "auto" : "none",
+              }}
+            >
+              {/* Subtitle */}
+              <p
+                className="mb-3 text-xs font-light uppercase text-white/80 md:mb-4 md:text-sm"
+                style={{ letterSpacing: "0.3em" }}
+              >
+                {slide.subtitle}
+              </p>
+
+              {/* Title */}
+              <h1
+                className="text-center font-light uppercase text-white text-4xl md:text-6xl lg:text-7xl xl:text-8xl"
+                style={{ letterSpacing: "0.15em", lineHeight: 1.1 }}
+              >
+                {slide.title}
+              </h1>
+
+              {/* CTA */}
+              <Link
+                href={slide.buttonLink}
+                className="mt-6 inline-block border border-white/80 bg-transparent px-8 py-3 text-[11px] font-light uppercase text-white transition-all duration-300 hover:bg-white hover:text-[#1A1A1A] md:mt-8 md:px-10 md:py-3.5 md:text-xs"
+                style={{ letterSpacing: "0.25em" }}
+              >
+                {slide.buttonText}
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Navigation dots — Zara style thin bars */}
+      <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-10">
+        {videoSlides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className="group relative h-5 flex items-center"
+            aria-label={`Slayt ${i + 1}`}
+            aria-current={i === current ? "true" : undefined}
+          >
+            <span
+              className="block h-[2px] rounded-full bg-white/40 transition-all duration-500 group-hover:bg-white/70"
+              style={{
+                width: i === current ? "32px" : "12px",
+                backgroundColor: i === current ? "rgba(255,255,255,0.9)" : undefined,
+              }}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-2 left-1/2 z-30 -translate-x-1/2 flex flex-col items-center gap-1 opacity-60 md:bottom-3">
+        <svg
+          className="h-4 w-4 animate-bounce text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </section>
+  );
+}
+
+// =========================================================================
+// LEGACY IMAGE SLIDER (backward compat for DB slides)
+// =========================================================================
+function LegacyImageSlider({ slides }: { slides: SlideData[] }) {
   const [current, setCurrent] = useState(0);
 
   const next = useCallback(() => {
     setCurrent((prev) => (prev + 1) % slides.length);
-  }, [slides.length]);
-
-  const prev = useCallback(() => {
-    setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
   }, [slides.length]);
 
   useEffect(() => {
@@ -86,128 +339,88 @@ export function HeroSlider({ slides: propSlides }: HeroSliderProps) {
   const slide = slides[current];
 
   return (
-    <section className="relative h-[85vh] min-h-[600px] w-full overflow-hidden bg-[#1A1A1A]">
-      {/* Background Images */}
-      {slides.map((s, i) => {
-        const alt = s.altText || `Vorte Tekstil - ${s.title || ""} ${s.highlight || ""}`;
-        const isActive = i === current;
-        const isFirst = i === 0;
-        return (
-          <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              isActive ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            {/* Desktop */}
-            <Image
-              src={s.imageDesktop}
-              alt={alt}
-              fill
-              className="hidden md:block object-cover object-center"
-              priority={isFirst}
-              loading={isFirst ? "eager" : "lazy"}
-              sizes="100vw"
-              quality={80}
-            />
-            {/* Mobile */}
-            <Image
-              src={s.imageMobile}
-              alt={alt}
-              fill
-              className="block md:hidden object-cover object-center"
-              priority={isFirst}
-              loading={isFirst ? "eager" : "lazy"}
-              sizes="100vw"
-              quality={80}
-            />
-          </div>
-        );
-      })}
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/80 via-[#1A1A1A]/40 to-transparent z-10" />
-
-      {/* Content */}
-      <div className="relative z-20 flex h-full items-center">
-        <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-8">
-          <div className="max-w-xl">
-            {slide.subtitle && (
-              <span className="inline-block mb-4 text-sm font-semibold tracking-widest text-[#7AC143] uppercase">
-                {slide.subtitle}
-              </span>
-            )}
-            <h1 className="text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
-              {slide.title}
-              {slide.highlight && (
-                <>
-                  <br />
-                  <span className="text-[#7AC143]">{slide.highlight}</span>
-                </>
-              )}
-            </h1>
-            {slide.description && (
-              <p className="mt-4 text-lg text-gray-300">{slide.description}</p>
-            )}
-            <div className="mt-8 flex flex-wrap gap-4">
-              {slide.buttonText && slide.buttonLink && (
-                <Link href={slide.buttonLink}>
-                  <Button size="lg" variant="primary">
-                    {slide.buttonText}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              )}
-              {slide.secondaryButtonText && slide.secondaryButtonLink && (
-                <Link href={slide.secondaryButtonLink}>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white text-white hover:bg-white hover:text-[#1A1A1A]"
-                  >
-                    {slide.secondaryButtonText}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
+    <section className="relative h-[100svh] w-full overflow-hidden bg-[#1A1A1A] md:h-screen">
+      {slides.map((s, i) => (
+        <div
+          key={i}
+          className="absolute inset-0"
+          style={{
+            opacity: i === current ? 1 : 0,
+            transition: "opacity 1s ease-in-out",
+            zIndex: i === current ? 2 : 1,
+          }}
+        >
+          <img
+            src={s.imageDesktop}
+            alt={s.altText || `${s.title || ""} ${s.highlight || ""}`}
+            className="hidden h-full w-full object-cover md:block"
+            loading={i === 0 ? "eager" : "lazy"}
+          />
+          <img
+            src={s.imageMobile}
+            alt={s.altText || `${s.title || ""} ${s.highlight || ""}`}
+            className="block h-full w-full object-cover md:hidden"
+            loading={i === 0 ? "eager" : "lazy"}
+          />
         </div>
+      ))}
+
+      <div
+        className="absolute inset-0 z-10"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, transparent 100%)",
+        }}
+      />
+
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-end pb-28 md:pb-32">
+        {slide?.subtitle && (
+          <p
+            className="mb-3 text-xs font-light uppercase text-white/80 md:text-sm"
+            style={{ letterSpacing: "0.3em" }}
+          >
+            {slide.subtitle}
+          </p>
+        )}
+        <h1
+          className="text-center font-light uppercase text-white text-4xl md:text-6xl lg:text-7xl"
+          style={{ letterSpacing: "0.15em", lineHeight: 1.1 }}
+        >
+          {slide?.title}
+          {slide?.highlight && (
+            <span className="block text-[#7AC143]">{slide.highlight}</span>
+          )}
+        </h1>
+        {slide?.buttonText && slide?.buttonLink && (
+          <Link
+            href={slide.buttonLink}
+            className="mt-6 inline-block border border-white/80 px-8 py-3 text-[11px] font-light uppercase text-white transition-all duration-300 hover:bg-white hover:text-[#1A1A1A] md:mt-8 md:px-10 md:py-3.5 md:text-xs"
+            style={{ letterSpacing: "0.25em" }}
+          >
+            {slide.buttonText}
+          </Link>
+        )}
       </div>
 
-      {/* Navigation Arrows */}
-      {slides.length > 1 && (
-        <>
+      {/* Dots */}
+      <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2">
+        {slides.map((_, i) => (
           <button
-            onClick={prev}
-            className="absolute left-4 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
-            aria-label="Önceki"
+            key={i}
+            onClick={() => setCurrent(i)}
+            className="group relative flex h-5 items-center"
+            aria-label={`Slayt ${i + 1}`}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <span
+              className="block h-[2px] rounded-full bg-white/40 transition-all duration-500 group-hover:bg-white/70"
+              style={{
+                width: i === current ? "32px" : "12px",
+                backgroundColor: i === current ? "rgba(255,255,255,0.9)" : undefined,
+              }}
+            />
           </button>
-          <button
-            onClick={next}
-            className="absolute right-4 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white backdrop-blur-sm hover:bg-white/20 transition-colors"
-            aria-label="Sonraki"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-
-          {/* Dots */}
-          <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === current ? "w-8 bg-[#7AC143]" : "w-2 bg-white/50"
-                }`}
-                aria-label={`Slayt ${i + 1}`}
-              />
-            ))}
-          </div>
-        </>
-      )}
+        ))}
+      </div>
     </section>
   );
 }
