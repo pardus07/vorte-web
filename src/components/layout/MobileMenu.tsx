@@ -10,6 +10,7 @@ interface MobileMenuProps {
 }
 
 const menuItems = [
+  { label: "ANASAYFA", href: "/" },
   { label: "ERKEK İÇ GİYİM", href: "/erkek-ic-giyim" },
   { label: "KADIN İÇ GİYİM", href: "/kadin-ic-giyim" },
   { label: "TOPTAN SATIŞ", href: "/toptan" },
