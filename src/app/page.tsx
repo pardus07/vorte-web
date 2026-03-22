@@ -148,7 +148,7 @@ export default async function HomePage() {
       />
 
       {/* Hero Slider */}
-      <HeroSlider slides={sliderData} />
+      <HeroSlider />
 
       {/* Homepage Top Banners */}
       {bannersByPosition["homepage-top"] && (

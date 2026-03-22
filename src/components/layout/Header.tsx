@@ -41,7 +41,7 @@ export function Header() {
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="group p-1 hover:opacity-70 transition-opacity"
-              aria-label="Men\u00fcy\u00fc a\u00e7"
+              aria-label="Menüyü aç"
             >
               <div className="flex flex-col gap-[5px]">
                 <span
@@ -86,7 +86,7 @@ export function Header() {
                   scrolled ? "text-[#1A1A1A]" : "text-white"
                 }`}
               >
-                TOPTAN SATI\u015e
+                TOPTAN SATIŞ
               </Link>
               <Link
                 href="/blog"
@@ -102,7 +102,7 @@ export function Header() {
           {/* Center: Logo */}
           <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex-shrink-0">
             <Image
-              src="/logo-dark.jpg"
+              src="/logo.png"
               alt="Vorte Tekstil"
               width={110}
               height={36}
@@ -139,7 +139,7 @@ export function Header() {
                   : "border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]"
               }`}
             >
-              BAY\u0130
+              BAYİ
             </Link>
 
             <Link
