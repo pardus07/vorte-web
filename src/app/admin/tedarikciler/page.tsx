@@ -18,6 +18,7 @@ import {
   Package,
   Scissors,
   Tag,
+  Eye,
   Box,
   Layers,
   Send,
@@ -244,6 +245,7 @@ export default function AdminSuppliersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [detailSupplier, setDetailSupplier] = useState<Supplier | null>(null);
   const limit = 20;
 
   // ── Tab 2: Tedarikci Kesfet ──
@@ -472,12 +474,20 @@ export default function AdminSuppliersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: discovered.name,
-          email: discovered.email,
-          phone: discovered.phone,
-          address: discovered.address,
+          email: discovered.email || null,
+          phone: discovered.phone || null,
+          address: discovered.address || null,
           type: categoryToSupplierType(discoverCategory),
           isActive: true,
-          notes: `Kesfedilen tedarikci. Website: ${discovered.website || "-"}, Urunler: ${discovered.products || "-"}, Min. Siparis: ${discovered.minOrder || "-"}, Kapasite: ${discovered.capacity || "-"}`,
+          minOrderQty: discovered.minOrder || null,
+          materials: JSON.stringify({
+            products: discovered.products || "",
+            capacity: discovered.capacity || "",
+            website: discovered.website || "",
+            minOrder: discovered.minOrder || "",
+            discoverCategory: discoverCategory,
+          }),
+          notes: `Ürünler: ${discovered.products || "-"}\nKapasite: ${discovered.capacity || "-"}\nMin. Sipariş: ${discovered.minOrder || "-"}\nWebsite: ${discovered.website || "-"}`,
         }),
       });
       if (res.ok) {
@@ -810,6 +820,13 @@ export default function AdminSuppliersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setDetailSupplier(supplier)}
+                            className="rounded p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+                            title="Detay"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                           <button
                             onClick={() => openEditModal(supplier)}
                             className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
@@ -1460,6 +1477,99 @@ export default function AdminSuppliersPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════ */}
+      {/* MODAL: Tedarikci Detay */}
+      {detailSupplier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+            <button
+              onClick={() => setDetailSupplier(null)}
+              className="absolute right-4 top-4 rounded-full p-1 hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-lg font-bold text-gray-900 pr-8">{detailSupplier.name}</h3>
+            <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[detailSupplier.type]}`}>
+              {TYPE_LABELS[detailSupplier.type]}
+            </span>
+            <Badge variant={detailSupplier.isActive ? "success" : "outline"} className="ml-2">
+              {detailSupplier.isActive ? "Aktif" : "Pasif"}
+            </Badge>
+
+            <div className="mt-4 space-y-3 text-sm">
+              {detailSupplier.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                  <span className="text-gray-700">{detailSupplier.address}</span>
+                </div>
+              )}
+              {detailSupplier.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 shrink-0 text-gray-400" />
+                  <a href={`tel:${detailSupplier.phone}`} className="text-[#7AC143] hover:underline">{detailSupplier.phone}</a>
+                </div>
+              )}
+              {detailSupplier.email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 shrink-0 text-gray-400" />
+                  <a href={`mailto:${detailSupplier.email}`} className="text-[#7AC143] hover:underline">{detailSupplier.email}</a>
+                </div>
+              )}
+              {detailSupplier.contactName && (
+                <div className="flex items-center gap-2">
+                  <span className="h-4 w-4 shrink-0 text-center text-gray-400 text-xs">👤</span>
+                  <span className="text-gray-700">Yetkili: {detailSupplier.contactName}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Materials / Details */}
+            {detailSupplier.materials && (() => {
+              try {
+                const m = typeof detailSupplier.materials === "string" ? JSON.parse(detailSupplier.materials) : detailSupplier.materials;
+                return (
+                  <div className="mt-4 rounded-lg bg-gray-50 p-4 space-y-2 text-sm">
+                    <h4 className="font-semibold text-gray-800 mb-2">Detay Bilgileri</h4>
+                    {m.products && (
+                      <div><span className="font-medium text-gray-600">Ürünler:</span> <span className="text-gray-800">{m.products}</span></div>
+                    )}
+                    {m.capacity && (
+                      <div><span className="font-medium text-gray-600">Kapasite:</span> <span className="text-gray-800">{m.capacity}</span></div>
+                    )}
+                    {m.website && (
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-3 w-3 text-gray-400" />
+                        <span className="font-medium text-gray-600">Website:</span>
+                        <a href={m.website.startsWith("http") ? m.website : `https://${m.website}`} target="_blank" rel="noopener noreferrer" className="text-[#7AC143] hover:underline">{m.website}</a>
+                      </div>
+                    )}
+                    {m.minOrder && (
+                      <div><span className="font-medium text-gray-600">Min. Sipariş:</span> <span className="text-gray-800">{m.minOrder}</span></div>
+                    )}
+                  </div>
+                );
+              } catch { return null; }
+            })()}
+
+            {/* Notes */}
+            {detailSupplier.notes && (
+              <div className="mt-4 rounded-lg border border-gray-200 p-4 text-sm">
+                <h4 className="font-semibold text-gray-800 mb-1">Notlar</h4>
+                <p className="text-gray-600 whitespace-pre-line">{detailSupplier.notes}</p>
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <Button variant="primary" size="sm" onClick={() => { setDetailSupplier(null); openEditModal(detailSupplier); }}>
+                <Pencil className="h-3.5 w-3.5 mr-1" /> Düzenle
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => { setDetailSupplier(null); handleDelete(detailSupplier); }}>
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Sil
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: Yeni / Duzenle Tedarikci                                */}
       {/* ════════════════════════════════════════════════════════════════ */}
       {modalOpen && (
