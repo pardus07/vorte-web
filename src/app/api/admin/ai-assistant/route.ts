@@ -14,7 +14,7 @@ import { resolveToolCall, executeApprovedToolCall } from "@/lib/ai-agent-executo
 import { buildSystemPrompt, fetchDynamicContext } from "@/lib/ai-agent-prompt";
 import { getPageContext } from "@/lib/ai-agent-context";
 
-const GEMINI_MODEL = "gemini-2.5-pro";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 export const maxDuration = 180; // Pro model daha yavaş + multi-step chain
 
