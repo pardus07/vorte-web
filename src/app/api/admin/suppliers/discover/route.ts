@@ -205,19 +205,8 @@ export async function POST(req: NextRequest) {
     // Initialize Gemini with Google Search grounding
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT,
-      tools: [
-        {
-          // @ts-expect-error — google_search_retrieval is valid but not in SDK types
-          google_search_retrieval: {
-            dynamic_retrieval_config: {
-              mode: "MODE_DYNAMIC",
-              dynamic_threshold: 0.3,
-            },
-          },
-        },
-      ],
     });
 
     const result = await model.generateContent(userPrompt);

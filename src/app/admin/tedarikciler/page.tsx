@@ -415,17 +415,34 @@ export default function AdminSuppliersPage() {
     setDiscoverResults([]);
 
     try {
-      const params = new URLSearchParams({
+      const body: Record<string, string> = {
         category: discoverCategory,
-        region: discoverRegion,
-      });
-      if (discoverExtra.trim()) params.set("query", discoverExtra.trim());
+        region: discoverRegion === "Tum Turkiye" ? "ALL" : discoverRegion.toUpperCase(),
+      };
+      if (discoverExtra.trim()) body.customQuery = discoverExtra.trim();
 
-      const res = await fetch(`/api/admin/suppliers/discover?${params}`);
+      const res = await fetch("/api/admin/suppliers/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
-      setDiscoverResults(data.suppliers || []);
-    } catch {
-      // silent
+      if (!res.ok) {
+        console.error("[discover] Error:", data.error);
+        setDiscoverResults([]);
+      } else {
+        setDiscoverResults(
+          (data.suppliers || []).map((s: DiscoveredSupplier, i: number) => ({
+            ...s,
+            id: `discover-${i}-${Date.now()}`,
+            alreadySaved: suppliers.some(
+              (existing) => existing.name.toLowerCase() === (s.name || "").toLowerCase()
+            ),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("[discover] Fetch error:", err);
     }
     setDiscoverLoading(false);
   };
