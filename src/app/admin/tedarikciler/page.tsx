@@ -136,7 +136,7 @@ const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
 
 const DISCOVER_CATEGORIES = [
   {
-    id: "penye-kumas",
+    id: "FABRIC",
     title: "Penye Kumas",
     desc: "Suprem, Ribana, Interlok, Modal",
     icon: Layers,
@@ -144,7 +144,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-blue-600",
   },
   {
-    id: "iplik",
+    id: "THREAD",
     title: "Iplik",
     desc: "Ring Combed, Compact, Penye Iplik",
     icon: Scissors,
@@ -152,7 +152,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-orange-600",
   },
   {
-    id: "erkek-bel-lastigi",
+    id: "ELASTIC_MALE",
     title: "Erkek Bel Lastigi",
     desc: "Jakarli, Dokuma, Orme 30-40mm",
     icon: Package,
@@ -160,7 +160,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-purple-600",
   },
   {
-    id: "kadin-kulot-lastigi",
+    id: "ELASTIC_FEMALE",
     title: "Kadin Kulot Lastigi",
     desc: "Ince elastik 8-12mm, Dantel, Biye",
     icon: Package,
@@ -168,7 +168,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-pink-600",
   },
   {
-    id: "dokuma-etiket",
+    id: "LABEL",
     title: "Dokuma Etiket",
     desc: "Marka, Beden, Yikama talimati, Barkod",
     icon: Tag,
@@ -176,7 +176,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-teal-600",
   },
   {
-    id: "esnek-ambalaj",
+    id: "FLEXIBLE_PACKAGING",
     title: "Esnek Ambalaj",
     desc: "Sase lamine poset, OPP, Zipli, Dijital baski",
     icon: Box,
@@ -184,7 +184,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-cyan-600",
   },
   {
-    id: "karton-ambalaj",
+    id: "CARDBOARD_PACKAGING",
     title: "Karton Ambalaj",
     desc: "Kutu, Kartela, Askili etiket, Sleeve",
     icon: Box,
@@ -192,7 +192,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-amber-600",
   },
   {
-    id: "karton-stand",
+    id: "CARDBOARD_STAND",
     title: "Karton Stand",
     desc: "Tezgah ustu, Ada tipi, Tam boy",
     icon: Box,
@@ -200,7 +200,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-lime-600",
   },
   {
-    id: "dikis-ipligi",
+    id: "SEWING_THREAD",
     title: "Dikis Ipligi",
     desc: "Overlok, Recme, Duz dikis",
     icon: Scissors,
@@ -208,7 +208,7 @@ const DISCOVER_CATEGORIES = [
     iconColor: "text-rose-600",
   },
   {
-    id: "aksesuar",
+    id: "ACCESSORY",
     title: "Aksesuar",
     desc: "Aski, Cengelli igne, Silika jel, Bant",
     icon: Tag,
