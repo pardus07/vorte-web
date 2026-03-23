@@ -310,7 +310,7 @@ export default function AdminSuppliersPage() {
     quantity: number;
     unit: string;
     supplierTypes: SupplierType[];
-    selectedSupplierId: string;
+    selectedSupplierIds: string[];
     productDetails: string;
   }
   const [bomMaterials, setBomMaterials] = useState<BomMaterialRow[]>([]);
@@ -662,7 +662,7 @@ export default function AdminSuppliersPage() {
         quantity: fabricKg,
         unit: "kg",
         supplierTypes: ["FABRIC"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Penye kumas (EB: ${ebCount} adet x 0.0375kg + KK: ${kkCount} adet x 0.022kg)`,
       },
       {
@@ -671,7 +671,7 @@ export default function AdminSuppliersPage() {
         quantity: elasticMaleM,
         unit: "m",
         supplierTypes: ["ELASTIC_MALE"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Erkek bel lastigi 30-40mm (${ebCount} adet x 0.85m)`,
       },
       {
@@ -680,7 +680,7 @@ export default function AdminSuppliersPage() {
         quantity: elasticMaleLegM,
         unit: "m",
         supplierTypes: ["ELASTIC_MALE"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Erkek bacak lastigi (${ebCount} adet x 0.70m)`,
       },
       {
@@ -689,7 +689,7 @@ export default function AdminSuppliersPage() {
         quantity: elasticFemaleM,
         unit: "m",
         supplierTypes: ["ELASTIC_FEMALE"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Kadin bel lastigi 8-12mm (${kkCount} adet x 0.68m)`,
       },
       {
@@ -698,7 +698,7 @@ export default function AdminSuppliersPage() {
         quantity: elasticFemaleLegM,
         unit: "m",
         supplierTypes: ["ELASTIC_FEMALE"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Kadin bacak lastigi (${kkCount} adet x 0.63m)`,
       },
       {
@@ -707,7 +707,7 @@ export default function AdminSuppliersPage() {
         quantity: sewingThreadM,
         unit: "m",
         supplierTypes: ["SEWING_THREAD"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Dikis ipligi (EB: ${ebCount} x 9.25m + KK: ${kkCount} x 7.5m)`,
       },
       {
@@ -716,7 +716,7 @@ export default function AdminSuppliersPage() {
         quantity: labels,
         unit: "adet",
         supplierTypes: ["LABEL"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Marka + beden etiketi (${totalProducts} adet urun icin)`,
       },
       {
@@ -725,7 +725,7 @@ export default function AdminSuppliersPage() {
         quantity: packaging,
         unit: "adet",
         supplierTypes: ["FLEXIBLE_PACKAGING", "CARDBOARD_PACKAGING"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Tekli urun ambalaji (${totalProducts} adet)`,
       },
     ];
@@ -738,7 +738,7 @@ export default function AdminSuppliersPage() {
         quantity: a,
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Stand A (50 urunluk tezgah ustu) - ${a} adet`,
       });
     }
@@ -749,7 +749,7 @@ export default function AdminSuppliersPage() {
         quantity: b,
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Stand B (100 urunluk tezgah ustu) - ${b} adet`,
       });
     }
@@ -760,7 +760,7 @@ export default function AdminSuppliersPage() {
         quantity: c,
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
-        selectedSupplierId: "",
+        selectedSupplierIds: [],
         productDetails: `Stand C (150 urunluk ada tipi) - ${c} adet`,
       });
     }
@@ -770,45 +770,70 @@ export default function AdminSuppliersPage() {
     setBomResult(null);
   };
 
-  const updateBomSupplier = (key: string, supplierId: string) => {
+  const toggleBomSupplier = (key: string, supplierId: string) => {
     setBomMaterials((prev) =>
-      prev.map((m) => (m.key === key ? { ...m, selectedSupplierId: supplierId } : m))
+      prev.map((m) => {
+        if (m.key !== key) return m;
+        const ids = m.selectedSupplierIds.includes(supplierId)
+          ? m.selectedSupplierIds.filter((id) => id !== supplierId)
+          : [...m.selectedSupplierIds, supplierId];
+        return { ...m, selectedSupplierIds: ids };
+      })
+    );
+  };
+
+  const selectAllSuppliersForRow = (key: string) => {
+    setBomMaterials((prev) =>
+      prev.map((m) => {
+        if (m.key !== key) return m;
+        const available = suppliersForTypes(m.supplierTypes);
+        const allSelected = available.every((s) => m.selectedSupplierIds.includes(s.id));
+        return {
+          ...m,
+          selectedSupplierIds: allSelected ? [] : available.map((s) => s.id),
+        };
+      })
     );
   };
 
   const suppliersForTypes = (types: SupplierType[]) =>
     suppliers.filter((s) => s.isActive && types.includes(s.type));
 
+  const totalSelectedSuppliers = bomMaterials.reduce(
+    (sum, m) => sum + m.selectedSupplierIds.length, 0
+  );
+
   const handleSendAllBomQuotes = async () => {
-    const rowsToSend = bomMaterials.filter((m) => m.selectedSupplierId);
-    if (rowsToSend.length === 0) return;
+    if (totalSelectedSuppliers === 0) return;
 
     setBomSending(true);
     setBomResult(null);
     let success = 0;
     let fail = 0;
 
-    for (const row of rowsToSend) {
-      try {
-        const res = await fetch(
-          `/api/admin/suppliers/${row.selectedSupplierId}/quotes`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              category: row.label,
-              productDetails: row.productDetails,
-              quantity: `${row.quantity} ${row.unit}`,
-            }),
+    for (const row of bomMaterials) {
+      for (const supplierId of row.selectedSupplierIds) {
+        try {
+          const res = await fetch(
+            `/api/admin/suppliers/${supplierId}/quotes`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                category: row.label,
+                productDetails: row.productDetails,
+                quantity: `${row.quantity} ${row.unit}`,
+              }),
+            }
+          );
+          if (res.ok) {
+            success++;
+          } else {
+            fail++;
           }
-        );
-        if (res.ok) {
-          success++;
-        } else {
+        } catch {
           fail++;
         }
-      } catch {
-        fail++;
       }
     }
 
@@ -2150,18 +2175,31 @@ export default function AdminSuppliersPage() {
                                   </td>
                                   <td className="px-3 py-2">
                                     {availableSuppliers.length > 0 ? (
-                                      <select
-                                        value={row.selectedSupplierId}
-                                        onChange={(e) => updateBomSupplier(row.key, e.target.value)}
-                                        className="form-input w-full text-xs py-1"
-                                      >
-                                        <option value="">Tedarikci sec...</option>
+                                      <div className="space-y-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => selectAllSuppliersForRow(row.key)}
+                                          className="text-[10px] text-[#7AC143] hover:underline mb-1"
+                                        >
+                                          {availableSuppliers.every((s) => row.selectedSupplierIds.includes(s.id))
+                                            ? "Secimi Kaldir"
+                                            : "Tumunu Sec"}
+                                        </button>
                                         {availableSuppliers.map((s) => (
-                                          <option key={s.id} value={s.id}>
-                                            {s.name}
-                                          </option>
+                                          <label
+                                            key={s.id}
+                                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5"
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={row.selectedSupplierIds.includes(s.id)}
+                                              onChange={() => toggleBomSupplier(row.key, s.id)}
+                                              className="h-3.5 w-3.5 rounded border-gray-300 text-[#7AC143] focus:ring-[#7AC143]"
+                                            />
+                                            <span className="text-xs text-gray-700">{s.name}</span>
+                                          </label>
                                         ))}
-                                      </select>
+                                      </div>
                                     ) : (
                                       <span className="text-xs text-gray-400 italic">
                                         Kayitli tedarikci yok
@@ -2313,11 +2351,11 @@ export default function AdminSuppliersPage() {
                   variant="primary"
                   size="sm"
                   onClick={handleSendAllBomQuotes}
-                  disabled={bomSending || bomMaterials.every((m) => !m.selectedSupplierId)}
+                  disabled={bomSending || totalSelectedSuppliers === 0}
                   loading={bomSending}
                 >
                   <Send className="h-4 w-4" />
-                  Tum Teklifleri Gonder ({bomMaterials.filter((m) => m.selectedSupplierId).length})
+                  Tum Teklifleri Gonder ({totalSelectedSuppliers})
                 </Button>
               )}
 
