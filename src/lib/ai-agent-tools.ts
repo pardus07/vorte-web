@@ -2091,7 +2091,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
   {
     name: "update_email_template",
     description:
-      "E-posta şablonu oluştur veya güncelle. Konu, HTML içerik ve değişkenler ayarlanır. Değişkenler: {{customerName}}, {{orderNumber}}, {{totalAmount}}, {{trackingNo}}, {{carrier}}, {{invoiceNo}}, {{resetUrl}}, {{companyName}}, {{dealerCode}}, {{loginUrl}}, {{refundAmount}} vb. Görsel eklemek için önce generate_image tool'unu directory='emails' ile çağır, dönen URL'yi <img> tag'i ile HTML'e ekle.",
+      "E-posta şablonu oluştur veya güncelle. Konu, HTML içerik ve değişkenler ayarlanır. Değişkenler: {{customerName}}, {{orderNumber}}, {{totalAmount}}, {{trackingNo}}, {{carrier}}, {{invoiceNo}}, {{resetUrl}}, {{companyName}}, {{dealerCode}}, {{loginUrl}}, {{refundAmount}}, {{supplierName}}, {{categoryName}}, {{productDetails}}, {{quantity}} vb. Görsel eklemek için önce generate_image tool'unu directory='emails' ile çağır, dönen URL'yi <img> tag'i ile HTML'e ekle.",
     parameters: {
       type: SchemaType.OBJECT,
       properties: {
@@ -2110,6 +2110,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
             "invoice",
             "newsletter",
             "production-termin",
+            "supplier-quote-request",
           ],
         },
         subject: {
@@ -2169,6 +2170,7 @@ export const agentFunctionDeclarations: FunctionDeclaration[] = ([
             "invoice",
             "newsletter",
             "production-termin",
+            "supplier-quote-request",
           ],
         },
       },
