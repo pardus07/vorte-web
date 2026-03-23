@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/Badge";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type SupplierType = "FABRIC" | "ELASTIC" | "THREAD" | "PACKAGING_MAT" | "LABEL";
+type SupplierType = "FABRIC" | "THREAD" | "ELASTIC_MALE" | "ELASTIC_FEMALE" | "LABEL" | "FLEXIBLE_PACKAGING" | "CARDBOARD_PACKAGING" | "CARDBOARD_STAND" | "SEWING_THREAD" | "ACCESSORY" | "ELASTIC" | "PACKAGING_MAT";
 type TabKey = "suppliers" | "discover" | "quotes" | "compare";
 type QuoteStatus = "PENDING" | "SENT" | "RECEIVED" | "ACCEPTED" | "REJECTED";
 
@@ -83,29 +83,48 @@ interface Quote {
 
 // ─── Constants ───────────────────────────────────────────────────────
 
-const TYPE_LABELS: Record<SupplierType, string> = {
-  FABRIC: "Kumas",
-  ELASTIC: "Lastik",
-  THREAD: "Iplik",
-  PACKAGING_MAT: "Ambalaj",
-  LABEL: "Etiket",
+const TYPE_LABELS: Record<string, string> = {
+  FABRIC: "Penye Kumaş",
+  THREAD: "İplik",
+  ELASTIC_MALE: "Erkek Bel Lastiği",
+  ELASTIC_FEMALE: "Kadın Külot Lastiği",
+  LABEL: "Dokuma Etiket",
+  FLEXIBLE_PACKAGING: "Esnek Ambalaj",
+  CARDBOARD_PACKAGING: "Karton Ambalaj",
+  CARDBOARD_STAND: "Karton Stand",
+  SEWING_THREAD: "Dikiş İpliği",
+  ACCESSORY: "Aksesuar",
+  ELASTIC: "Lastik (Eski)",
+  PACKAGING_MAT: "Ambalaj (Eski)",
 };
 
-const TYPE_COLORS: Record<SupplierType, string> = {
-  FABRIC: "bg-blue-100 text-blue-700",
-  ELASTIC: "bg-purple-100 text-purple-700",
+const TYPE_COLORS: Record<string, string> = {
+  FABRIC: "bg-green-100 text-green-700",
   THREAD: "bg-orange-100 text-orange-700",
+  ELASTIC_MALE: "bg-red-100 text-red-700",
+  ELASTIC_FEMALE: "bg-pink-100 text-pink-700",
+  LABEL: "bg-purple-100 text-purple-700",
+  FLEXIBLE_PACKAGING: "bg-emerald-100 text-emerald-700",
+  CARDBOARD_PACKAGING: "bg-amber-100 text-amber-700",
+  CARDBOARD_STAND: "bg-lime-100 text-lime-700",
+  SEWING_THREAD: "bg-rose-100 text-rose-700",
+  ACCESSORY: "bg-indigo-100 text-indigo-700",
+  ELASTIC: "bg-purple-100 text-purple-700",
   PACKAGING_MAT: "bg-cyan-100 text-cyan-700",
-  LABEL: "bg-teal-100 text-teal-700",
 };
 
 const TYPE_TABS: { value: string; label: string }[] = [
-  { value: "", label: "Tumu" },
-  { value: "FABRIC", label: "Kumas" },
-  { value: "ELASTIC", label: "Lastik" },
-  { value: "THREAD", label: "Iplik" },
-  { value: "PACKAGING_MAT", label: "Ambalaj" },
+  { value: "", label: "Tümü" },
+  { value: "FABRIC", label: "Penye Kumaş" },
+  { value: "THREAD", label: "İplik" },
+  { value: "ELASTIC_MALE", label: "Erkek Lastiği" },
+  { value: "ELASTIC_FEMALE", label: "Kadın Lastiği" },
   { value: "LABEL", label: "Etiket" },
+  { value: "FLEXIBLE_PACKAGING", label: "Esnek Ambalaj" },
+  { value: "CARDBOARD_PACKAGING", label: "Karton Ambalaj" },
+  { value: "CARDBOARD_STAND", label: "Karton Stand" },
+  { value: "SEWING_THREAD", label: "Dikiş İpliği" },
+  { value: "ACCESSORY", label: "Aksesuar" },
 ];
 
 const EMPTY_FORM = {
@@ -455,20 +474,14 @@ export default function AdminSuppliersPage() {
   };
 
   // Map discover category to SupplierType
-  const categoryToSupplierType = (cat: string | null): SupplierType => {
-    const map: Record<string, SupplierType> = {
-      FABRIC: "FABRIC",
-      THREAD: "THREAD",
-      ELASTIC_MALE: "ELASTIC",
-      ELASTIC_FEMALE: "ELASTIC",
-      LABEL: "LABEL",
-      FLEXIBLE_PACKAGING: "PACKAGING_MAT",
-      CARDBOARD_PACKAGING: "PACKAGING_MAT",
-      CARDBOARD_STAND: "PACKAGING_MAT",
-      SEWING_THREAD: "THREAD",
-      ACCESSORY: "PACKAGING_MAT",
-    };
-    return map[cat || ""] || "FABRIC";
+  const categoryToSupplierType = (cat: string | null): string => {
+    const validTypes = [
+      "FABRIC", "THREAD", "ELASTIC_MALE", "ELASTIC_FEMALE", "LABEL",
+      "FLEXIBLE_PACKAGING", "CARDBOARD_PACKAGING", "CARDBOARD_STAND",
+      "SEWING_THREAD", "ACCESSORY",
+    ];
+    if (cat && validTypes.includes(cat)) return cat;
+    return "FABRIC";
   };
 
   const handleSaveDiscovered = async (discovered: DiscoveredSupplier) => {
@@ -479,7 +492,7 @@ export default function AdminSuppliersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: discovered.name,
-          email: discovered.email && discovered.email.includes("@") ? discovered.email : "",
+          email: discovered.email || "",
           phone: discovered.phone || "",
           address: discovered.address || "",
           type: categoryToSupplierType(discoverCategory),

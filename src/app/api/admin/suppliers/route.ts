@@ -5,9 +5,9 @@ import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email().optional().nullable().or(z.literal("")),
+  email: z.string().email("Geçerli e-posta adresi giriniz"),
   phone: z.string().optional().nullable(),
-  type: z.enum(["FABRIC", "ELASTIC", "THREAD", "PACKAGING_MAT", "LABEL"]),
+  type: z.enum(["FABRIC", "THREAD", "ELASTIC_MALE", "ELASTIC_FEMALE", "LABEL", "FLEXIBLE_PACKAGING", "CARDBOARD_PACKAGING", "CARDBOARD_STAND", "SEWING_THREAD", "ACCESSORY", "ELASTIC", "PACKAGING_MAT"]),
   address: z.string().optional().nullable(),
   contactName: z.string().optional().nullable(),
   materials: z.union([z.array(z.string()), z.string()]).optional().nullable(),
@@ -68,13 +68,10 @@ export async function POST(req: NextRequest) {
     try { materialsData = JSON.parse(materialsData); } catch { materialsData = [materialsData]; }
   }
 
-  // Handle empty email
-  const email = parsed.data.email && parsed.data.email.trim() ? parsed.data.email.trim() : null;
-
   const supplier = await db.supplier.create({
     data: {
       name: parsed.data.name,
-      email,
+      email: parsed.data.email,
       phone: parsed.data.phone || null,
       type: parsed.data.type,
       address: parsed.data.address || null,

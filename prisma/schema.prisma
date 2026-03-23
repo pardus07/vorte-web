@@ -701,11 +701,19 @@ enum ProductionStage {
 }
 
 enum SupplierType {
-  FABRIC       // Kumaş tedarikçisi
-  ELASTIC      // Lastik tedarikçisi
-  THREAD       // İplik tedarikçisi
-  PACKAGING_MAT // Ambalaj tedarikçisi
-  LABEL        // Etiket tedarikçisi
+  FABRIC             // Penye Kumaş (Süprem, Ribana, İnterlok, Modal)
+  THREAD             // İplik (Ring Combed, Compact, Penye İplik)
+  ELASTIC_MALE       // Erkek Bel Lastiği (Jakarlı, Dokuma, Örme 30-40mm)
+  ELASTIC_FEMALE     // Kadın Külot Lastiği (İnce elastik 8-12mm, Dantel, Biye)
+  LABEL              // Dokuma Etiket (Marka, Beden, Yıkama talimatı, Barkod)
+  FLEXIBLE_PACKAGING // Esnek Ambalaj (Şase lamine poşet, OPP, Zipli, Dijital baskı)
+  CARDBOARD_PACKAGING // Karton Ambalaj (Kutu, Kartela, Askılı etiket, Sleeve)
+  CARDBOARD_STAND    // Karton Stand (Tezgah üstü, Ada tipi, Tam boy)
+  SEWING_THREAD      // Dikiş İpliği (Overlok, Reçme, Düz dikiş)
+  ACCESSORY          // Aksesuar (Askı, Çengelli iğne, Silika jel, Bant)
+  // Eski değerler (geriye uyumluluk)
+  ELASTIC            // Eski: Genel lastik
+  PACKAGING_MAT      // Eski: Genel ambalaj
 }
 
 enum QualityResult {
