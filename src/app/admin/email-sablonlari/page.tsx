@@ -25,6 +25,7 @@ const DEFAULT_TEMPLATES = [
   { name: "dealer-approved", label: "Bayi Onayı", vars: "companyName, dealerCode, loginUrl", from: "bayi@vorte.com.tr" },
   { name: "newsletter", label: "Bülten", vars: "content", from: "info@vorte.com.tr" },
   { name: "production-termin", label: "Üretim Termin Bildirimi", vars: "companyName, orderNumber, terminDate, totalAmount, productionNote", from: "bayi@vorte.com.tr" },
+  { name: "supplier-quote-request", label: "Tedarikçi Teklif Talebi", vars: "supplierName, categoryName, productDetails, quantity", from: "info@vorte.com.tr" },
 ];
 
 interface TemplateData {
