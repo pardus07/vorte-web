@@ -664,6 +664,7 @@ model EmailLog {
   status       String   // "sent", "failed", "bounced"
   error        String?
   provider     String?  // "smtp" | "resend" | "mock"
+  body         String?  @db.Text
   sentAt       DateTime @default(now())
 
   @@map("email_logs")

@@ -11,6 +11,7 @@ import {
   XCircle,
   AlertTriangle,
   Filter,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -33,9 +34,12 @@ interface EmailLogData {
   to: string;
   subject: string;
   templateId: string | null;
+  templateName: string | null;
+  fromAddress: string | null;
   status: string;
   error: string | null;
   sentAt: string;
+  body?: string | null;
 }
 
 export default function AdminEmailLogPage() {
@@ -46,6 +50,23 @@ export default function AdminEmailLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [viewLog, setViewLog] = useState<EmailLogData | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  const openEmailDetail = async (id: string) => {
+    setViewLoading(true);
+    try {
+      const res = await fetch(`/api/admin/email-log/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setViewLog(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   const limit = 50;
 
@@ -160,6 +181,7 @@ export default function AdminEmailLogPage() {
                 <th className="px-4 py-3 font-medium text-gray-700">Durum</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Hata</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Tarih</th>
+                <th className="px-4 py-3 font-medium text-gray-700">İşlem</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -181,12 +203,21 @@ export default function AdminEmailLogPage() {
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {new Date(log.sentAt).toLocaleString("tr-TR")}
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => openEmailDetail(log.id)}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#7AC143] transition-colors"
+                        title="İçeriği Görüntüle"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
                     E-posta kaydı yok
                   </td>
                 </tr>
@@ -207,6 +238,73 @@ export default function AdminEmailLogPage() {
             <button onClick={() => setPage(page + 1)} disabled={page >= totalPages} className="rounded-lg border p-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">
               <ChevronRight className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+      {/* Email Detail Modal */}
+      {(viewLog || viewLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setViewLog(null)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#7AC143]/10 rounded-lg">
+                  <Mail className="h-5 w-5 text-[#7AC143]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#1A1A1A]">E-posta İçeriği</h3>
+                  {viewLog && (
+                    <p className="text-xs text-gray-500">{new Date(viewLog.sentAt).toLocaleString("tr-TR")}</p>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setViewLog(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {viewLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7AC143]" />
+              </div>
+            ) : viewLog ? (
+              <>
+                {/* Meta */}
+                <div className="px-5 py-3 bg-gray-50 text-sm space-y-1 border-b">
+                  <div className="flex gap-2"><span className="text-gray-500 w-16">Alıcı:</span><span className="font-medium">{viewLog.to}</span></div>
+                  <div className="flex gap-2"><span className="text-gray-500 w-16">Konu:</span><span className="font-medium">{viewLog.subject}</span></div>
+                  {viewLog.fromAddress && (
+                    <div className="flex gap-2"><span className="text-gray-500 w-16">Gönderen:</span><span>{viewLog.fromAddress}</span></div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="text-gray-500 w-16">Durum:</span>
+                    <Badge variant={STATUS_MAP[viewLog.status]?.variant || "outline"}>
+                      {STATUS_MAP[viewLog.status]?.label || viewLog.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 overflow-auto p-1">
+                  {viewLog.body ? (
+                    <iframe
+                      srcDoc={viewLog.body}
+                      className="w-full h-[500px] border-0"
+                      sandbox="allow-same-origin"
+                      title="E-posta içeriği"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-gray-400">
+                      <Mail className="h-12 w-12 mb-3 opacity-30" />
+                      <p className="text-sm">İçerik kaydedilmemiş</p>
+                      <p className="text-xs mt-1">Bu özellik eklenmeden önce gönderilmiş e-postalar</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}

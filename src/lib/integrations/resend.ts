@@ -243,6 +243,7 @@ class ResendClient {
     status: string;
     error?: string;
     provider?: string;
+    body?: string;
   }) {
     try {
       await db.emailLog.create({
@@ -255,6 +256,7 @@ class ResendClient {
           status: data.status,
           error: data.error || null,
           provider: data.provider || null,
+          body: data.body || null,
         },
       });
     } catch (err) {
@@ -283,6 +285,7 @@ class ResendClient {
         fromAddress: from,
         status: "sent",
         provider: result.provider,
+        body: params.html,
       }).catch(() => {});
 
       return result;
@@ -294,6 +297,7 @@ class ResendClient {
         fromAddress: from,
         status: "failed",
         error: err instanceof Error ? err.message : String(err),
+        body: params.html,
       }).catch(() => {});
       throw err;
     }
@@ -373,6 +377,7 @@ class ResendClient {
         fromAddress,
         status: "sent",
         provider: result.provider,
+        body: html,
       }).catch(() => {});
 
       return result;
@@ -385,6 +390,7 @@ class ResendClient {
         fromAddress,
         status: "failed",
         error: err instanceof Error ? err.message : String(err),
+        body: html,
       }).catch(() => {});
       throw err;
     }
