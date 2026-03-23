@@ -64,22 +64,31 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-// DELETE — soft delete (deactivate)
-export async function DELETE(_req: NextRequest, { params }: Params) {
+// DELETE — hard delete (completely remove) or soft delete via query param
+export async function DELETE(req: NextRequest, { params }: Params) {
   const admin = await requirePermission("products", "w");
   if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
   const { id } = await params;
+  const soft = req.nextUrl.searchParams.get("soft") === "true";
 
   const supplier = await db.supplier.findUnique({ where: { id } });
   if (!supplier) {
     return NextResponse.json({ error: "Tedarikçi bulunamadı" }, { status: 404 });
   }
 
-  await db.supplier.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  if (soft) {
+    await db.supplier.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  } else {
+    // Delete related records first
+    await db.supplierQuote.deleteMany({ where: { supplierId: id } });
+    await db.supplierOrder.deleteMany({ where: { supplierId: id } });
+    await db.materialStock.updateMany({ where: { supplierId: id }, data: { supplierId: null } });
+    await db.supplier.delete({ where: { id } });
+  }
 
   return NextResponse.json({ success: true });
 }

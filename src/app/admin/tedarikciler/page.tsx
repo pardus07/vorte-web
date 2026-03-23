@@ -395,16 +395,21 @@ export default function AdminSuppliersPage() {
   };
 
   const handleDelete = async (supplier: Supplier) => {
-    if (!confirm(`"${supplier.name}" tedarikcisi devre disi birakilacak. Emin misiniz?`))
+    if (!confirm(`"${supplier.name}" tedarikçisi kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?`))
       return;
 
     try {
       const res = await fetch(`/api/admin/suppliers/${supplier.id}`, {
         method: "DELETE",
       });
-      if (res.ok) fetchSuppliers();
+      if (res.ok) {
+        fetchSuppliers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Silme işlemi başarısız oldu.");
+      }
     } catch {
-      // silent
+      alert("Bağlantı hatası. Lütfen tekrar deneyin.");
     }
   };
 
