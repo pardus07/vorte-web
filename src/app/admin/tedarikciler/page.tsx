@@ -296,6 +296,25 @@ export default function AdminSuppliersPage() {
   });
   const [quoteSaving, setQuoteSaving] = useState(false);
 
+  // ── Tab 3: BOM Stand Paketi ──
+  type QuoteModalMode = "stand" | "manual";
+  const [quoteModalMode, setQuoteModalMode] = useState<QuoteModalMode>("stand");
+  const [standCounts, setStandCounts] = useState({ A: 0, B: 0, C: 0 });
+  const [bomCalculated, setBomCalculated] = useState(false);
+  const [bomSending, setBomSending] = useState(false);
+  const [bomResult, setBomResult] = useState<{ success: number; fail: number } | null>(null);
+
+  interface BomMaterialRow {
+    key: string;
+    label: string;
+    quantity: number;
+    unit: string;
+    supplierTypes: SupplierType[];
+    selectedSupplierId: string;
+    productDetails: string;
+  }
+  const [bomMaterials, setBomMaterials] = useState<BomMaterialRow[]>([]);
+
   // ── Tab 4: Karsilastirma ──
   const [compareCategory, setCompareCategory] = useState("");
 
@@ -595,6 +614,216 @@ export default function AdminSuppliersPage() {
       status: quote.status,
     });
     setEditQuoteModalOpen(true);
+  };
+
+  // ─── BOM Stand Paketi Hesaplama ──────────────────────────────────
+
+  const calculateStandBOM = () => {
+    const a = standCounts.A || 0;
+    const b = standCounts.B || 0;
+    const c = standCounts.C || 0;
+
+    // Stand A = 50 adet: 25 EB Siyah + 25 KK Ten
+    // Stand B = 100 adet: 25 EB Siyah + 25 EB Lacivert + 25 KK Siyah + 25 KK Ten
+    // Stand C = 150 adet: 25 EB Siyah + 25 EB Lacivert + 25 EB Gri + 25 KK Siyah + 25 KK Beyaz + 25 KK Ten
+    const ebCount = a * 25 + b * 50 + c * 75; // Erkek Boxer toplam
+    const kkCount = a * 25 + b * 50 + c * 75; // Kadin Kulot toplam
+    const totalProducts = ebCount + kkCount;
+
+    if (totalProducts === 0) return;
+
+    // BOM hesaplama (birim tuketim degerleri)
+    // EB: kumasi 0.0375 kg, bel lastik 0.85m, bacak lastik 0.70m, iplik 9.25m, etiket 1, ambalaj 1
+    // KK: kumasi 0.022 kg, bel lastik 0.68m, bacak lastik 0.63m, iplik 7.5m, etiket 1, ambalaj 1
+    const fabricKg = parseFloat((ebCount * 0.0375 + kkCount * 0.022).toFixed(2));
+    const elasticMaleM = parseFloat((ebCount * 0.85).toFixed(2)); // Erkek bel lastigi
+    const elasticMaleLegM = parseFloat((ebCount * 0.70).toFixed(2)); // Erkek bacak lastigi
+    const elasticFemaleM = parseFloat((kkCount * 0.68).toFixed(2)); // Kadin bel lastigi
+    const elasticFemaleLegM = parseFloat((kkCount * 0.63).toFixed(2)); // Kadin bacak lastigi
+    const sewingThreadM = parseFloat((ebCount * 9.25 + kkCount * 7.5).toFixed(2));
+    const labels = totalProducts;
+    const packaging = totalProducts;
+
+    // Detay metinleri
+    const ebDetail = [];
+    if (a > 0) ebDetail.push(`Stand A: ${a * 25} adet (Siyah)`);
+    if (b > 0) ebDetail.push(`Stand B: ${b * 25} Siyah + ${b * 25} Lacivert`);
+    if (c > 0) ebDetail.push(`Stand C: ${c * 25} Siyah + ${c * 25} Lacivert + ${c * 25} Gri`);
+
+    const kkDetail = [];
+    if (a > 0) kkDetail.push(`Stand A: ${a * 25} adet (Ten)`);
+    if (b > 0) kkDetail.push(`Stand B: ${b * 25} Siyah + ${b * 25} Ten`);
+    if (c > 0) kkDetail.push(`Stand C: ${c * 25} Siyah + ${c * 25} Beyaz + ${c * 25} Ten`);
+
+    const materials: BomMaterialRow[] = [
+      {
+        key: "fabric",
+        label: "Penye Kumas",
+        quantity: fabricKg,
+        unit: "kg",
+        supplierTypes: ["FABRIC"],
+        selectedSupplierId: "",
+        productDetails: `Penye kumas (EB: ${ebCount} adet x 0.0375kg + KK: ${kkCount} adet x 0.022kg)`,
+      },
+      {
+        key: "elastic_male",
+        label: "Erkek Bel Lastigi",
+        quantity: elasticMaleM,
+        unit: "m",
+        supplierTypes: ["ELASTIC_MALE"],
+        selectedSupplierId: "",
+        productDetails: `Erkek bel lastigi 30-40mm (${ebCount} adet x 0.85m)`,
+      },
+      {
+        key: "elastic_male_leg",
+        label: "Erkek Bacak Lastigi",
+        quantity: elasticMaleLegM,
+        unit: "m",
+        supplierTypes: ["ELASTIC_MALE"],
+        selectedSupplierId: "",
+        productDetails: `Erkek bacak lastigi (${ebCount} adet x 0.70m)`,
+      },
+      {
+        key: "elastic_female",
+        label: "Kadin Bel Lastigi",
+        quantity: elasticFemaleM,
+        unit: "m",
+        supplierTypes: ["ELASTIC_FEMALE"],
+        selectedSupplierId: "",
+        productDetails: `Kadin bel lastigi 8-12mm (${kkCount} adet x 0.68m)`,
+      },
+      {
+        key: "elastic_female_leg",
+        label: "Kadin Bacak Lastigi",
+        quantity: elasticFemaleLegM,
+        unit: "m",
+        supplierTypes: ["ELASTIC_FEMALE"],
+        selectedSupplierId: "",
+        productDetails: `Kadin bacak lastigi (${kkCount} adet x 0.63m)`,
+      },
+      {
+        key: "sewing_thread",
+        label: "Dikis Ipligi",
+        quantity: sewingThreadM,
+        unit: "m",
+        supplierTypes: ["SEWING_THREAD"],
+        selectedSupplierId: "",
+        productDetails: `Dikis ipligi (EB: ${ebCount} x 9.25m + KK: ${kkCount} x 7.5m)`,
+      },
+      {
+        key: "label",
+        label: "Dokuma Etiket",
+        quantity: labels,
+        unit: "adet",
+        supplierTypes: ["LABEL"],
+        selectedSupplierId: "",
+        productDetails: `Marka + beden etiketi (${totalProducts} adet urun icin)`,
+      },
+      {
+        key: "packaging",
+        label: "Ambalaj",
+        quantity: packaging,
+        unit: "adet",
+        supplierTypes: ["FLEXIBLE_PACKAGING", "CARDBOARD_PACKAGING"],
+        selectedSupplierId: "",
+        productDetails: `Tekli urun ambalaji (${totalProducts} adet)`,
+      },
+    ];
+
+    // Karton Stand satislari
+    if (a > 0) {
+      materials.push({
+        key: "stand_a",
+        label: "Karton Stand A",
+        quantity: a,
+        unit: "adet",
+        supplierTypes: ["CARDBOARD_STAND"],
+        selectedSupplierId: "",
+        productDetails: `Stand A (50 urunluk tezgah ustu) - ${a} adet`,
+      });
+    }
+    if (b > 0) {
+      materials.push({
+        key: "stand_b",
+        label: "Karton Stand B",
+        quantity: b,
+        unit: "adet",
+        supplierTypes: ["CARDBOARD_STAND"],
+        selectedSupplierId: "",
+        productDetails: `Stand B (100 urunluk tezgah ustu) - ${b} adet`,
+      });
+    }
+    if (c > 0) {
+      materials.push({
+        key: "stand_c",
+        label: "Karton Stand C",
+        quantity: c,
+        unit: "adet",
+        supplierTypes: ["CARDBOARD_STAND"],
+        selectedSupplierId: "",
+        productDetails: `Stand C (150 urunluk ada tipi) - ${c} adet`,
+      });
+    }
+
+    setBomMaterials(materials);
+    setBomCalculated(true);
+    setBomResult(null);
+  };
+
+  const updateBomSupplier = (key: string, supplierId: string) => {
+    setBomMaterials((prev) =>
+      prev.map((m) => (m.key === key ? { ...m, selectedSupplierId: supplierId } : m))
+    );
+  };
+
+  const suppliersForTypes = (types: SupplierType[]) =>
+    suppliers.filter((s) => s.isActive && types.includes(s.type));
+
+  const handleSendAllBomQuotes = async () => {
+    const rowsToSend = bomMaterials.filter((m) => m.selectedSupplierId);
+    if (rowsToSend.length === 0) return;
+
+    setBomSending(true);
+    setBomResult(null);
+    let success = 0;
+    let fail = 0;
+
+    for (const row of rowsToSend) {
+      try {
+        const res = await fetch(
+          `/api/admin/suppliers/${row.selectedSupplierId}/quotes`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category: row.label,
+              productDetails: row.productDetails,
+              quantity: `${row.quantity} ${row.unit}`,
+            }),
+          }
+        );
+        if (res.ok) {
+          success++;
+        } else {
+          fail++;
+        }
+      } catch {
+        fail++;
+      }
+    }
+
+    setBomResult({ success, fail });
+    setBomSending(false);
+    if (success > 0) fetchQuotes();
+  };
+
+  const resetBomModal = () => {
+    setQuoteModalMode("stand");
+    setStandCounts({ A: 0, B: 0, C: 0 });
+    setBomCalculated(false);
+    setBomMaterials([]);
+    setBomResult(null);
+    setBomSending(false);
   };
 
   // ─── Compare Data ──────────────────────────────────────────────────
@@ -1198,7 +1427,7 @@ export default function AdminSuppliersPage() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => setQuoteModalOpen(true)}
+              onClick={() => { resetBomModal(); setQuoteForm({ supplierId: "", category: "", product: "", quantity: "" }); setQuoteModalOpen(true); }}
             >
               <Plus className="h-4 w-4" />
               Yeni Teklif Talebi
@@ -1767,126 +1996,348 @@ export default function AdminSuppliersPage() {
       )}
 
       {/* ════════════════════════════════════════════════════════════════ */}
-      {/* MODAL: Yeni Teklif Talebi                                      */}
+      {/* MODAL: Yeni Teklif Talebi (2 Modlu: Stand Paketi / Manuel)     */}
       {/* ════════════════════════════════════════════════════════════════ */}
       {quoteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-xl">
+            {/* Header */}
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
                 <Send className="h-5 w-5 text-[#7AC143]" />
                 Yeni Teklif Talebi
               </h2>
               <button
-                onClick={() => setQuoteModalOpen(false)}
+                onClick={() => { setQuoteModalOpen(false); resetBomModal(); }}
                 className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="px-6 py-4 space-y-4">
-              {/* Supplier Select */}
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Tedarikci <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={quoteForm.supplierId}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, supplierId: e.target.value })
-                  }
-                  className="form-input w-full"
-                >
-                  <option value="">Tedarikci secin...</option>
-                  {suppliers
-                    .filter((s) => s.isActive)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({TYPE_LABELS[s.type]})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Kategori
-                </label>
-                <select
-                  value={quoteForm.category}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, category: e.target.value })
-                  }
-                  className="form-input w-full"
-                >
-                  <option value="">Kategori secin...</option>
-                  {DISCOVER_CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.title}>
-                      {cat.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Product Details */}
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Urun Detaylari <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={quoteForm.product}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, product: e.target.value })
-                  }
-                  rows={3}
-                  placeholder="Urun adi, ozellikleri, renk, gramaj vb..."
-                  className="form-input w-full resize-none"
-                />
-              </div>
-
-              {/* Quantity */}
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Miktar <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={quoteForm.quantity}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, quantity: e.target.value })
-                  }
-                  placeholder="orn: 5000"
-                  className="form-input w-full"
-                  min={1}
-                />
-              </div>
+            {/* Mode Tabs */}
+            <div className="flex border-b px-6">
+              <button
+                onClick={() => { setQuoteModalMode("stand"); setBomResult(null); }}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  quoteModalMode === "stand"
+                    ? "border-[#7AC143] text-[#7AC143]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Package className="inline h-4 w-4 mr-1.5" />
+                Stand Paketi ile Teklif
+              </button>
+              <button
+                onClick={() => { setQuoteModalMode("manual"); setBomResult(null); }}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  quoteModalMode === "manual"
+                    ? "border-[#7AC143] text-[#7AC143]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Pencil className="inline h-4 w-4 mr-1.5" />
+                Manuel Teklif
+              </button>
             </div>
 
+            {/* Body - scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+
+              {/* ── MOD 1: Stand Paketi ── */}
+              {quoteModalMode === "stand" && (
+                <>
+                  {!bomCalculated ? (
+                    <>
+                      <p className="text-sm text-gray-500">
+                        Stand adetlerini girin ve BOM hesaplamasini baslatin.
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        {(["A", "B", "C"] as const).map((stand) => (
+                          <div key={stand} className="rounded-lg border p-4 text-center">
+                            <div className="text-sm font-semibold text-gray-700 mb-1">
+                              Stand {stand}
+                            </div>
+                            <div className="text-xs text-gray-400 mb-2">
+                              {stand === "A" ? "50 urun" : stand === "B" ? "100 urun" : "150 urun"}
+                            </div>
+                            <input
+                              type="number"
+                              min={0}
+                              value={standCounts[stand]}
+                              onChange={(e) =>
+                                setStandCounts({ ...standCounts, [stand]: Math.max(0, Number(e.target.value)) })
+                              }
+                              className="form-input w-full text-center text-lg font-bold"
+                              placeholder="0"
+                            />
+                            <div className="text-xs text-gray-400 mt-1">adet</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Stand icerik aciklamalari */}
+                      <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500 space-y-1">
+                        <p><strong>Stand A (50):</strong> 25 EB Siyah + 25 KK Ten (her beden 5 adet)</p>
+                        <p><strong>Stand B (100):</strong> 25 EB Siyah + 25 EB Lacivert + 25 KK Siyah + 25 KK Ten</p>
+                        <p><strong>Stand C (150):</strong> 25 EB Siyah + 25 EB Lacivert + 25 EB Gri + 25 KK Siyah + 25 KK Beyaz + 25 KK Ten</p>
+                      </div>
+
+                      {/* Ozet */}
+                      {(standCounts.A > 0 || standCounts.B > 0 || standCounts.C > 0) && (
+                        <div className="rounded-lg border border-[#7AC143]/30 bg-green-50 p-3 text-sm">
+                          <div className="font-medium text-gray-800 mb-1">Toplam Uretim</div>
+                          <div className="text-gray-600">
+                            {(() => {
+                              const eb = standCounts.A * 25 + standCounts.B * 50 + standCounts.C * 75;
+                              const kk = standCounts.A * 25 + standCounts.B * 50 + standCounts.C * 75;
+                              return (
+                                <>
+                                  <span className="font-medium">{eb.toLocaleString("tr-TR")}</span> Erkek Boxer +{" "}
+                                  <span className="font-medium">{kk.toLocaleString("tr-TR")}</span> Kadin Kulot ={" "}
+                                  <span className="font-bold text-[#7AC143]">{(eb + kk).toLocaleString("tr-TR")}</span> toplam urun
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* BOM sonuclari - Malzeme Ihtiyaclari tablosu */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-800">
+                          Malzeme Ihtiyaclari
+                        </h3>
+                        <button
+                          onClick={() => { setBomCalculated(false); setBomMaterials([]); setBomResult(null); }}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Geri Don
+                        </button>
+                      </div>
+
+                      {/* Ozet bar */}
+                      <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                        Stand A: {standCounts.A} | Stand B: {standCounts.B} | Stand C: {standCounts.C} |{" "}
+                        Toplam: {((standCounts.A * 50) + (standCounts.B * 100) + (standCounts.C * 150)).toLocaleString("tr-TR")} urun
+                      </div>
+
+                      <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">Malzeme</th>
+                              <th className="px-3 py-2 text-right text-xs font-medium text-gray-600">Miktar</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 min-w-[180px]">Tedarikci</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {bomMaterials.map((row) => {
+                              const availableSuppliers = suppliersForTypes(row.supplierTypes);
+                              return (
+                                <tr key={row.key} className="hover:bg-gray-50">
+                                  <td className="px-3 py-2">
+                                    <div className="font-medium text-gray-800 text-xs">{row.label}</div>
+                                  </td>
+                                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                                    <span className="font-semibold text-gray-800">
+                                      {row.quantity.toLocaleString("tr-TR")}
+                                    </span>
+                                    <span className="text-gray-400 ml-1">{row.unit}</span>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {availableSuppliers.length > 0 ? (
+                                      <select
+                                        value={row.selectedSupplierId}
+                                        onChange={(e) => updateBomSupplier(row.key, e.target.value)}
+                                        className="form-input w-full text-xs py-1"
+                                      >
+                                        <option value="">Tedarikci sec...</option>
+                                        {availableSuppliers.map((s) => (
+                                          <option key={s.id} value={s.id}>
+                                            {s.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 italic">
+                                        Kayitli tedarikci yok
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Sonuc mesaji */}
+                      {bomResult && (
+                        <div
+                          className={`rounded-lg p-3 text-sm ${
+                            bomResult.fail > 0
+                              ? "bg-amber-50 border border-amber-200 text-amber-800"
+                              : "bg-green-50 border border-green-200 text-green-800"
+                          }`}
+                        >
+                          {bomResult.success > 0 && (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-4 w-4" />
+                              {bomResult.success} teklif basariyla gonderildi.
+                            </span>
+                          )}
+                          {bomResult.fail > 0 && (
+                            <span className="flex items-center gap-1 mt-1">
+                              <AlertTriangle className="h-4 w-4" />
+                              {bomResult.fail} teklif gonderilemedi.
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* ── MOD 2: Manuel Teklif ── */}
+              {quoteModalMode === "manual" && (
+                <>
+                  {/* Supplier Select */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Tedarikci <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={quoteForm.supplierId}
+                      onChange={(e) =>
+                        setQuoteForm({ ...quoteForm, supplierId: e.target.value })
+                      }
+                      className="form-input w-full"
+                    >
+                      <option value="">Tedarikci secin...</option>
+                      {suppliers
+                        .filter((s) => s.isActive)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({TYPE_LABELS[s.type]})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Kategori
+                    </label>
+                    <select
+                      value={quoteForm.category}
+                      onChange={(e) =>
+                        setQuoteForm({ ...quoteForm, category: e.target.value })
+                      }
+                      className="form-input w-full"
+                    >
+                      <option value="">Kategori secin...</option>
+                      {DISCOVER_CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.title}>
+                          {cat.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Product Details */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Urun Detaylari <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={quoteForm.product}
+                      onChange={(e) =>
+                        setQuoteForm({ ...quoteForm, product: e.target.value })
+                      }
+                      rows={3}
+                      placeholder="Urun adi, ozellikleri, renk, gramaj vb..."
+                      className="form-input w-full resize-none"
+                    />
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Miktar <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={quoteForm.quantity}
+                      onChange={(e) =>
+                        setQuoteForm({ ...quoteForm, quantity: e.target.value })
+                      }
+                      placeholder="orn: 5000"
+                      className="form-input w-full"
+                      min={1}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
             <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setQuoteModalOpen(false)}
+                onClick={() => { setQuoteModalOpen(false); resetBomModal(); }}
               >
                 Iptal
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleCreateQuote}
-                disabled={
-                  quoteSaving ||
-                  !quoteForm.supplierId ||
-                  !quoteForm.product.trim() ||
-                  !quoteForm.quantity
-                }
-                loading={quoteSaving}
-              >
-                <Send className="h-4 w-4" />
-                Teklif Iste
-              </Button>
+
+              {quoteModalMode === "stand" && !bomCalculated && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={calculateStandBOM}
+                  disabled={standCounts.A === 0 && standCounts.B === 0 && standCounts.C === 0}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  BOM Hesapla
+                </Button>
+              )}
+
+              {quoteModalMode === "stand" && bomCalculated && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSendAllBomQuotes}
+                  disabled={bomSending || bomMaterials.every((m) => !m.selectedSupplierId)}
+                  loading={bomSending}
+                >
+                  <Send className="h-4 w-4" />
+                  Tum Teklifleri Gonder ({bomMaterials.filter((m) => m.selectedSupplierId).length})
+                </Button>
+              )}
+
+              {quoteModalMode === "manual" && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleCreateQuote}
+                  disabled={
+                    quoteSaving ||
+                    !quoteForm.supplierId ||
+                    !quoteForm.product.trim() ||
+                    !quoteForm.quantity
+                  }
+                  loading={quoteSaving}
+                >
+                  <Send className="h-4 w-4" />
+                  Teklif Iste
+                </Button>
+              )}
             </div>
           </div>
         </div>
