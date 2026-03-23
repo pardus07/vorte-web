@@ -241,8 +241,6 @@ export default function AdminEmailLogPage() {
           </div>
         </div>
       )}
-    </div>
-
       {/* Email Detail Modal */}
       {(viewLog || viewLoading) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setViewLog(null)}>
