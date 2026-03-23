@@ -5,14 +5,16 @@ import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().optional(),
+  email: z.string().email().optional().nullable().or(z.literal("")),
+  phone: z.string().optional().nullable(),
   type: z.enum(["FABRIC", "ELASTIC", "THREAD", "PACKAGING_MAT", "LABEL"]),
-  address: z.string().optional(),
-  contactName: z.string().optional(),
-  materials: z.array(z.string()).optional(),
-  leadTimeDays: z.number().int().optional(),
-  minOrderQty: z.string().optional(),
+  address: z.string().optional().nullable(),
+  contactName: z.string().optional().nullable(),
+  materials: z.union([z.array(z.string()), z.string()]).optional().nullable(),
+  leadTimeDays: z.number().int().optional().nullable(),
+  minOrderQty: z.string().optional().nullable(),
+  isActive: z.boolean().optional(),
+  notes: z.string().optional().nullable(),
 });
 
 // GET — list suppliers
@@ -60,10 +62,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz veri", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Handle materials — can be JSON string or array
+  let materialsData: unknown = parsed.data.materials || [];
+  if (typeof materialsData === "string") {
+    try { materialsData = JSON.parse(materialsData); } catch { materialsData = [materialsData]; }
+  }
+
+  // Handle empty email
+  const email = parsed.data.email && parsed.data.email.trim() ? parsed.data.email.trim() : null;
+
   const supplier = await db.supplier.create({
     data: {
-      ...parsed.data,
-      materials: parsed.data.materials || [],
+      name: parsed.data.name,
+      email,
+      phone: parsed.data.phone || null,
+      type: parsed.data.type,
+      address: parsed.data.address || null,
+      contactName: parsed.data.contactName || null,
+      materials: materialsData,
+      leadTimeDays: parsed.data.leadTimeDays || null,
+      minOrderQty: parsed.data.minOrderQty || null,
+      isActive: parsed.data.isActive ?? true,
+      notes: parsed.data.notes || null,
     },
   });
 

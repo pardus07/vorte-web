@@ -479,9 +479,9 @@ export default function AdminSuppliersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: discovered.name,
-          email: discovered.email || null,
-          phone: discovered.phone || null,
-          address: discovered.address || null,
+          email: discovered.email && discovered.email.includes("@") ? discovered.email : "",
+          phone: discovered.phone || "",
+          address: discovered.address || "",
           type: categoryToSupplierType(discoverCategory),
           isActive: true,
           minOrderQty: discovered.minOrder || null,
@@ -502,9 +502,12 @@ export default function AdminSuppliersPage() {
           )
         );
         fetchSuppliers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(`Kayıt başarısız: ${data.error || "Bilinmeyen hata"}${data.details ? "\n" + JSON.stringify(data.details) : ""}`);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      alert("Bağlantı hatası. Lütfen tekrar deneyin.");
     }
     setSavingDiscoverId(null);
   };
