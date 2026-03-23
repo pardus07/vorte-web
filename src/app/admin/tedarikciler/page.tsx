@@ -447,6 +447,23 @@ export default function AdminSuppliersPage() {
     setDiscoverLoading(false);
   };
 
+  // Map discover category to SupplierType
+  const categoryToSupplierType = (cat: string | null): SupplierType => {
+    const map: Record<string, SupplierType> = {
+      FABRIC: "FABRIC",
+      THREAD: "THREAD",
+      ELASTIC_MALE: "ELASTIC",
+      ELASTIC_FEMALE: "ELASTIC",
+      LABEL: "LABEL",
+      FLEXIBLE_PACKAGING: "PACKAGING_MAT",
+      CARDBOARD_PACKAGING: "PACKAGING_MAT",
+      CARDBOARD_STAND: "PACKAGING_MAT",
+      SEWING_THREAD: "THREAD",
+      ACCESSORY: "PACKAGING_MAT",
+    };
+    return map[cat || ""] || "FABRIC";
+  };
+
   const handleSaveDiscovered = async (discovered: DiscoveredSupplier) => {
     setSavingDiscoverId(discovered.id);
     try {
@@ -458,7 +475,7 @@ export default function AdminSuppliersPage() {
           email: discovered.email,
           phone: discovered.phone,
           address: discovered.address,
-          type: "FABRIC" as SupplierType,
+          type: categoryToSupplierType(discoverCategory),
           isActive: true,
           notes: `Kesfedilen tedarikci. Website: ${discovered.website || "-"}, Urunler: ${discovered.products || "-"}, Min. Siparis: ${discovered.minOrder || "-"}, Kapasite: ${discovered.capacity || "-"}`,
         }),
