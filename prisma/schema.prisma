@@ -871,6 +871,7 @@ model Supplier {
   materials   Json?        // ["Ana Kumaş", "İç Katman"] gibi
   leadTimeDays Int?        // Ortalama teslim süresi (gün)
   minOrderQty String?      // "500 kg", "1000 m" gibi
+  notes       String?      // Ürünler, kapasite, website gibi detay notları
 
   orders      SupplierOrder[]
   stocks      MaterialStock[]
