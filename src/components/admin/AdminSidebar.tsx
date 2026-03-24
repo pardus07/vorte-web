@@ -127,6 +127,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps = {}) {
                   key={entry.label}
                   group={entry}
                   pathname={pathname}
+                  onClose={onClose}
                 />
               );
             }
@@ -171,7 +172,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps = {}) {
   );
 }
 
-function SidebarGroup({ group, pathname }: { group: MenuGroup; pathname: string }) {
+function SidebarGroup({ group, pathname, onClose }: { group: MenuGroup; pathname: string; onClose?: () => void }) {
   const isAnyChildActive = group.children.some((child) =>
     pathname.startsWith(child.href)
   );
