@@ -367,8 +367,8 @@ function generateMaleBoxerPieces(
 
   // ──────── YAN PANEL ────────
   // Yamuk dikdortgen — ustte genis (kalca), altta dar (paca)
-  const hipSide = hipCirc * HIP_RATIOS.side; // toplam yan kalca (M: 21.3cm)
-  const spTopW = (hipSide / 2) * (1 + ease.hip) * shrinkX; // M: ~11.4cm
+  const hipSide = hipCirc * HIP_RATIOS.side; // bir yan panelin kalca payi (M: 21.3cm)
+  const spTopW = hipSide * (1 + ease.hip) * shrinkX; // tam yan panel genisligi (M: ~22.8cm)
   const spBotW = sideLegFlat; // Paca seviyesinde — kalcadan dar (M: ~5.3cm)
   const spHeight = patternH * shrinkY;
   const spW = Math.max(spTopW, spBotW); // En genis kenar = ust (kalca)
@@ -458,46 +458,13 @@ function generateMaleBoxerPieces(
     offsetY: 0,
   };
 
-  // ──────── BEL BANDI (WAISTBAND) ────────
-  // Duz serit — belCevresi/2 × 4cm (2 adet kesilir: on + arka)
-  // "enclosed" tip: kumas lastik uzerine katlanir
-  const wbHeight = 4; // cm — lastik genisligi (MALE_WAIST_WIDTH_CM)
-  const wbWidth = r1(waistCirc / 2 * (1 + ease.waist) * shrinkX);
+  // ──────── BEL LASTİĞİ (KALIP PARCASI DEĞİL) ────────
+  // 4cm genislikte logolu hazir lastik — kumastan kesilmez
+  // Lastik uzunlugu: bel cevresi × %85 (elastik germe)
+  const elasticWidthCm = 4; // cm — lastik genisligi
+  const elasticLengthCm = r1(waistCirc * 0.85); // kesim uzunlugu (germe oncesi)
 
-  const wbPath = [
-    `M 0 0`,
-    `L ${r2(wbWidth)} 0`,
-    `L ${r2(wbWidth)} ${r2(wbHeight)}`,
-    `L 0 ${r2(wbHeight)}`,
-    `Z`,
-  ].join(" ");
-
-  const waistbandPiece: PatternPiece = {
-    name: "waistband",
-    label: "Bel Bandi",
-    svgPath: wbPath,
-    points: [
-      { x: 0, y: 0 },
-      { x: wbWidth, y: 0 },
-      { x: wbWidth, y: wbHeight },
-      { x: 0, y: wbHeight },
-    ],
-    grainLine: { start: { x: 2, y: wbHeight / 2 }, end: { x: wbWidth - 2, y: wbHeight / 2 } },
-    notches: [
-      { x: wbWidth / 2, y: 0 },
-      { x: wbWidth / 2, y: wbHeight },
-    ],
-    color: PIECE_COLORS.waistband,
-    width: wbWidth,
-    height: wbHeight,
-    areaCm2: r1(wbWidth * wbHeight),
-    grainAngle: 90, // enine kesim — lastik yonunde
-    seamType: "coverlock",
-    offsetX: 0,
-    offsetY: 0,
-  };
-
-  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece, waistbandPiece];
+  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece];
 
   // Yerlesimleri hesapla — yan yana, 3cm bosluk
   const gap = 3; // cm
@@ -522,8 +489,8 @@ function generateMaleBoxerPieces(
     sidePanelHeight: r1(spHeight),
     gussetWidth: gussetW,
     gussetHeight: gussetH,
-    waistbandWidth: wbWidth,
-    waistbandHeight: wbHeight,
+    elasticLengthCm,
+    elasticWidthCm,
     legOpeningCirc: pacaCirc,
     frontLegHemWidth: r1(fpBottomHalfW * 2),
     backLegHemWidth: r1(bpBottomHalfW * 2),
@@ -1048,25 +1015,45 @@ export function validatePattern(pattern: Pattern): ValidationResult {
     checks.push({ name: "Ag parcasi", passed: gOk, message: `Genislik: ${gW.toFixed(1)}cm`, value: gW });
   }
 
-  // 4. Bel cevresi kontrolu
+  // 4. Bel / kalca cevresi kontrolu
   const easeWaist = pattern.gender === "male"
     ? EASE_PROFILES.MALE_BOXER.waist
     : EASE_PROFILES.FEMALE_PANTY.waist;
 
-  const expectedWaist = pattern.metadata.waistCirc * (1 + easeWaist);
-  const calculatedWaist = (front.width + back.width) * 2;
-  const waistDiffPercent = Math.abs(calculatedWaist - expectedWaist) / expectedWaist;
+  const wb = pattern.pieces.find((p) => p.name === "waistband");
+  const side = pattern.pieces.find((p) => p.name === "side_panel");
 
-  if (waistDiffPercent > 0.15) {
+  let calculatedCirc: number;
+  let expectedCirc: number;
+  let circLabel: string;
+
+  if (wb) {
+    // Erkek boxer — bel bandi × 2 = bel cevresi
+    calculatedCirc = wb.width * 2;
+    expectedCirc = pattern.metadata.waistCirc * (1 + easeWaist);
+    circLabel = "Bel cevresi";
+  } else {
+    // Kadin kulot — bel bandi yok, panel genislikleri = kalca cevresi
+    const easeHip = pattern.gender === "male"
+      ? EASE_PROFILES.MALE_BOXER.hip
+      : EASE_PROFILES.FEMALE_PANTY.hip;
+    calculatedCirc = front.width + back.width + (side ? side.width * 2 : 0);
+    expectedCirc = pattern.metadata.hipCirc * (1 + easeHip);
+    circLabel = "Kalca cevresi";
+  }
+
+  const circDiffPercent = Math.abs(calculatedCirc - expectedCirc) / expectedCirc;
+
+  if (circDiffPercent > 0.15) {
     warnings.push(
-      `Bel cevresi uyumsuzlugu: hesaplanan=${calculatedWaist.toFixed(1)}cm, beklenen=${expectedWaist.toFixed(1)}cm (fark: ${(waistDiffPercent * 100).toFixed(1)}%)`,
+      `${circLabel} uyumsuzlugu: hesaplanan=${calculatedCirc.toFixed(1)}cm, beklenen=${expectedCirc.toFixed(1)}cm (fark: ${(circDiffPercent * 100).toFixed(1)}%)`,
     );
   }
   checks.push({
-    name: "Bel cevresi",
-    passed: waistDiffPercent <= 0.15,
-    message: `Hesaplanan: ${calculatedWaist.toFixed(1)}cm, beklenen: ${expectedWaist.toFixed(1)}cm`,
-    value: waistDiffPercent,
+    name: circLabel,
+    passed: circDiffPercent <= 0.15,
+    message: `Hesaplanan: ${calculatedCirc.toFixed(1)}cm, beklenen: ${expectedCirc.toFixed(1)}cm`,
+    value: circDiffPercent,
   });
 
   // 5. Alan kontrolu
