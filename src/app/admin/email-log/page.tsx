@@ -54,15 +54,24 @@ export default function AdminEmailLogPage() {
   const [viewLoading, setViewLoading] = useState(false);
 
   const openEmailDetail = async (id: string) => {
+    // Find from current logs first for instant display
+    const existing = logs.find(l => l.id === id);
+    if (existing) {
+      setViewLog(existing);
+    }
     setViewLoading(true);
     try {
       const res = await fetch(`/api/admin/email-log/${id}`);
       if (res.ok) {
         const data = await res.json();
         setViewLog(data);
+      } else if (existing) {
+        // API failed but we have basic data, show it
+        setViewLog(existing);
       }
     } catch {
-      // ignore
+      // API failed, keep existing if available
+      if (!existing) setViewLog(null);
     } finally {
       setViewLoading(false);
     }
