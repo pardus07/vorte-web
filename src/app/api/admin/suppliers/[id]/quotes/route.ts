@@ -101,68 +101,42 @@ export async function POST(
     },
   });
 
-  // Send email to supplier
-  const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: #333; color: #fff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-      <h1 style="margin: 0; font-size: 22px;">Vorte Tekstil — Teklif Talebi</h1>
-    </div>
-    <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px;">
+  // Send email using DB template
+  let emailHtml = "";
+  const emailSubject = `Vorte Tekstil — Teklif Talebi | ${categoryLabel}`;
+
+  // Try to load template from DB
+  const template = await db.emailTemplate.findUnique({
+    where: { name: "supplier-quote-request" },
+  });
+
+  if (template && template.body) {
+    // Use DB template with variable replacement
+    emailHtml = template.body
+      .replace(/\{\{supplierName\}\}/g, supplier.contactName || supplier.name)
+      .replace(/\{\{categoryName\}\}/g, categoryLabel)
+      .replace(/\{\{productDetails\}\}/g, productDetails.replace(/\n/g, "<br/>"))
+      .replace(/\{\{quantity\}\}/g, quantity);
+  } else {
+    // Fallback: simple HTML
+    emailHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+      <h2>Vorte Tekstil — Teklif Talebi</h2>
       <p>Sayın <strong>${supplier.contactName || supplier.name}</strong>,</p>
       <p>Vorte Tekstil olarak aşağıdaki ürün için fiyat teklifi almak istiyoruz:</p>
-
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr style="background: #7AC143; color: #fff;">
-          <th style="padding: 10px; text-align: left;">Bilgi</th>
-          <th style="padding: 10px; text-align: left;">Detay</th>
-        </tr>
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 10px; font-weight: bold;">Ürün</td>
-          <td style="padding: 10px;">${productDetails}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #ddd; background: #fff;">
-          <td style="padding: 10px; font-weight: bold;">Miktar</td>
-          <td style="padding: 10px;">${quantity}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #ddd;">
-          <td style="padding: 10px; font-weight: bold;">Kategori</td>
-          <td style="padding: 10px;">${categoryLabel}</td>
-        </tr>
-      </table>
-
-      <p>Teklifinizi aşağıdaki bilgilerle iletmenizi rica ederiz:</p>
-      <ul>
-        <li>Birim fiyat</li>
-        <li>Minimum sipariş miktarı</li>
-        <li>Teslimat süresi</li>
-        <li>Ödeme koşulları</li>
-      </ul>
-
-      <p>Yanıtınızı <a href="mailto:info@vorte.com.tr" style="color: #7AC143;">info@vorte.com.tr</a> adresine gönderebilirsiniz.</p>
-
-      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-      <p style="color: #666; font-size: 14px;">
-        Saygılarımızla,<br />
-        <strong>Vorte Tekstil</strong><br />
-        Dumlupınar Mah., Nilüfer/Bursa<br />
-        Tel: 0850 305 86 35<br />
-        <a href="https://www.vorte.com.tr" style="color: #7AC143;">www.vorte.com.tr</a>
-      </p>
-    </div>
-  </div>
-</body>
-</html>`;
+      <p><strong>Kategori:</strong> ${categoryLabel}</p>
+      <p><strong>Ürün:</strong><br/>${productDetails.replace(/\n/g, "<br/>")}</p>
+      <p><strong>Miktar:</strong> ${quantity}</p>
+      <p>Yanıtınızı <a href="mailto:info@vorte.com.tr">info@vorte.com.tr</a> adresine gönderebilirsiniz.</p>
+      <p>Saygılarımızla,<br/>Vorte Tekstil<br/>0850 305 86 35</p>
+    </div>`;
+  }
 
   try {
     await resendClient.sendEmail({
       to: supplier.email,
-      subject: `Vorte Tekstil — Teklif Talebi (${categoryLabel})`,
+      subject: emailSubject,
       html: emailHtml,
-      templateName: "supplier-order",
+      templateName: "supplier-quote-request",
     });
   } catch (err) {
     console.error("[SupplierQuote] Email gönderimi başarısız:", err);
