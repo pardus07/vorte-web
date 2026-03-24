@@ -655,6 +655,26 @@ export default function AdminSuppliersPage() {
     if (b > 0) kkDetail.push(`Stand B: ${b * 25} Siyah + ${b * 25} Ten`);
     if (c > 0) kkDetail.push(`Stand C: ${c * 25} Siyah + ${c * 25} Beyaz + ${c * 25} Ten`);
 
+    // Renk dagilimi hesapla
+    const ebSiyah = a * 25 + b * 25 + c * 25;
+    const ebLacivert = b * 25 + c * 25;
+    const ebGri = c * 25;
+    const kkSiyah = b * 25 + c * 25;
+    const kkBeyaz = c * 25;
+    const kkTen = a * 25 + b * 25 + c * 25;
+
+    const ebRenkler = [
+      ebSiyah > 0 ? `Siyah: ${ebSiyah} adet` : "",
+      ebLacivert > 0 ? `Lacivert: ${ebLacivert} adet` : "",
+      ebGri > 0 ? `Gri: ${ebGri} adet` : "",
+    ].filter(Boolean).join(", ");
+
+    const kkRenkler = [
+      kkSiyah > 0 ? `Siyah: ${kkSiyah} adet` : "",
+      kkBeyaz > 0 ? `Beyaz: ${kkBeyaz} adet` : "",
+      kkTen > 0 ? `Ten Rengi: ${kkTen} adet` : "",
+    ].filter(Boolean).join(", ");
+
     const materials: BomMaterialRow[] = [
       {
         key: "fabric",
@@ -663,7 +683,26 @@ export default function AdminSuppliersPage() {
         unit: "kg",
         supplierTypes: ["FABRIC"],
         selectedSupplierIds: [],
-        productDetails: `Penye kumas (EB: ${ebCount} adet x 0.0375kg + KK: ${kkCount} adet x 0.022kg)`,
+        productDetails: [
+          `Penye Suprem Kumas (%95 Pamuk, %5 Elastan)`,
+          `Iplik: Ring Combed (Penye), Ne 30/1`,
+          ``,
+          `ERKEK BOXER (Gramaj: 180 gr/m2):`,
+          ...(ebSiyah > 0 ? [`  Siyah: ${ebSiyah} adet = ${(ebSiyah * 0.0375).toFixed(2)} kg`] : []),
+          ...(ebLacivert > 0 ? [`  Lacivert: ${ebLacivert} adet = ${(ebLacivert * 0.0375).toFixed(2)} kg`] : []),
+          ...(ebGri > 0 ? [`  Gri: ${ebGri} adet = ${(ebGri * 0.0375).toFixed(2)} kg`] : []),
+          `  Erkek Boxer Toplam: ${ebCount} adet = ${(ebCount * 0.0375).toFixed(2)} kg`,
+          ``,
+          `KADIN KULOT (Gramaj: 160 gr/m2):`,
+          ...(kkSiyah > 0 ? [`  Siyah: ${kkSiyah} adet = ${(kkSiyah * 0.022).toFixed(2)} kg`] : []),
+          ...(kkBeyaz > 0 ? [`  Beyaz: ${kkBeyaz} adet = ${(kkBeyaz * 0.022).toFixed(2)} kg`] : []),
+          ...(kkTen > 0 ? [`  Ten Rengi: ${kkTen} adet = ${(kkTen * 0.022).toFixed(2)} kg`] : []),
+          `  Kadin Kulot Toplam: ${kkCount} adet = ${(kkCount * 0.022).toFixed(2)} kg`,
+          ``,
+          `GENEL TOPLAM: ${fabricKg} kg`,
+          `Bedenler: S, M, L, XL, XXL (her renk/bedenden esit dagilim)`,
+          `Kullanim: Ic giyim uretimi (boxer + kulot)`,
+        ].join("\n"),
       },
       {
         key: "elastic_male",
@@ -672,7 +711,13 @@ export default function AdminSuppliersPage() {
         unit: "m",
         supplierTypes: ["ELASTIC_MALE"],
         selectedSupplierIds: [],
-        productDetails: `Erkek bel lastigi 30-40mm (${ebCount} adet x 0.85m)`,
+        productDetails: [
+          `Jakarli Bel Lastigi - Erkek Boxer icin`,
+          `Genislik: 30-40mm, VORTE logo jakarlı dokuma`,
+          `Renkler: ${ebRenkler}`,
+          `Toplam: ${ebCount} adet boxer x 0.85m = ${elasticMaleM} metre`,
+          `Malzeme: Polyester + elastan, yumusak dokulu`,
+        ].join("\n"),
       },
       {
         key: "elastic_male_leg",
@@ -681,7 +726,11 @@ export default function AdminSuppliersPage() {
         unit: "m",
         supplierTypes: ["ELASTIC_MALE"],
         selectedSupplierIds: [],
-        productDetails: `Erkek bacak lastigi (${ebCount} adet x 0.70m)`,
+        productDetails: [
+          `Bacak (Paca) Lastigi - Erkek Boxer icin`,
+          `Genislik: 8-12mm, duz elastik`,
+          `Toplam: ${ebCount} adet boxer x 2 bacak x 0.35m = ${elasticMaleLegM} metre`,
+        ].join("\n"),
       },
       {
         key: "elastic_female",
@@ -690,7 +739,12 @@ export default function AdminSuppliersPage() {
         unit: "m",
         supplierTypes: ["ELASTIC_FEMALE"],
         selectedSupplierIds: [],
-        productDetails: `Kadin bel lastigi 8-12mm (${kkCount} adet x 0.68m)`,
+        productDetails: [
+          `Ince Bel Lastigi - Kadin Kulot icin`,
+          `Genislik: 8-12mm, yumusak dantel kenarli`,
+          `Renkler: ${kkRenkler}`,
+          `Toplam: ${kkCount} adet kulot x 0.68m = ${elasticFemaleM} metre`,
+        ].join("\n"),
       },
       {
         key: "elastic_female_leg",
@@ -699,7 +753,11 @@ export default function AdminSuppliersPage() {
         unit: "m",
         supplierTypes: ["ELASTIC_FEMALE"],
         selectedSupplierIds: [],
-        productDetails: `Kadin bacak lastigi (${kkCount} adet x 0.63m)`,
+        productDetails: [
+          `Bacak Lastigi / Biye - Kadin Kulot icin`,
+          `Genislik: 6-10mm, yumusak elastik veya biye`,
+          `Toplam: ${kkCount} adet kulot x 2 bacak x 0.315m = ${elasticFemaleLegM} metre`,
+        ].join("\n"),
       },
       {
         key: "sewing_thread",
@@ -708,7 +766,13 @@ export default function AdminSuppliersPage() {
         unit: "m",
         supplierTypes: ["SEWING_THREAD"],
         selectedSupplierIds: [],
-        productDetails: `Dikis ipligi (EB: ${ebCount} x 9.25m + KK: ${kkCount} x 7.5m)`,
+        productDetails: [
+          `Dikis Ipligi - Overlok + Recme + Duz Dikis`,
+          `Erkek Boxer: ${ebCount} adet x 9.25m (4 iplik overlok + recme)`,
+          `Kadin Kulot: ${kkCount} adet x 7.5m (4 iplik overlok + recme)`,
+          `Toplam: ${sewingThreadM} metre`,
+          `Renk: Siyah, Beyaz, Gri, Lacivert, Ten (urun rengine uygun)`,
+        ].join("\n"),
       },
       {
         key: "label",
@@ -717,7 +781,14 @@ export default function AdminSuppliersPage() {
         unit: "adet",
         supplierTypes: ["LABEL"],
         selectedSupplierIds: [],
-        productDetails: `Marka + beden etiketi (${totalProducts} adet urun icin)`,
+        productDetails: [
+          `Dokuma Etiket Seti - ${totalProducts} adet urun icin`,
+          `1. Marka Etiketi: VORTE logo, arka bel ortasi (${totalProducts} adet)`,
+          `2. Beden Etiketi: S/M/L/XL/XXL (${totalProducts} adet)`,
+          `3. Yikama Talimati: ISO 3758 semboller + %95 Pamuk %5 Elastan + Made in Turkey (${totalProducts} adet)`,
+          `4. GTIN Barkod Etiketi: EAN-13 barkod (${totalProducts} adet)`,
+          `Toplam: ${totalProducts * 4} adet etiket (4 cesit x ${totalProducts} urun)`,
+        ].join("\n"),
       },
       {
         key: "packaging",
@@ -726,11 +797,17 @@ export default function AdminSuppliersPage() {
         unit: "adet",
         supplierTypes: ["FLEXIBLE_PACKAGING", "CARDBOARD_PACKAGING"],
         selectedSupplierIds: [],
-        productDetails: `Tekli urun ambalaji (${totalProducts} adet)`,
+        productDetails: [
+          `Tekli Urun Ambalaji - ${totalProducts} adet`,
+          `OPP Seffaf Poset: ${totalProducts} adet (urun gorunur, barkodlu)`,
+          `Karton Insert/Kartela: ${totalProducts} adet (marka baskili)`,
+          `Ic Koli (12'li): ${Math.ceil(totalProducts / 12)} adet`,
+          `Dis Koli (5 kat oluklu mukavva): ${Math.ceil(totalProducts / 24)} adet`,
+        ].join("\n"),
       },
     ];
 
-    // Karton Stand satislari
+    // Karton Stand satirlari
     if (a > 0) {
       materials.push({
         key: "stand_a",
@@ -739,7 +816,13 @@ export default function AdminSuppliersPage() {
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
         selectedSupplierIds: [],
-        productDetails: `Stand A (50 urunluk tezgah ustu) - ${a} adet`,
+        productDetails: [
+          `Stand A - Tek Yonlu Tezgah Ustu (${a} adet)`,
+          `Kapasite: 50 urun/stand`,
+          `Icerik: 25 Erkek Boxer Siyah + 25 Kadin Kulot Ten Rengi`,
+          `Olculer: Tezgah ustu boyut, tek yonlu sergileme`,
+          `Malzeme: 3 katli oluklu mukavva, VORTE marka baskili`,
+        ].join("\n"),
       });
     }
     if (b > 0) {
@@ -750,7 +833,13 @@ export default function AdminSuppliersPage() {
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
         selectedSupplierIds: [],
-        productDetails: `Stand B (100 urunluk tezgah ustu) - ${b} adet`,
+        productDetails: [
+          `Stand B - Cift Yonlu Ada Tipi (${b} adet)`,
+          `Kapasite: 100 urun/stand`,
+          `Icerik: 25 EB Siyah + 25 EB Lacivert + 25 KK Siyah + 25 KK Ten`,
+          `Olculer: Cift yonlu ada tipi, 360 derece sergileme`,
+          `Malzeme: 3 katli oluklu mukavva, VORTE marka baskili`,
+        ].join("\n"),
       });
     }
     if (c > 0) {
@@ -761,7 +850,13 @@ export default function AdminSuppliersPage() {
         unit: "adet",
         supplierTypes: ["CARDBOARD_STAND"],
         selectedSupplierIds: [],
-        productDetails: `Stand C (150 urunluk ada tipi) - ${c} adet`,
+        productDetails: [
+          `Stand C - Tam Boy Cift Yonlu (${c} adet)`,
+          `Kapasite: 150 urun/stand`,
+          `Icerik: 25 EB Siyah + 25 EB Lacivert + 25 EB Gri + 25 KK Siyah + 25 KK Beyaz + 25 KK Ten`,
+          `Olculer: 145x45x45 cm, tam boy cift yonlu`,
+          `Malzeme: 5 katli oluklu mukavva, VORTE marka baskili, laminasyonlu`,
+        ].join("\n"),
       });
     }
 
