@@ -1,8 +1,9 @@
 /**
- * Vorte Tekstil — Parametrik Kalıp Hesaplama Motoru
+ * Vorte Tekstil — Parametrik Kalip Hesaplama Motoru
  *
- * Saf TypeScript, UI bağımsız.
- * Beden verileri bom-calculator.ts'den alınır.
+ * FreeSewing Bruce boxer-brief referansi ile gercekci kalip geometrisi.
+ * Her parca SVG path olarak cubic/quadratic bezier egrileri ile cizilir.
+ * Beden verileri bom-calculator.ts'den alinir.
  */
 
 import {
@@ -31,13 +32,18 @@ export interface Point {
 export interface PatternPiece {
   name: string;
   label: string;
-  points: Point[];
+  svgPath: string;        // SVG path d attribute — bezier egrili
+  points: Point[];         // Geriye uyumluluk icin kose noktalari
   grainLine: { start: Point; end: Point };
   notches: Point[];
   color: string;
-  width: number;   // cm
-  height: number;  // cm
+  width: number;           // cm
+  height: number;          // cm
   areaCm2: number;
+  grainAngle: number;      // derece (0 = dikey)
+  seamType: string;        // "flatlock", "overlock", "coverlock"
+  offsetX: number;         // SVG'deki x pozisyonu (cm)
+  offsetY: number;         // SVG'deki y pozisyonu (cm)
 }
 
 export interface Pattern {
@@ -47,7 +53,9 @@ export interface Pattern {
   pieces: PatternPiece[];
   totalAreaCm2: number;
   totalAreaWithSeamCm2: number;
+  realFabricArea: number;  // dikiş payı + fire dahil cm²
   fabricAreaM2: number;
+  measurements: Record<string, number>;
   metadata: {
     waistCirc: number;
     hipCirc: number;
@@ -60,6 +68,7 @@ export interface PatternOptions {
   seamAllowance?: SeamType;
   includeShrinkage?: boolean;
   easeOverride?: Partial<EaseProfile>;
+  scale?: number;          // 1cm = kaç px (varsayilan 4)
 }
 
 export interface EaseProfile {
@@ -71,42 +80,52 @@ export interface EaseProfile {
 
 export interface ValidationResult {
   valid: boolean;
+  isValid: boolean;        // alias
+  checks: { name: string; passed: boolean; message: string; value?: number }[];
   errors: string[];
   warnings: string[];
 }
 
 // ─── SABİTLER ───────────────────────────────────────────────
 
-/** Bölgesel ease (bolluk) profilleri */
+/** Bolgesel ease (bolluk) profilleri */
 export const EASE_PROFILES: Record<string, EaseProfile> = {
-  MALE_BOXER: { waist: 0.12, hip: 0.07, leg: 0.09, gusset: 0.01 },
+  MALE_BOXER:   { waist: 0.12, hip: 0.07, leg: 0.09, gusset: 0.01 },
   FEMALE_PANTY: { waist: 0.11, hip: 0.09, leg: 0.06, gusset: 0 },
 };
 
-/** Çekme payları (yıkama sonrası) */
+/** Cekme paylari (yikama sonrasi) */
 export const SHRINKAGE = {
-  lengthwise: 0.05,  // %5 boyuna çekme
-  crosswise: 0.03,   // %3 enine çekme
+  lengthwise: 0.05,  // %5 boyuna cekme
+  crosswise: 0.03,   // %3 enine cekme
 } as const;
 
-/** Dikiş payları (cm) */
+/** Dikis paylari (cm) */
 export const SEAM_ALLOWANCES: Record<SeamType, number> = {
-  flatlock: 0.35,
-  overlock: 0.6,
+  flatlock:  0.35,
+  overlock:  0.6,
   coverlock: 1.2,
   waistband: 3.0,
 };
 
 /** SVG renk paleti */
 const PIECE_COLORS: Record<string, string> = {
-  front_panel: "#3B82F6",   // mavi
-  back_panel: "#22C55E",    // yeşil
-  gusset: "#F97316",        // turuncu
-  gusset_lining: "#F97316", // turuncu
-  waistband: "#8B5CF6",     // mor
+  front_panel:   "#3B82F6",
+  back_panel:    "#22C55E",
+  side_panel:    "#A855F7",
+  gusset:        "#F97316",
+  gusset_lining: "#F97316",
+  waistband:     "#8B5CF6",
 };
 
-/** Grading tablosu — beden arası artışlar (cm) */
+/** Hip ratio — kalca bolme oranlari (FreeSewing Bruce referansi) */
+const HIP_RATIOS = {
+  front: 0.30,
+  back:  0.32,
+  side:  0.19,
+} as const;
+
+/** Grading tablosu — beden arasi artislar (cm) */
 const GRADING_TABLE = {
   waist: { "S-M": 4, "M-L": 4, "L-XL": 5, "XL-XXL": 5 },
   hip:   { "S-M": 4, "M-L": 4, "L-XL": 5, "XL-XXL": 5 },
@@ -122,319 +141,540 @@ function getSizeIndex(size: SizeKey): number {
   return SIZE_ORDER.indexOf(size);
 }
 
-/** Dikdörtgen + yuvarlatılmış köşeler için kontrol noktaları */
-function createRoundedRect(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radius: number = 1.5,
-): Point[] {
-  const r = Math.min(radius, w / 2, h / 2);
-  return [
-    { x: x + r, y },
-    { x: x + w - r, y },
-    { x: x + w, y: y + r },
-    { x: x + w, y: y + h - r },
-    { x: x + w - r, y: y + h },
-    { x: x + r, y: y + h },
-    { x, y: y + h - r },
-    { x, y: y + r },
-  ];
-}
+/** Shoelace formuluyle poligon alani (cm²) */
+function polygonAreaFromPath(svgPath: string, scale: number): number {
+  // Path'deki tum koordinatlari parse et ve shoelace uygula
+  const coords: [number, number][] = [];
+  const nums = svgPath.match(/-?\d+\.?\d*/g);
+  if (!nums) return 0;
+  for (let i = 0; i < nums.length; i += 2) {
+    if (i + 1 < nums.length) {
+      coords.push([parseFloat(nums[i]) / scale, parseFloat(nums[i + 1]) / scale]);
+    }
+  }
+  if (coords.length < 3) return 0;
 
-/** Eğri ağ (kasık) çıkıntısı kontrol noktaları */
-function createCrotchExtension(
-  baseX: number,
-  baseY: number,
-  extensionWidth: number,
-  extensionHeight: number,
-  direction: "left" | "right" = "right",
-): Point[] {
-  const sign = direction === "right" ? 1 : -1;
-  return [
-    { x: baseX, y: baseY },
-    { x: baseX + sign * extensionWidth * 0.3, y: baseY + extensionHeight * 0.2 },
-    { x: baseX + sign * extensionWidth * 0.7, y: baseY + extensionHeight * 0.6 },
-    { x: baseX + sign * extensionWidth, y: baseY + extensionHeight },
-    { x: baseX + sign * extensionWidth, y: baseY + extensionHeight + 2 },
-    { x: baseX + sign * extensionWidth * 0.5, y: baseY + extensionHeight + 3 },
-  ];
-}
-
-function polygonArea(points: Point[]): number {
   let area = 0;
-  const n = points.length;
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    area += points[i].x * points[j].y;
-    area -= points[j].x * points[i].y;
+  for (let i = 0; i < coords.length; i++) {
+    const j = (i + 1) % coords.length;
+    area += coords[i][0] * coords[j][1];
+    area -= coords[j][0] * coords[i][1];
   }
   return Math.abs(area / 2);
 }
 
-// ─── ERKEK BOXER KALIP HESABI ───────────────────────────────
-
-function generateMaleBoxerPattern(
-  size: SizeKey,
-  options: PatternOptions = {},
-): Pattern {
-  const sizeData = MALE_BOXER_SIZES[size];
-  const ease = { ...EASE_PROFILES.MALE_BOXER, ...options.easeOverride };
-
-  // Temel ölçüler
-  const hipCirc = sizeData.yarimGenCm * 4; // yarımGen x 2 = tam genişlik, x 2 = çevre
-  const waistCirc = sizeData.belCevresiCm;
-  const patternHeight = sizeData.kalipBoyCm;
-
-  // Kalıp formülleri
-  const frontPanelWidth = (hipCirc / 4) - 1;
-  const backPanelWidth = (hipCirc / 4) + 1;
-  const frontRise = patternHeight;
-  const backRise = frontRise + 3.5;
-  const frontCrotchExt = (hipCirc / 2) / 8;
-  const backCrotchExt = (hipCirc / 2) / 8 + 3;
-  const gussetWidth = 8;
-  const gussetLength = frontRise * 0.6;
-
-  // Bel bandı
-  const waistbandWidth = waistCirc / 2 + 2; // yarım bel bandı + dikiş payı
-  const waistbandHeight = 4; // 4cm bel bandı yüksekliği
-
-  // Ease uygula
-  const easedFrontW = frontPanelWidth * (1 + ease.hip);
-  const easedBackW = backPanelWidth * (1 + ease.hip);
-
-  // Çekme payı uygula
-  const shrinkX = options.includeShrinkage ? (1 + SHRINKAGE.crosswise) : 1;
-  const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
-
-  const finalFrontW = easedFrontW * shrinkX;
-  const finalBackW = easedBackW * shrinkX;
-  const finalFrontH = frontRise * shrinkY;
-  const finalBackH = backRise * shrinkY;
-
-  // Ön panel kontrol noktaları
-  const frontPoints = createRoundedRect(0, 0, finalFrontW, finalFrontH, 2);
-  const frontCrotchPoints = createCrotchExtension(
-    finalFrontW * 0.7, finalFrontH, frontCrotchExt, frontCrotchExt * 0.8, "right",
-  );
-
-  // Arka panel kontrol noktaları
-  const backPoints = createRoundedRect(0, 0, finalBackW, finalBackH, 2);
-  const backCrotchPoints = createCrotchExtension(
-    finalBackW * 0.7, finalBackH, backCrotchExt, backCrotchExt * 0.8, "right",
-  );
-
-  // Ağ parçası
-  const gussetPoints = createRoundedRect(0, 0, gussetWidth, gussetLength, 1);
-
-  // Bel bandı
-  const waistbandPoints = createRoundedRect(0, 0, waistbandWidth, waistbandHeight, 0.5);
-
-  // Parçaları oluştur
-  const pieces: PatternPiece[] = [
-    {
-      name: "front_panel",
-      label: "Ön Panel",
-      points: [...frontPoints, ...frontCrotchPoints],
-      grainLine: { start: { x: finalFrontW / 2, y: 2 }, end: { x: finalFrontW / 2, y: finalFrontH - 2 } },
-      notches: [
-        { x: 0, y: finalFrontH * 0.5 },
-        { x: finalFrontW, y: finalFrontH * 0.5 },
-        { x: finalFrontW * 0.5, y: 0 },
-      ],
-      color: PIECE_COLORS.front_panel,
-      width: finalFrontW,
-      height: finalFrontH,
-      areaCm2: finalFrontW * finalFrontH + (frontCrotchExt * frontCrotchExt * 0.8 * 0.5),
-    },
-    {
-      name: "back_panel",
-      label: "Arka Panel",
-      points: [...backPoints, ...backCrotchPoints],
-      grainLine: { start: { x: finalBackW / 2, y: 2 }, end: { x: finalBackW / 2, y: finalBackH - 2 } },
-      notches: [
-        { x: 0, y: finalBackH * 0.5 },
-        { x: finalBackW, y: finalBackH * 0.5 },
-        { x: finalBackW * 0.5, y: 0 },
-      ],
-      color: PIECE_COLORS.back_panel,
-      width: finalBackW,
-      height: finalBackH,
-      areaCm2: finalBackW * finalBackH + (backCrotchExt * backCrotchExt * 0.8 * 0.5),
-    },
-    {
-      name: "gusset",
-      label: "Ağ Parçası",
-      points: gussetPoints,
-      grainLine: { start: { x: gussetWidth / 2, y: 1 }, end: { x: gussetWidth / 2, y: gussetLength - 1 } },
-      notches: [
-        { x: 0, y: gussetLength / 2 },
-        { x: gussetWidth, y: gussetLength / 2 },
-      ],
-      color: PIECE_COLORS.gusset,
-      width: gussetWidth,
-      height: gussetLength,
-      areaCm2: gussetWidth * gussetLength,
-    },
-    {
-      name: "waistband",
-      label: "Bel Bandı",
-      points: waistbandPoints,
-      grainLine: { start: { x: 2, y: waistbandHeight / 2 }, end: { x: waistbandWidth - 2, y: waistbandHeight / 2 } },
-      notches: [
-        { x: waistbandWidth / 2, y: 0 },
-        { x: waistbandWidth / 4, y: 0 },
-        { x: (waistbandWidth * 3) / 4, y: 0 },
-      ],
-      color: PIECE_COLORS.waistband,
-      width: waistbandWidth,
-      height: waistbandHeight,
-      areaCm2: waistbandWidth * waistbandHeight,
-    },
-  ];
-
-  const totalAreaCm2 = pieces.reduce((sum, p) => sum + p.areaCm2, 0);
-
-  // Dikiş payı ekle
-  const defaultSeam = options.seamAllowance || "flatlock";
-  const seamCm = SEAM_ALLOWANCES[defaultSeam];
-  const totalAreaWithSeamCm2 = pieces.reduce((sum, p) => {
-    const perimeter = 2 * (p.width + p.height);
-    return sum + p.areaCm2 + perimeter * seamCm;
-  }, 0);
-
-  return {
-    modelType: "boxer_brief",
-    size,
-    gender: "male",
-    pieces,
-    totalAreaCm2,
-    totalAreaWithSeamCm2,
-    fabricAreaM2: totalAreaWithSeamCm2 / 10000,
-    metadata: {
-      waistCirc,
-      hipCirc,
-      patternHeight,
-      seamType: {
-        side: "flatlock" as SeamType,
-        crotch: "overlock" as SeamType,
-        waist: "coverlock" as SeamType,
-        leg: "coverlock" as SeamType,
-      },
-    },
-  };
+/** Basit dikdortgen alan tahmini (bezier parcalar icin fallback) */
+function estimateArea(width: number, height: number, shapeFactor: number): number {
+  return width * height * shapeFactor;
 }
 
-// ─── KADIN KÜLOT KALIP HESABI ───────────────────────────────
+/** Sayi yuvarla (1 ondalik) */
+function r1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
 
-function generateFemalePantyPattern(
+/** Sayi yuvarla (2 ondalik) */
+function r2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+// ─── ERKEK BOXER BRİEF — 4 PARCA ───────────────────────────
+
+function generateMaleBoxerPieces(
   size: SizeKey,
   options: PatternOptions = {},
-): Pattern {
-  const sizeData = FEMALE_PANTY_SIZES[size];
-  const ease = { ...EASE_PROFILES.FEMALE_PANTY, ...options.easeOverride };
+): { pieces: PatternPiece[]; measurements: Record<string, number> } {
+  const sd = MALE_BOXER_SIZES[size];
+  const ease = { ...EASE_PROFILES.MALE_BOXER, ...options.easeOverride };
 
-  const waistCirc = sizeData.belCevresiCm;
-  const hipCirc = sizeData.yarimGenCm * 4;
-  const patternHeight = sizeData.kalipBoyCm;
+  // Temel olculer
+  const hipCirc = sd.yarimGenCm * 4;
+  const waistCirc = sd.belCevresiCm;
+  const patternH = sd.kalipBoyCm;
 
-  // Kalıp formülleri
-  const frontPanelWidth = (waistCirc / 4) * 0.9;
-  const backPanelWidth = (waistCirc / 4) * 0.9 + 2;
-  const hipLineWidth = (hipCirc * 0.8) / 4;
-  const gussetWidth = 8;
-  const gussetLength = 14;
-
-  // Ease uygula
-  const easedFrontW = frontPanelWidth * (1 + ease.hip);
-  const easedBackW = backPanelWidth * (1 + ease.hip);
-
-  // Çekme payı
+  // Ease + cekme paylari
   const shrinkX = options.includeShrinkage ? (1 + SHRINKAGE.crosswise) : 1;
   const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
 
-  const finalFrontW = easedFrontW * shrinkX;
-  const finalBackW = easedBackW * shrinkX;
-  const finalFrontH = patternHeight * shrinkY;
-  const finalBackH = (patternHeight + 2) * shrinkY; // arka biraz daha uzun
+  // Gusset sabitleri
+  const gussetW = 7;    // cm
+  const gussetH = 3.5;  // cm
 
-  // Ön panel — taperli şekil (belden kalçaya genişleyen, kasığa daralan)
-  const frontPoints: Point[] = [
-    { x: (finalFrontW - finalFrontW * 0.8) / 2, y: 0 },
-    { x: finalFrontW - (finalFrontW - finalFrontW * 0.8) / 2, y: 0 },
-    { x: finalFrontW, y: finalFrontH * 0.4 },
-    { x: finalFrontW * 0.8, y: finalFrontH * 0.8 },
-    { x: finalFrontW * 0.55, y: finalFrontH },
-    { x: finalFrontW * 0.45, y: finalFrontH },
-    { x: finalFrontW * 0.2, y: finalFrontH * 0.8 },
-    { x: 0, y: finalFrontH * 0.4 },
-  ];
+  // ──────── ON PANEL ────────
+  // Kalkan/kelebek sekli — belden kasiga daralan
+  const fpWaistHalf = (hipCirc / 4) * HIP_RATIOS.front * 2 * (1 + ease.hip) * shrinkX;
+  const fpHeight = patternH * shrinkY;
+  const fpCrotchW = gussetW * 0.5; // kasik noktasinda daralma
 
-  // Arka panel
-  const backPoints: Point[] = [
-    { x: (finalBackW - finalBackW * 0.85) / 2, y: 0 },
-    { x: finalBackW - (finalBackW - finalBackW * 0.85) / 2, y: 0 },
-    { x: finalBackW, y: finalBackH * 0.4 },
-    { x: finalBackW * 0.85, y: finalBackH * 0.75 },
-    { x: finalBackW * 0.6, y: finalBackH },
-    { x: finalBackW * 0.4, y: finalBackH },
-    { x: finalBackW * 0.15, y: finalBackH * 0.75 },
-    { x: 0, y: finalBackH * 0.4 },
-  ];
+  // Bel egrisi icbukey derinligi (cm)
+  const fpWaistDip = 1.5;
+  // Kalca hatti yuksekligi (belden asagi)
+  const fpHipY = fpHeight * 0.35;
+  // Kalca genisligi (bel genisliginden biraz daha genis)
+  const fpHipHalfW = fpWaistHalf * 1.05;
 
-  // Ağ astarı
-  const gussetPoints = createRoundedRect(0, 0, gussetWidth, gussetLength, 1.5);
+  // SVG path: orijin (0,0) = sol ust kose
+  // Noktalar:
+  //   TL = (cx - waistHalf, 0)  bel sol
+  //   TR = (cx + waistHalf, 0)  bel sag
+  //   HR = (cx + hipHalf, hipY) kalca sag
+  //   CR = (cx + crotchHalf, H) kasik sag
+  //   CL = (cx - crotchHalf, H) kasik sol
+  //   HL = (cx - hipHalf, hipY) kalca sol
+  const cx = fpHipHalfW; // merkez x
+  const fpW = fpHipHalfW * 2;
 
-  const pieces: PatternPiece[] = [
-    {
-      name: "front_panel",
-      label: "Ön Panel",
-      points: frontPoints,
-      grainLine: { start: { x: finalFrontW / 2, y: 2 }, end: { x: finalFrontW / 2, y: finalFrontH - 2 } },
-      notches: [
-        { x: 0, y: finalFrontH * 0.4 },
-        { x: finalFrontW, y: finalFrontH * 0.4 },
-        { x: finalFrontW / 2, y: 0 },
-      ],
-      color: PIECE_COLORS.front_panel,
-      width: finalFrontW,
-      height: finalFrontH,
-      areaCm2: polygonArea(frontPoints),
-    },
-    {
-      name: "back_panel",
-      label: "Arka Panel",
-      points: backPoints,
-      grainLine: { start: { x: finalBackW / 2, y: 2 }, end: { x: finalBackW / 2, y: finalBackH - 2 } },
-      notches: [
-        { x: 0, y: finalBackH * 0.4 },
-        { x: finalBackW, y: finalBackH * 0.4 },
-        { x: finalBackW / 2, y: 0 },
-      ],
-      color: PIECE_COLORS.back_panel,
-      width: finalBackW,
-      height: finalBackH,
-      areaCm2: polygonArea(backPoints),
-    },
-    {
-      name: "gusset_lining",
-      label: "Ağ Astarı",
-      points: gussetPoints,
-      grainLine: { start: { x: gussetWidth / 2, y: 1 }, end: { x: gussetWidth / 2, y: gussetLength - 1 } },
-      notches: [
-        { x: 0, y: gussetLength / 2 },
-        { x: gussetWidth, y: gussetLength / 2 },
-      ],
-      color: PIECE_COLORS.gusset_lining,
-      width: gussetWidth,
-      height: gussetLength,
-      areaCm2: gussetWidth * gussetLength,
-    },
-  ];
+  const fpPath = [
+    `M ${r2(cx - fpWaistHalf)} 0`,
+    // Bel egrisi — quadratic bezier, ortada asagi (icbukey)
+    `Q ${r2(cx)} ${r2(fpWaistDip)}, ${r2(cx + fpWaistHalf)} 0`,
+    // Sag yan: belden kalcaya duz cizgi
+    `L ${r2(cx + fpHipHalfW)} ${r2(fpHipY)}`,
+    // Sag kasik egrisi — cubic bezier, kalcadan kasiga S-egrisi
+    `C ${r2(cx + fpHipHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.4)}, ${r2(cx + fpCrotchW * 1.3)} ${r2(fpHeight * 0.85)}, ${r2(cx + fpCrotchW)} ${r2(fpHeight)}`,
+    // Kasik tabani — duz
+    `L ${r2(cx - fpCrotchW)} ${r2(fpHeight)}`,
+    // Sol kasik egrisi — cubic bezier (simetrik)
+    `C ${r2(cx - fpCrotchW * 1.3)} ${r2(fpHeight * 0.85)}, ${r2(cx - fpHipHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.4)}, ${r2(cx - fpHipHalfW)} ${r2(fpHipY)}`,
+    // Sol yan: kalcadan bele duz cizgi
+    `L ${r2(cx - fpWaistHalf)} 0`,
+    `Z`,
+  ].join(" ");
 
-  const totalAreaCm2 = pieces.reduce((sum, p) => sum + p.areaCm2, 0);
+  const frontPiece: PatternPiece = {
+    name: "front_panel",
+    label: "On Panel",
+    svgPath: fpPath,
+    points: [
+      { x: cx - fpWaistHalf, y: 0 },
+      { x: cx + fpWaistHalf, y: 0 },
+      { x: cx + fpHipHalfW, y: fpHipY },
+      { x: cx + fpCrotchW, y: fpHeight },
+      { x: cx - fpCrotchW, y: fpHeight },
+      { x: cx - fpHipHalfW, y: fpHipY },
+    ],
+    grainLine: { start: { x: cx, y: 2 }, end: { x: cx, y: fpHeight - 2 } },
+    notches: [
+      // Tek centik — yan dikiste, kasik baslangicinda
+      { x: cx + fpHipHalfW, y: fpHipY },
+      { x: cx - fpHipHalfW, y: fpHipY },
+    ],
+    color: PIECE_COLORS.front_panel,
+    width: r1(fpW),
+    height: r1(fpHeight),
+    areaCm2: r1(estimateArea(fpW, fpHeight, 0.65)),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ──────── ARKA PANEL ────────
+  // Trapez sekli — ustte dar, altta genis; daha derin kasik egrisi
+  const bpWaistHalf = (hipCirc / 4) * HIP_RATIOS.back * 2 * (1 + ease.hip) * shrinkX;
+  const backRise = 3.5; // cm
+  const bpHeight = (patternH + backRise) * shrinkY;
+  const bpCrotchW = gussetW * 0.55;
+
+  const bpWaistDip = 2.5; // Daha belirgin icbukey
+  const bpHipY = bpHeight * 0.30;
+  const bpHipHalfW = bpWaistHalf * 1.08;
+  const bpCx = bpHipHalfW;
+  const bpW = bpHipHalfW * 2;
+
+  const bpPath = [
+    `M ${r2(bpCx - bpWaistHalf)} 0`,
+    // Bel egrisi — daha belirgin icbukey
+    `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalf)} 0`,
+    // Sag yan
+    `L ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY)}`,
+    // Sag kasik — daha derin ve genis cubic bezier
+    `C ${r2(bpCx + bpHipHalfW * 1.02)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.45)}, ${r2(bpCx + bpCrotchW * 1.5)} ${r2(bpHeight * 0.82)}, ${r2(bpCx + bpCrotchW)} ${r2(bpHeight)}`,
+    // Kasik tabani
+    `L ${r2(bpCx - bpCrotchW)} ${r2(bpHeight)}`,
+    // Sol kasik (simetrik)
+    `C ${r2(bpCx - bpCrotchW * 1.5)} ${r2(bpHeight * 0.82)}, ${r2(bpCx - bpHipHalfW * 1.02)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.45)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY)}`,
+    // Sol yan
+    `L ${r2(bpCx - bpWaistHalf)} 0`,
+    `Z`,
+  ].join(" ");
+
+  const backPiece: PatternPiece = {
+    name: "back_panel",
+    label: "Arka Panel",
+    svgPath: bpPath,
+    points: [
+      { x: bpCx - bpWaistHalf, y: 0 },
+      { x: bpCx + bpWaistHalf, y: 0 },
+      { x: bpCx + bpHipHalfW, y: bpHipY },
+      { x: bpCx + bpCrotchW, y: bpHeight },
+      { x: bpCx - bpCrotchW, y: bpHeight },
+      { x: bpCx - bpHipHalfW, y: bpHipY },
+    ],
+    grainLine: { start: { x: bpCx, y: 2 }, end: { x: bpCx, y: bpHeight - 2 } },
+    notches: [
+      // Cift centik — yan dikiste
+      { x: bpCx + bpHipHalfW, y: bpHipY },
+      { x: bpCx + bpHipHalfW, y: bpHipY + 1 },
+      { x: bpCx - bpHipHalfW, y: bpHipY },
+      { x: bpCx - bpHipHalfW, y: bpHipY + 1 },
+    ],
+    color: PIECE_COLORS.back_panel,
+    width: r1(bpW),
+    height: r1(bpHeight),
+    areaCm2: r1(estimateArea(bpW, bpHeight, 0.62)),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ──────── YAN PANEL ────────
+  // Yamuk dikdortgen — ust dar, alt genis (bacak)
+  const spTopW = (hipCirc / 4) * HIP_RATIOS.side * 2 * (1 + ease.hip) * shrinkX;
+  const spBotW = spTopW * 1.12; // Alt kenar biraz daha genis
+  const spHeight = patternH * shrinkY;
+  const spW = Math.max(spTopW, spBotW);
+
+  // Yamuk: sol kenar iceride, sag kenar disaridda
+  const spInsetTop = (spW - spTopW) / 2;
+  const spInsetBot = (spW - spBotW) / 2;
+
+  const spPath = [
+    `M ${r2(spInsetTop)} 0`,
+    `L ${r2(spW - spInsetTop)} 0`,
+    `L ${r2(spW - spInsetBot)} ${r2(spHeight)}`,
+    `L ${r2(spInsetBot)} ${r2(spHeight)}`,
+    `Z`,
+  ].join(" ");
+
+  const sidePiece: PatternPiece = {
+    name: "side_panel",
+    label: "Yan Panel",
+    svgPath: spPath,
+    points: [
+      { x: spInsetTop, y: 0 },
+      { x: spW - spInsetTop, y: 0 },
+      { x: spW - spInsetBot, y: spHeight },
+      { x: spInsetBot, y: spHeight },
+    ],
+    grainLine: { start: { x: spW / 2, y: 2 }, end: { x: spW / 2, y: spHeight - 2 } },
+    notches: [
+      { x: spInsetTop, y: spHeight * 0.5 },
+      { x: spW - spInsetTop, y: spHeight * 0.5 },
+    ],
+    color: PIECE_COLORS.side_panel,
+    width: r1(spW),
+    height: r1(spHeight),
+    areaCm2: r1((spTopW + spBotW) / 2 * spHeight),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ──────── AG PARCASI (GUSSET) ────────
+  // Kucuk dikdortgen/oval — kenarlar hafif yuvarlak
+  const gRx = 1.2; // rx
+  const gRy = 0.8; // ry
+
+  // Yuvarlak kenarli dikdortgen path
+  const gPath = [
+    `M ${r2(gRx)} 0`,
+    `L ${r2(gussetW - gRx)} 0`,
+    `Q ${r2(gussetW)} 0, ${r2(gussetW)} ${r2(gRy)}`,
+    `L ${r2(gussetW)} ${r2(gussetH - gRy)}`,
+    `Q ${r2(gussetW)} ${r2(gussetH)}, ${r2(gussetW - gRx)} ${r2(gussetH)}`,
+    `L ${r2(gRx)} ${r2(gussetH)}`,
+    `Q 0 ${r2(gussetH)}, 0 ${r2(gussetH - gRy)}`,
+    `L 0 ${r2(gRy)}`,
+    `Q 0 0, ${r2(gRx)} 0`,
+    `Z`,
+  ].join(" ");
+
+  const gussetPiece: PatternPiece = {
+    name: "gusset",
+    label: "Ag Parcasi",
+    svgPath: gPath,
+    points: [
+      { x: gRx, y: 0 },
+      { x: gussetW - gRx, y: 0 },
+      { x: gussetW, y: gRy },
+      { x: gussetW, y: gussetH - gRy },
+      { x: gussetW - gRx, y: gussetH },
+      { x: gRx, y: gussetH },
+      { x: 0, y: gussetH - gRy },
+      { x: 0, y: gRy },
+    ],
+    grainLine: { start: { x: gussetW / 2, y: 0.5 }, end: { x: gussetW / 2, y: gussetH - 0.5 } },
+    notches: [
+      { x: 0, y: gussetH / 2 },
+      { x: gussetW, y: gussetH / 2 },
+    ],
+    color: PIECE_COLORS.gusset,
+    width: gussetW,
+    height: gussetH,
+    areaCm2: r1(gussetW * gussetH * 0.92), // kenar yuvarlama kompanzasyonu
+    grainAngle: 0,
+    seamType: "overlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece];
+
+  // Yerlesimleri hesapla — yan yana, 3cm bosluk
+  const gap = 3; // cm
+  let curX = 0;
+  for (const p of pieces) {
+    p.offsetX = curX;
+    p.offsetY = 0;
+    curX += p.width + gap;
+  }
+
+  const measurements: Record<string, number> = {
+    hipCirc,
+    waistCirc,
+    patternHeight: patternH,
+    frontPanelWidth: r1(fpW),
+    frontPanelHeight: r1(fpHeight),
+    backPanelWidth: r1(bpW),
+    backPanelHeight: r1(bpHeight),
+    sidePanelWidth: r1(spW),
+    sidePanelHeight: r1(spHeight),
+    gussetWidth: gussetW,
+    gussetHeight: gussetH,
+  };
+
+  return { pieces, measurements };
+}
+
+// ─── KADIN KULOT — 3 PARCA ──────────────────────────────────
+
+function generateFemalePantyPieces(
+  size: SizeKey,
+  options: PatternOptions = {},
+): { pieces: PatternPiece[]; measurements: Record<string, number> } {
+  const sd = FEMALE_PANTY_SIZES[size];
+  const ease = { ...EASE_PROFILES.FEMALE_PANTY, ...options.easeOverride };
+
+  const waistCirc = sd.belCevresiCm;
+  const hipCirc = sd.yarimGenCm * 4;
+  const patternH = sd.kalipBoyCm;
+
+  const shrinkX = options.includeShrinkage ? (1 + SHRINKAGE.crosswise) : 1;
+  const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
+
+  // Gusset astar sabitleri
+  const gussetW = 7 + (getSizeIndex(size) * 0.5); // 7-9cm bedene gore
+  const gussetLen = 14; // cm sabit
+
+  // ──────── ON PANEL ────────
+  // Kelebek/kalkan sekli — belden kasiga daralan, V kesim bacak acikligi
+  const fpWaistHalf = (waistCirc / 4) * 0.9 * (1 + ease.hip) * shrinkX;
+  const fpHeight = patternH * shrinkY;
+  const fpCrotchW = gussetW * 0.5 * 0.5; // ~2cm — dar kasik
+  const fpWaistDip = 1.2;
+  const fpHipY = fpHeight * 0.38;
+  const fpHipHalfW = fpWaistHalf * 1.08;
+  const fpCx = fpHipHalfW;
+  const fpW = fpHipHalfW * 2;
+
+  // V-kesim: Bacak acikligi yukari dogru V seklinde
+  const fpLegY = fpHeight * 0.65; // V noktasi yuksekligi
+
+  const fpPath = [
+    `M ${r2(fpCx - fpWaistHalf)} 0`,
+    // Bel egrisi — icbukey
+    `Q ${r2(fpCx)} ${r2(fpWaistDip)}, ${r2(fpCx + fpWaistHalf)} 0`,
+    // Sag yan: belden kalcaya
+    `L ${r2(fpCx + fpHipHalfW)} ${r2(fpHipY)}`,
+    // Sag bacak V-kesimi — cubic bezier
+    `C ${r2(fpCx + fpHipHalfW)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.6)}, ${r2(fpCx + fpHipHalfW * 0.7)} ${r2(fpLegY)}, ${r2(fpCx + fpCrotchW * 1.8)} ${r2(fpLegY)}`,
+    // Kasiga inis
+    `C ${r2(fpCx + fpCrotchW * 1.4)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.5)}, ${r2(fpCx + fpCrotchW * 1.1)} ${r2(fpHeight * 0.92)}, ${r2(fpCx + fpCrotchW)} ${r2(fpHeight)}`,
+    // Kasik tabani
+    `L ${r2(fpCx - fpCrotchW)} ${r2(fpHeight)}`,
+    // Sol kasiga cikis (simetrik)
+    `C ${r2(fpCx - fpCrotchW * 1.1)} ${r2(fpHeight * 0.92)}, ${r2(fpCx - fpCrotchW * 1.4)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.5)}, ${r2(fpCx - fpCrotchW * 1.8)} ${r2(fpLegY)}`,
+    // Sol bacak V-kesimi
+    `C ${r2(fpCx - fpHipHalfW * 0.7)} ${r2(fpLegY)}, ${r2(fpCx - fpHipHalfW)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.6)}, ${r2(fpCx - fpHipHalfW)} ${r2(fpHipY)}`,
+    // Sol yan
+    `L ${r2(fpCx - fpWaistHalf)} 0`,
+    `Z`,
+  ].join(" ");
+
+  const frontPiece: PatternPiece = {
+    name: "front_panel",
+    label: "On Panel",
+    svgPath: fpPath,
+    points: [
+      { x: fpCx - fpWaistHalf, y: 0 },
+      { x: fpCx + fpWaistHalf, y: 0 },
+      { x: fpCx + fpHipHalfW, y: fpHipY },
+      { x: fpCx + fpCrotchW, y: fpHeight },
+      { x: fpCx - fpCrotchW, y: fpHeight },
+      { x: fpCx - fpHipHalfW, y: fpHipY },
+    ],
+    grainLine: { start: { x: fpCx, y: 2 }, end: { x: fpCx, y: fpHeight - 2 } },
+    notches: [
+      { x: fpCx + fpHipHalfW, y: fpHipY },
+      { x: fpCx - fpHipHalfW, y: fpHipY },
+      { x: fpCx, y: 0 },
+    ],
+    color: PIECE_COLORS.front_panel,
+    width: r1(fpW),
+    height: r1(fpHeight),
+    areaCm2: r1(estimateArea(fpW, fpHeight, 0.55)),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ──────── ARKA PANEL ────────
+  // On panele benzer ama daha genis, oturma bolgesi genis, kasik derin
+  const bpWaistHalf = ((waistCirc / 4) * 0.9 + 2) * (1 + ease.hip) * shrinkX * 0.5;
+  const bpRise = 2; // cm
+  const bpHeight = (patternH + bpRise) * shrinkY;
+  const bpCrotchW = gussetW * 0.5 * 0.55;
+  const bpWaistDip = 1.8;
+  const bpHipY = bpHeight * 0.33;
+  const bpHipHalfW = bpWaistHalf * 1.12; // Oturma bolgesi daha genis
+  const bpCx = bpHipHalfW;
+  const bpW = bpHipHalfW * 2;
+  const bpLegY = bpHeight * 0.60;
+
+  const bpPath = [
+    `M ${r2(bpCx - bpWaistHalf)} 0`,
+    `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalf)} 0`,
+    `L ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY)}`,
+    // Sag bacak V-kesimi — daha derin
+    `C ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.55)}, ${r2(bpCx + bpHipHalfW * 0.65)} ${r2(bpLegY)}, ${r2(bpCx + bpCrotchW * 2)} ${r2(bpLegY)}`,
+    `C ${r2(bpCx + bpCrotchW * 1.5)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.5)}, ${r2(bpCx + bpCrotchW * 1.2)} ${r2(bpHeight * 0.90)}, ${r2(bpCx + bpCrotchW)} ${r2(bpHeight)}`,
+    `L ${r2(bpCx - bpCrotchW)} ${r2(bpHeight)}`,
+    `C ${r2(bpCx - bpCrotchW * 1.2)} ${r2(bpHeight * 0.90)}, ${r2(bpCx - bpCrotchW * 1.5)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.5)}, ${r2(bpCx - bpCrotchW * 2)} ${r2(bpLegY)}`,
+    `C ${r2(bpCx - bpHipHalfW * 0.65)} ${r2(bpLegY)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.55)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY)}`,
+    `L ${r2(bpCx - bpWaistHalf)} 0`,
+    `Z`,
+  ].join(" ");
+
+  const backPiece: PatternPiece = {
+    name: "back_panel",
+    label: "Arka Panel",
+    svgPath: bpPath,
+    points: [
+      { x: bpCx - bpWaistHalf, y: 0 },
+      { x: bpCx + bpWaistHalf, y: 0 },
+      { x: bpCx + bpHipHalfW, y: bpHipY },
+      { x: bpCx + bpCrotchW, y: bpHeight },
+      { x: bpCx - bpCrotchW, y: bpHeight },
+      { x: bpCx - bpHipHalfW, y: bpHipY },
+    ],
+    grainLine: { start: { x: bpCx, y: 2 }, end: { x: bpCx, y: bpHeight - 2 } },
+    notches: [
+      { x: bpCx + bpHipHalfW, y: bpHipY },
+      { x: bpCx + bpHipHalfW, y: bpHipY + 1 },
+      { x: bpCx - bpHipHalfW, y: bpHipY },
+      { x: bpCx - bpHipHalfW, y: bpHipY + 1 },
+    ],
+    color: PIECE_COLORS.back_panel,
+    width: r1(bpW),
+    height: r1(bpHeight),
+    areaCm2: r1(estimateArea(bpW, bpHeight, 0.52)),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ──────── AG ASTARI ────────
+  // Oval dikdortgen — kenarlar yuvarlak
+  const gRx = 2.0;
+  const gRy = 1.5;
+
+  const gPath = [
+    `M ${r2(gRx)} 0`,
+    `L ${r2(gussetW - gRx)} 0`,
+    `Q ${r2(gussetW)} 0, ${r2(gussetW)} ${r2(gRy)}`,
+    `L ${r2(gussetW)} ${r2(gussetLen - gRy)}`,
+    `Q ${r2(gussetW)} ${r2(gussetLen)}, ${r2(gussetW - gRx)} ${r2(gussetLen)}`,
+    `L ${r2(gRx)} ${r2(gussetLen)}`,
+    `Q 0 ${r2(gussetLen)}, 0 ${r2(gussetLen - gRy)}`,
+    `L 0 ${r2(gRy)}`,
+    `Q 0 0, ${r2(gRx)} 0`,
+    `Z`,
+  ].join(" ");
+
+  const gussetPiece: PatternPiece = {
+    name: "gusset_lining",
+    label: "Ag Astari",
+    svgPath: gPath,
+    points: [
+      { x: gRx, y: 0 },
+      { x: gussetW - gRx, y: 0 },
+      { x: gussetW, y: gRy },
+      { x: gussetW, y: gussetLen - gRy },
+      { x: gussetW - gRx, y: gussetLen },
+      { x: gRx, y: gussetLen },
+      { x: 0, y: gussetLen - gRy },
+      { x: 0, y: gRy },
+    ],
+    grainLine: { start: { x: gussetW / 2, y: 1 }, end: { x: gussetW / 2, y: gussetLen - 1 } },
+    notches: [
+      { x: 0, y: gussetLen / 2 },
+      { x: gussetW, y: gussetLen / 2 },
+    ],
+    color: PIECE_COLORS.gusset_lining,
+    width: r1(gussetW),
+    height: gussetLen,
+    areaCm2: r1(gussetW * gussetLen * 0.90),
+    grainAngle: 0,
+    seamType: "overlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  const pieces = [frontPiece, backPiece, gussetPiece];
+
+  // Yerlesimleri hesapla
+  const gap = 3;
+  let curX = 0;
+  for (const p of pieces) {
+    p.offsetX = curX;
+    p.offsetY = 0;
+    curX += p.width + gap;
+  }
+
+  const measurements: Record<string, number> = {
+    hipCirc,
+    waistCirc,
+    patternHeight: patternH,
+    frontPanelWidth: r1(fpW),
+    frontPanelHeight: r1(fpHeight),
+    backPanelWidth: r1(bpW),
+    backPanelHeight: r1(bpHeight),
+    gussetWidth: r1(gussetW),
+    gussetLength: gussetLen,
+  };
+
+  return { pieces, measurements };
+}
+
+// ─── PATTERN BUILDER ─────────────────────────────────────────
+
+function buildPattern(
+  modelType: ModelType,
+  gender: "male" | "female",
+  size: SizeKey,
+  piecesData: { pieces: PatternPiece[]; measurements: Record<string, number> },
+  options: PatternOptions = {},
+): Pattern {
+  const { pieces, measurements } = piecesData;
+
+  const totalAreaCm2 = pieces.reduce((s, p) => s + p.areaCm2, 0);
+
+  // Dikis payi ekle
   const defaultSeam = options.seamAllowance || "flatlock";
   const seamCm = SEAM_ALLOWANCES[defaultSeam];
   const totalAreaWithSeamCm2 = pieces.reduce((sum, p) => {
@@ -442,14 +682,23 @@ function generateFemalePantyPattern(
     return sum + p.areaCm2 + perimeter * seamCm;
   }, 0);
 
+  // Gercek kumak alani (fire dahil)
+  const realFabricArea = totalAreaWithSeamCm2 * 1.10; // %10 fire
+
+  const hipCirc = measurements.hipCirc || 0;
+  const waistCirc = measurements.waistCirc || 0;
+  const patternHeight = measurements.patternHeight || 0;
+
   return {
-    modelType: "bikini",
+    modelType,
     size,
-    gender: "female",
+    gender,
     pieces,
-    totalAreaCm2,
-    totalAreaWithSeamCm2,
-    fabricAreaM2: totalAreaWithSeamCm2 / 10000,
+    totalAreaCm2: r1(totalAreaCm2),
+    totalAreaWithSeamCm2: r1(totalAreaWithSeamCm2),
+    realFabricArea: r1(realFabricArea),
+    fabricAreaM2: r2(totalAreaWithSeamCm2 / 10000),
+    measurements,
     metadata: {
       waistCirc,
       hipCirc,
@@ -467,8 +716,8 @@ function generateFemalePantyPattern(
 // ─── ANA FONKSİYONLAR ──────────────────────────────────────
 
 /**
- * Ana kalıp üretme fonksiyonu.
- * modelType'a göre uygun kalıp hesabını çağırır.
+ * Ana kalip uretme fonksiyonu.
+ * modelType'a gore uygun kalip hesabini cagirir.
  */
 export function generatePattern(
   modelType: ModelType,
@@ -478,49 +727,54 @@ export function generatePattern(
   switch (modelType) {
     case "boxer_brief":
     case "trunk": {
-      const pattern = generateMaleBoxerPattern(size, options);
-      pattern.modelType = modelType;
-      // Trunk için bacak boyunu kısalt
+      const data = generateMaleBoxerPieces(size, options);
+      const pattern = buildPattern(modelType, "male", size, data, options);
+
+      // Trunk icin bacak boyunu kisalt
       if (modelType === "trunk") {
+        const heightReduction = 0.75;
         pattern.pieces = pattern.pieces.map((p) => {
           if (p.name === "front_panel" || p.name === "back_panel") {
-            const heightReduction = 0.75; // %25 kısaltma
             return {
               ...p,
-              height: p.height * heightReduction,
-              areaCm2: p.areaCm2 * heightReduction,
+              height: r1(p.height * heightReduction),
+              areaCm2: r1(p.areaCm2 * heightReduction),
+              // svgPath'i Y ekseninde scale et
+              svgPath: scalePathY(p.svgPath, heightReduction),
               points: p.points.map((pt) => ({ x: pt.x, y: pt.y * heightReduction })),
             };
           }
           return p;
         });
-        pattern.totalAreaCm2 = pattern.pieces.reduce((s, p) => s + p.areaCm2, 0);
-        pattern.totalAreaWithSeamCm2 = pattern.totalAreaCm2 * 1.05;
-        pattern.fabricAreaM2 = pattern.totalAreaWithSeamCm2 / 10000;
+        pattern.totalAreaCm2 = r1(pattern.pieces.reduce((s, p) => s + p.areaCm2, 0));
+        pattern.totalAreaWithSeamCm2 = r1(pattern.totalAreaCm2 * 1.05);
+        pattern.fabricAreaM2 = r2(pattern.totalAreaWithSeamCm2 / 10000);
       }
       return pattern;
     }
     case "bikini":
     case "hipster": {
-      const pattern = generateFemalePantyPattern(size, options);
-      pattern.modelType = modelType;
-      // Hipster için bel hattını düşür (daha kısa boy)
+      const data = generateFemalePantyPieces(size, options);
+      const pattern = buildPattern(modelType, "female", size, data, options);
+
+      // Hipster icin bel hattini dusur
       if (modelType === "hipster") {
+        const heightReduction = 0.88;
         pattern.pieces = pattern.pieces.map((p) => {
           if (p.name === "front_panel" || p.name === "back_panel") {
-            const heightReduction = 0.88; // bel hattı düşürme
             return {
               ...p,
-              height: p.height * heightReduction,
-              areaCm2: p.areaCm2 * heightReduction,
+              height: r1(p.height * heightReduction),
+              areaCm2: r1(p.areaCm2 * heightReduction),
+              svgPath: scalePathY(p.svgPath, heightReduction),
               points: p.points.map((pt) => ({ x: pt.x, y: pt.y * heightReduction })),
             };
           }
           return p;
         });
-        pattern.totalAreaCm2 = pattern.pieces.reduce((s, p) => s + p.areaCm2, 0);
-        pattern.totalAreaWithSeamCm2 = pattern.totalAreaCm2 * 1.05;
-        pattern.fabricAreaM2 = pattern.totalAreaWithSeamCm2 / 10000;
+        pattern.totalAreaCm2 = r1(pattern.pieces.reduce((s, p) => s + p.areaCm2, 0));
+        pattern.totalAreaWithSeamCm2 = r1(pattern.totalAreaCm2 * 1.05);
+        pattern.fabricAreaM2 = r2(pattern.totalAreaWithSeamCm2 / 10000);
       }
       return pattern;
     }
@@ -529,9 +783,29 @@ export function generatePattern(
   }
 }
 
+/** SVG path'deki Y koordinatlarini scale et */
+function scalePathY(path: string, factor: number): string {
+  // SVG path komutlarini parse et ve Y degerlerini carp
+  return path.replace(
+    /([MLCQZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/gi,
+    (match, cmd: string, coords: string) => {
+      if (cmd.toUpperCase() === "Z") return cmd;
+      const nums = coords.trim().split(/\s+/).map(Number);
+      const scaled: number[] = [];
+      for (let i = 0; i < nums.length; i++) {
+        if (i % 2 === 0) {
+          scaled.push(r2(nums[i])); // X — degistirme
+        } else {
+          scaled.push(r2(nums[i] * factor)); // Y — scale
+        }
+      }
+      return `${cmd} ${scaled.join(" ")}`;
+    },
+  );
+}
+
 /**
- * Beden grading — temel kalıptan hedef bedene ölçekleme.
- * Grading tablosuna göre artış/azalış uygular.
+ * Beden grading — temel kaliptan hedef bedene olcekleme.
  */
 export function gradePattern(basePattern: Pattern, targetSize: SizeKey): Pattern {
   const baseIdx = getSizeIndex(basePattern.size);
@@ -539,7 +813,7 @@ export function gradePattern(basePattern: Pattern, targetSize: SizeKey): Pattern
 
   if (baseIdx === targetIdx) return basePattern;
 
-  // Adım adım grading uygula
+  // Adim adim grading uygula
   let cumulativeWaistDelta = 0;
   let cumulativeHipDelta = 0;
   let cumulativeLegDelta = 0;
@@ -561,41 +835,50 @@ export function gradePattern(basePattern: Pattern, targetSize: SizeKey): Pattern
     cumulativeLegDelta += legStep * step;
   }
 
-  // Ölçek faktörleri hesapla
-  const baseWaist = basePattern.metadata.waistCirc;
   const baseHip = basePattern.metadata.hipCirc;
+  const baseWaist = basePattern.metadata.waistCirc;
   const scaleX = (baseHip + cumulativeHipDelta) / baseHip;
-  const scaleY = 1 + (cumulativeWaistDelta / baseWaist) * 0.3; // boy ölçekleme daha yumuşak
+  const scaleY = 1 + (cumulativeWaistDelta / baseWaist) * 0.3;
 
-  // Yeni kalıp oluştur — scale uygula
   const newPieces = basePattern.pieces.map((piece) => ({
     ...piece,
-    width: piece.width * scaleX,
-    height: piece.height * scaleY,
-    areaCm2: piece.areaCm2 * scaleX * scaleY,
+    width: r1(piece.width * scaleX),
+    height: r1(piece.height * scaleY),
+    areaCm2: r1(piece.areaCm2 * scaleX * scaleY),
+    svgPath: scalePathXY(piece.svgPath, scaleX, scaleY),
     points: piece.points.map((pt) => ({
-      x: pt.x * scaleX,
-      y: pt.y * scaleY,
+      x: r2(pt.x * scaleX),
+      y: r2(pt.y * scaleY),
     })),
     grainLine: {
-      start: { x: piece.grainLine.start.x * scaleX, y: piece.grainLine.start.y * scaleY },
-      end: { x: piece.grainLine.end.x * scaleX, y: piece.grainLine.end.y * scaleY },
+      start: { x: r2(piece.grainLine.start.x * scaleX), y: r2(piece.grainLine.start.y * scaleY) },
+      end: { x: r2(piece.grainLine.end.x * scaleX), y: r2(piece.grainLine.end.y * scaleY) },
     },
     notches: piece.notches.map((n) => ({
-      x: n.x * scaleX,
-      y: n.y * scaleY,
+      x: r2(n.x * scaleX),
+      y: r2(n.y * scaleY),
     })),
   }));
 
-  const totalAreaCm2 = newPieces.reduce((s, p) => s + p.areaCm2, 0);
+  // Offsetleri yeniden hesapla
+  const gap = 3;
+  let curX = 0;
+  for (const p of newPieces) {
+    p.offsetX = curX;
+    p.offsetY = 0;
+    curX += p.width + gap;
+  }
+
+  const totalAreaCm2 = r1(newPieces.reduce((s, p) => s + p.areaCm2, 0));
 
   return {
     ...basePattern,
     size: targetSize,
     pieces: newPieces,
     totalAreaCm2,
-    totalAreaWithSeamCm2: totalAreaCm2 * 1.05,
-    fabricAreaM2: (totalAreaCm2 * 1.05) / 10000,
+    totalAreaWithSeamCm2: r1(totalAreaCm2 * 1.05),
+    fabricAreaM2: r2((totalAreaCm2 * 1.05) / 10000),
+    realFabricArea: r1(totalAreaCm2 * 1.05 * 1.10),
     metadata: {
       ...basePattern.metadata,
       waistCirc: baseWaist + cumulativeWaistDelta,
@@ -604,12 +887,33 @@ export function gradePattern(basePattern: Pattern, targetSize: SizeKey): Pattern
   };
 }
 
+/** SVG path'deki X ve Y koordinatlarini scale et */
+function scalePathXY(path: string, fx: number, fy: number): string {
+  return path.replace(
+    /([MLCQZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/gi,
+    (match, cmd: string, coords: string) => {
+      if (cmd.toUpperCase() === "Z") return cmd;
+      const nums = coords.trim().split(/\s+/).map(Number);
+      const scaled: number[] = [];
+      for (let i = 0; i < nums.length; i++) {
+        if (i % 2 === 0) {
+          scaled.push(r2(nums[i] * fx));
+        } else {
+          scaled.push(r2(nums[i] * fy));
+        }
+      }
+      return `${cmd} ${scaled.join(" ")}`;
+    },
+  );
+}
+
 /**
- * Kalıp doğrulama — çevre eşleştirme ve uyumluluk kontrolleri.
+ * Kalip dogrulama — cevre eslestirme ve uyumluluk kontrolleri.
  */
 export function validatePattern(pattern: Pattern): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const checks: { name: string; passed: boolean; message: string; value?: number }[] = [];
 
   const front = pattern.pieces.find((p) => p.name === "front_panel");
   const back = pattern.pieces.find((p) => p.name === "back_panel");
@@ -617,44 +921,54 @@ export function validatePattern(pattern: Pattern): ValidationResult {
     p.name === "gusset" || p.name === "gusset_lining",
   );
 
+  // 1. Temel parcalar mevcut mu?
   if (!front || !back) {
-    errors.push("Ön ve arka panel bulunamadı.");
-    return { valid: false, errors, warnings };
+    errors.push("On ve arka panel bulunamadi.");
+    checks.push({ name: "Temel parcalar", passed: false, message: "On/arka panel eksik" });
+    return { valid: false, isValid: false, checks, errors, warnings };
   }
+  checks.push({ name: "Temel parcalar", passed: true, message: "On ve arka panel mevcut" });
 
-  // 1. Yan dikiş uzunluğu kontrolü (+-2mm tolerans)
-  const sideTolerance = 0.2; // cm
-  const frontSideLength = front.height;
-  const backSideLength = back.height;
-  const sideDiff = Math.abs(frontSideLength - backSideLength);
+  // 2. Yan dikis uzunlugu kontrolu (+-2mm tolerans)
+  const frontSideLen = front.height;
+  const backSideLen = back.height;
+  const sideDiff = Math.abs(frontSideLen - backSideLen);
 
   if (pattern.gender === "male" && pattern.modelType !== "trunk") {
-    // Boxer: arka rise daha uzun, bu normal — sadece cok buyuk fark uyar
     if (sideDiff > 5) {
       errors.push(
-        `Yan dikiş farkı çok büyük: ön=${frontSideLength.toFixed(1)}cm, arka=${backSideLength.toFixed(1)}cm (fark: ${sideDiff.toFixed(1)}cm)`,
+        `Yan dikis farki cok buyuk: on=${frontSideLen.toFixed(1)}cm, arka=${backSideLen.toFixed(1)}cm (fark: ${sideDiff.toFixed(1)}cm)`,
       );
+      checks.push({ name: "Yan dikis", passed: false, message: `Fark: ${sideDiff.toFixed(1)}cm`, value: sideDiff });
+    } else {
+      checks.push({ name: "Yan dikis", passed: true, message: `Fark: ${sideDiff.toFixed(1)}cm (backRise dahil)`, value: sideDiff });
     }
   } else if (pattern.gender === "female") {
-    if (sideDiff > sideTolerance + 3) {
+    const ok = sideDiff <= 5;
+    if (!ok) {
       warnings.push(
-        `Yan dikiş farkı: ön=${frontSideLength.toFixed(1)}cm, arka=${backSideLength.toFixed(1)}cm`,
+        `Yan dikis farki: on=${frontSideLen.toFixed(1)}cm, arka=${backSideLen.toFixed(1)}cm`,
       );
     }
+    checks.push({ name: "Yan dikis", passed: ok, message: `Fark: ${sideDiff.toFixed(1)}cm`, value: sideDiff });
   }
 
-  // 2. Ağ parçası ön kenar kontrolü
+  // 3. Ag parcasi kontrolu
   if (gusset) {
-    const gussetFrontEdge = gusset.width;
-    if (gussetFrontEdge < 5) {
-      warnings.push(`Ağ genişliği çok dar: ${gussetFrontEdge.toFixed(1)}cm`);
+    const gW = gusset.width;
+    let gOk = true;
+    if (gW < 5) {
+      warnings.push(`Ag genisligi cok dar: ${gW.toFixed(1)}cm`);
+      gOk = false;
     }
-    if (gussetFrontEdge > 12) {
-      warnings.push(`Ağ genişliği çok geniş: ${gussetFrontEdge.toFixed(1)}cm`);
+    if (gW > 12) {
+      warnings.push(`Ag genisligi cok genis: ${gW.toFixed(1)}cm`);
+      gOk = false;
     }
+    checks.push({ name: "Ag parcasi", passed: gOk, message: `Genislik: ${gW.toFixed(1)}cm`, value: gW });
   }
 
-  // 3. Bel çevresi kontrolü
+  // 4. Bel cevresi kontrolu
   const easeWaist = pattern.gender === "male"
     ? EASE_PROFILES.MALE_BOXER.waist
     : EASE_PROFILES.FEMALE_PANTY.waist;
@@ -665,46 +979,80 @@ export function validatePattern(pattern: Pattern): ValidationResult {
 
   if (waistDiffPercent > 0.15) {
     warnings.push(
-      `Bel çevresi uyumsuzluğu: hesaplanan=${calculatedWaist.toFixed(1)}cm, beklenen=${expectedWaist.toFixed(1)}cm (fark: ${(waistDiffPercent * 100).toFixed(1)}%)`,
+      `Bel cevresi uyumsuzlugu: hesaplanan=${calculatedWaist.toFixed(1)}cm, beklenen=${expectedWaist.toFixed(1)}cm (fark: ${(waistDiffPercent * 100).toFixed(1)}%)`,
     );
   }
+  checks.push({
+    name: "Bel cevresi",
+    passed: waistDiffPercent <= 0.15,
+    message: `Hesaplanan: ${calculatedWaist.toFixed(1)}cm, beklenen: ${expectedWaist.toFixed(1)}cm`,
+    value: waistDiffPercent,
+  });
 
-  // 4. Alan kontrolü — aşırı küçük veya büyük
+  // 5. Alan kontrolu
+  const areaOk = pattern.totalAreaCm2 >= 200 && pattern.totalAreaCm2 <= 5000;
   if (pattern.totalAreaCm2 < 200) {
-    errors.push(`Toplam alan çok küçük: ${pattern.totalAreaCm2.toFixed(0)}cm2`);
+    errors.push(`Toplam alan cok kucuk: ${pattern.totalAreaCm2.toFixed(0)}cm2`);
   }
   if (pattern.totalAreaCm2 > 5000) {
-    errors.push(`Toplam alan çok büyük: ${pattern.totalAreaCm2.toFixed(0)}cm2`);
+    errors.push(`Toplam alan cok buyuk: ${pattern.totalAreaCm2.toFixed(0)}cm2`);
   }
+  checks.push({
+    name: "Toplam alan",
+    passed: areaOk,
+    message: `${pattern.totalAreaCm2.toFixed(0)}cm2`,
+    value: pattern.totalAreaCm2,
+  });
 
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
+  // 6. Parca ust uste binme kontrolu
+  let overlapOk = true;
+  for (let i = 0; i < pattern.pieces.length; i++) {
+    for (let j = i + 1; j < pattern.pieces.length; j++) {
+      const a = pattern.pieces[i];
+      const b = pattern.pieces[j];
+      const aRight = a.offsetX + a.width;
+      const bLeft = b.offsetX;
+      if (aRight > bLeft + 0.1) {
+        overlapOk = false;
+        errors.push(`Parcalar ust uste biniyor: ${a.label} ve ${b.label}`);
+      }
+    }
+  }
+  checks.push({ name: "Ust uste binme", passed: overlapOk, message: overlapOk ? "Parcalar ayri" : "Carpma tespit edildi" });
+
+  const valid = errors.length === 0;
+  return { valid, isValid: valid, checks, errors, warnings };
 }
 
 /**
- * Kalıp parçalarından SVG string üretir.
- * @param pattern - Kalıp verisi
- * @param scale - 1cm = kaç px (varsayılan 5)
+ * Kalip parcalarindan SVG string uretir.
+ * Bezier egrili gercekci kalip gorseli.
+ *
+ * @param pattern - Kalip verisi
+ * @param scale - 1cm = kac px (varsayilan 4)
  */
-export function patternToSVG(pattern: Pattern, scale: number = 5): string {
-  const padding = 20;
-  let offsetX = padding;
-  const offsetY = padding;
+export function patternToSVG(pattern: Pattern, scale: number = 4): string {
+  const paddingCm = 2; // cm padding
+  const pad = paddingCm * scale;
+  const gapCm = 3;
+  const gap = gapCm * scale;
 
-  // Toplam genişlik ve yükseklik hesapla
-  let totalWidth = padding;
-  let maxHeight = 0;
+  // Baslik icin ust bosluk
+  const headerHeight = 24; // px
 
-  for (const piece of pattern.pieces) {
-    totalWidth += piece.width * scale + padding;
-    maxHeight = Math.max(maxHeight, piece.height * scale);
+  // Toplam genislik ve yukseklik hesapla
+  let totalWidthCm = paddingCm;
+  let maxHeightCm = 0;
+
+  for (let i = 0; i < pattern.pieces.length; i++) {
+    totalWidthCm += pattern.pieces[i].width;
+    if (i < pattern.pieces.length - 1) totalWidthCm += gapCm;
+    maxHeightCm = Math.max(maxHeightCm, pattern.pieces[i].height);
   }
+  totalWidthCm += paddingCm;
 
-  const svgWidth = totalWidth + padding;
-  const svgHeight = maxHeight + padding * 2 + 30;
+  const svgWidth = Math.ceil(totalWidthCm * scale);
+  const svgHeight = Math.ceil(maxHeightCm * scale + pad * 2 + headerHeight + 20); // +20 etiketler icin
 
   const parts: string[] = [];
 
@@ -715,66 +1063,75 @@ export function patternToSVG(pattern: Pattern, scale: number = 5): string {
   // Arka plan
   parts.push(`  <rect width="${svgWidth}" height="${svgHeight}" fill="#FAFAFA" />`);
 
-  // Başlık
-  const genderLabel = pattern.gender === "male" ? "Erkek" : "Kadın";
+  // Baslik
+  const genderLabel = pattern.gender === "male" ? "Erkek" : "Kadin";
   parts.push(
-    `  <text x="${svgWidth / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#374151">${pattern.modelType.toUpperCase()} - ${pattern.size} - ${genderLabel}</text>`,
+    `  <text x="${svgWidth / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#374151">${pattern.modelType.toUpperCase()} - ${pattern.size} - ${genderLabel}</text>`,
   );
 
-  // Her parça için SVG oluştur
+  // Her parca icin SVG olustur
+  let offsetXpx = pad;
+
   for (const piece of pattern.pieces) {
     const pxW = piece.width * scale;
     const pxH = piece.height * scale;
+    const originY = pad + headerHeight;
 
-    parts.push(`  <g transform="translate(${offsetX}, ${offsetY + 20})">`);
+    parts.push(`  <g transform="translate(${r1(offsetXpx)}, ${r1(originY)})">`);
 
-    // Path oluştur
-    if (piece.points.length > 0) {
-      const pathPoints = piece.points.map(
-        (pt) => `${((pt.x / piece.width) * pxW).toFixed(1)},${((pt.y / piece.height) * pxH).toFixed(1)}`,
-      );
-      const pathD = `M ${pathPoints[0]} ` + pathPoints.slice(1).map((p) => `L ${p}`).join(" ") + " Z";
+    // Path olustur — svgPath'i scale et
+    const scaledPath = piece.svgPath.replace(
+      /(-?\d+\.?\d*)/g,
+      (match, num, offset, fullStr) => {
+        // Komut harflerini atla
+        const prevChar = fullStr[offset - 1];
+        if (prevChar && /[A-Za-z]/.test(prevChar) && !/\d/.test(prevChar)) {
+          // Ilk koordinat (hemen komuttan sonra)
+        }
+        return r2(parseFloat(num) * scale).toString();
+      },
+    );
 
-      parts.push(
-        `    <path d="${pathD}" fill="${piece.color}20" stroke="${piece.color}" stroke-width="1.5" />`,
-      );
-    }
+    // Daha guvenilir scale: path'i parse edip tekrar olustur
+    const finalPath = scalePathXY(piece.svgPath, scale, scale);
 
-    // Grain line (kesikli çizgi)
-    const glStart = piece.grainLine.start;
-    const glEnd = piece.grainLine.end;
-    const glX1 = ((glStart.x / piece.width) * pxW).toFixed(1);
-    const glY1 = ((glStart.y / piece.height) * pxH).toFixed(1);
-    const glX2 = ((glEnd.x / piece.width) * pxW).toFixed(1);
-    const glY2 = ((glEnd.y / piece.height) * pxH).toFixed(1);
     parts.push(
-      `    <line x1="${glX1}" y1="${glY1}" x2="${glX2}" y2="${glY2}" stroke="#94A3B8" stroke-width="0.8" stroke-dasharray="4,3" />`,
+      `    <path d="${finalPath}" fill="${piece.color}" fill-opacity="0.15" stroke="${piece.color}" stroke-width="2" />`,
+    );
+
+    // Grain line (kesikli cizgi)
+    const glX1 = r1(piece.grainLine.start.x * scale);
+    const glY1 = r1(piece.grainLine.start.y * scale);
+    const glX2 = r1(piece.grainLine.end.x * scale);
+    const glY2 = r1(piece.grainLine.end.y * scale);
+    parts.push(
+      `    <line x1="${glX1}" y1="${glY1}" x2="${glX2}" y2="${glY2}" stroke="#94A3B8" stroke-width="0.8" stroke-dasharray="4 4" />`,
     );
 
     // Grain line ok ucu
-    const glEndPxX = (glEnd.x / piece.width) * pxW;
-    const glEndPxY = (glEnd.y / piece.height) * pxH;
+    const arrowX = glX2;
+    const arrowY = glY2;
     parts.push(
-      `    <polygon points="${(glEndPxX - 3).toFixed(1)},${(glEndPxY - 6).toFixed(1)} ${(glEndPxX + 3).toFixed(1)},${(glEndPxY - 6).toFixed(1)} ${glEndPxX.toFixed(1)},${glEndPxY.toFixed(1)}" fill="#94A3B8" />`,
+      `    <polygon points="${r1(arrowX - 3)},${r1(arrowY - 6)} ${r1(arrowX + 3)},${r1(arrowY - 6)} ${r1(arrowX)},${r1(arrowY)}" fill="#94A3B8" />`,
     );
 
-    // Notch (çentik) noktaları — küçük üçgenler
+    // Notch (centik) noktalari — kucuk ucgenler (3px)
     for (const notch of piece.notches) {
-      const nx = (notch.x / piece.width) * pxW;
-      const ny = (notch.y / piece.height) * pxH;
+      const nx = r1(notch.x * scale);
+      const ny = r1(notch.y * scale);
       parts.push(
-        `    <polygon points="${(nx - 2).toFixed(1)},${ny.toFixed(1)} ${(nx + 2).toFixed(1)},${ny.toFixed(1)} ${nx.toFixed(1)},${(ny + 4).toFixed(1)}" fill="${piece.color}" />`,
+        `    <polygon points="${r1(nx - 3)},${ny} ${r1(nx + 3)},${ny} ${nx},${r1(ny + 5)}" fill="${piece.color}" />`,
       );
     }
 
-    // Parça etiketi
+    // Parca etiketi — altinda
     parts.push(
-      `    <text x="${(pxW / 2).toFixed(1)}" y="${(pxH + 14).toFixed(1)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#6B7280">${piece.label} (${piece.width.toFixed(1)}x${piece.height.toFixed(1)}cm)</text>`,
+      `    <text x="${r1(pxW / 2)}" y="${r1(pxH + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#6B7280">${piece.label} (${piece.width.toFixed(1)}\u00D7${piece.height.toFixed(1)}cm)</text>`,
     );
 
     parts.push(`  </g>`);
 
-    offsetX += pxW + padding;
+    offsetXpx += pxW + gap;
   }
 
   parts.push(`</svg>`);
@@ -783,8 +1140,8 @@ export function patternToSVG(pattern: Pattern, scale: number = 5): string {
 }
 
 /**
- * Gerçek kumaş alanı hesabı — dikiş payı, ease, çekme payı dahil.
- * m2 cinsinden döner.
+ * Gercek kumak alani hesabi — dikis payi, ease, cekme payi dahil.
+ * m2 cinsinden doner.
  */
 export function calculateRealFabricArea(pattern: Pattern): number {
   let totalCm2 = 0;
@@ -792,27 +1149,27 @@ export function calculateRealFabricArea(pattern: Pattern): number {
   for (const piece of pattern.pieces) {
     let area = piece.areaCm2;
 
-    // Dikiş payı ekle (çevre x dikiş payı genişliği)
+    // Dikis payi ekle (cevre x dikis payi genisligi)
     const perimeter = 2 * (piece.width + piece.height);
     const seamType = (pattern.metadata.seamType.side || "flatlock") as SeamType;
     area += perimeter * SEAM_ALLOWANCES[seamType];
 
-    // Çekme payı ekle
+    // Cekme payi ekle
     area *= (1 + SHRINKAGE.lengthwise) * (1 + SHRINKAGE.crosswise);
 
     totalCm2 += area;
   }
 
-  // Simetrik parçalar (ön/arka panel) 2 adet kesilir — ağ ve bel bandı tekil
+  // Simetrik parcalar (on/arka panel, yan panel) 2 adet kesilir — ag tekil
   const symmetricArea = pattern.pieces.reduce((sum, p) => {
     if (p.name === "gusset" || p.name === "gusset_lining" || p.name === "waistband") {
-      return sum; // tekil parçalar
+      return sum; // tekil parcalar
     }
     return sum + p.areaCm2;
   }, 0);
 
-  // Toplam: tüm parçalar + simetrik parçaların fazladan 1 kopyası
+  // Toplam: tum parcalar + simetrik parcalarin fazladan 1 kopyasi
   const finalCm2 = totalCm2 + symmetricArea * (1 + SHRINKAGE.lengthwise) * (1 + SHRINKAGE.crosswise);
 
-  return finalCm2 / 10000; // m2'ye çevir
+  return finalCm2 / 10000; // m2'ye cevir
 }
