@@ -6,9 +6,10 @@ import { signOut } from "next-auth/react";
 
 interface AdminHeaderProps {
   user: { name?: string | null; email?: string | null };
+  onMenuClick?: () => void;
 }
 
-export function AdminHeader({ user }: AdminHeaderProps) {
+export function AdminHeader({ user, onMenuClick }: AdminHeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-      <button className="lg:hidden">
+      <button className="lg:hidden p-1" onClick={onMenuClick} aria-label="Menüyü aç">
         <Menu className="h-5 w-5 text-gray-600" />
       </button>
 

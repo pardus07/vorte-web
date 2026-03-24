@@ -100,11 +100,15 @@ const menuItems: MenuEntry[] = [
   { label: "Ayarlar", href: "/admin/ayarlar", icon: Settings },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  onClose?: () => void;
+}
+
+export function AdminSidebar({ onClose }: AdminSidebarProps = {}) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-white lg:flex">
+    <aside className="flex h-full w-64 flex-col border-r bg-white">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b px-6">
         <Image src="/logo.png" alt="Vorte" width={80} height={28} />
@@ -137,6 +141,7 @@ export function AdminSidebar() {
               <li key={entry.href}>
                 <Link
                   href={entry.href}
+                  onClick={onClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     isActive
                       ? "bg-[#7AC143]/10 font-medium text-[#7AC143]"
@@ -200,6 +205,7 @@ function SidebarGroup({ group, pathname }: { group: MenuGroup; pathname: string 
               <li key={child.href}>
                 <Link
                   href={child.href}
+                  onClick={onClose}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors ${
                     isActive
                       ? "font-medium text-[#7AC143]"
