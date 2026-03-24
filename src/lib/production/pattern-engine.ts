@@ -202,42 +202,37 @@ function generateMaleBoxerPieces(
 
   // ──────── ON PANEL ────────
   // Kalkan/kelebek sekli — belden kasiga daralan
-  const fpWaistHalf = (hipCirc / 4) * HIP_RATIOS.front * 2 * (1 + ease.hip) * shrinkX;
+  // FreeSewing Bruce referansi: hipFront = hips * 0.30
+  const hipFront = hipCirc * HIP_RATIOS.front; // toplam on kalca (M: 28.8cm)
+  const fpHalfW = (hipFront / 2) * (1 - ease.hip) * shrinkX; // yarim genislik (M: ~13.4cm)
   const fpHeight = patternH * shrinkY;
-  const fpCrotchW = gussetW * 0.5; // kasik noktasinda daralma
+  const fpCrotchHalfW = gussetW * 0.5; // kasik noktasinda daralma (3.5cm)
 
-  // Bel egrisi icbukey derinligi (cm)
+  // Bel — kalcadan biraz dar
+  const fpWaistHalfW = fpHalfW * 0.92;
+  // Bel egrisi icbukey derinligi
   const fpWaistDip = 1.5;
-  // Kalca hatti yuksekligi (belden asagi)
+  // Kalca hatti yuksekligi (belden asagi ~%35)
   const fpHipY = fpHeight * 0.35;
-  // Kalca genisligi (bel genisliginden biraz daha genis)
-  const fpHipHalfW = fpWaistHalf * 1.05;
 
-  // SVG path: orijin (0,0) = sol ust kose
-  // Noktalar:
-  //   TL = (cx - waistHalf, 0)  bel sol
-  //   TR = (cx + waistHalf, 0)  bel sag
-  //   HR = (cx + hipHalf, hipY) kalca sag
-  //   CR = (cx + crotchHalf, H) kasik sag
-  //   CL = (cx - crotchHalf, H) kasik sol
-  //   HL = (cx - hipHalf, hipY) kalca sol
-  const cx = fpHipHalfW; // merkez x
-  const fpW = fpHipHalfW * 2;
+  // Merkez x = yarim genislik (parca simetrik)
+  const cx = fpHalfW;
+  const fpW = fpHalfW * 2;
 
   const fpPath = [
-    `M ${r2(cx - fpWaistHalf)} 0`,
+    `M ${r2(cx - fpWaistHalfW)} 0`,
     // Bel egrisi — quadratic bezier, ortada asagi (icbukey)
-    `Q ${r2(cx)} ${r2(fpWaistDip)}, ${r2(cx + fpWaistHalf)} 0`,
-    // Sag yan: belden kalcaya duz cizgi
-    `L ${r2(cx + fpHipHalfW)} ${r2(fpHipY)}`,
-    // Sag kasik egrisi — cubic bezier, kalcadan kasiga S-egrisi
-    `C ${r2(cx + fpHipHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.4)}, ${r2(cx + fpCrotchW * 1.3)} ${r2(fpHeight * 0.85)}, ${r2(cx + fpCrotchW)} ${r2(fpHeight)}`,
+    `Q ${r2(cx)} ${r2(fpWaistDip)}, ${r2(cx + fpWaistHalfW)} 0`,
+    // Sag yan: belden kalcaya hafif disari acilan
+    `L ${r2(cx + fpHalfW)} ${r2(fpHipY)}`,
+    // Sag kasik egrisi — cubic bezier, kalcadan kasiga yumusak S-egrisi
+    `C ${r2(cx + fpHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.35)}, ${r2(cx + fpCrotchHalfW + 2)} ${r2(fpHeight * 0.82)}, ${r2(cx + fpCrotchHalfW)} ${r2(fpHeight)}`,
     // Kasik tabani — duz
-    `L ${r2(cx - fpCrotchW)} ${r2(fpHeight)}`,
+    `L ${r2(cx - fpCrotchHalfW)} ${r2(fpHeight)}`,
     // Sol kasik egrisi — cubic bezier (simetrik)
-    `C ${r2(cx - fpCrotchW * 1.3)} ${r2(fpHeight * 0.85)}, ${r2(cx - fpHipHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.4)}, ${r2(cx - fpHipHalfW)} ${r2(fpHipY)}`,
-    // Sol yan: kalcadan bele duz cizgi
-    `L ${r2(cx - fpWaistHalf)} 0`,
+    `C ${r2(cx - fpCrotchHalfW - 2)} ${r2(fpHeight * 0.82)}, ${r2(cx - fpHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.35)}, ${r2(cx - fpHalfW)} ${r2(fpHipY)}`,
+    // Sol yan: kalcadan bele
+    `L ${r2(cx - fpWaistHalfW)} 0`,
     `Z`,
   ].join(" ");
 
@@ -246,18 +241,17 @@ function generateMaleBoxerPieces(
     label: "On Panel",
     svgPath: fpPath,
     points: [
-      { x: cx - fpWaistHalf, y: 0 },
-      { x: cx + fpWaistHalf, y: 0 },
-      { x: cx + fpHipHalfW, y: fpHipY },
-      { x: cx + fpCrotchW, y: fpHeight },
-      { x: cx - fpCrotchW, y: fpHeight },
-      { x: cx - fpHipHalfW, y: fpHipY },
+      { x: cx - fpWaistHalfW, y: 0 },
+      { x: cx + fpWaistHalfW, y: 0 },
+      { x: cx + fpHalfW, y: fpHipY },
+      { x: cx + fpCrotchHalfW, y: fpHeight },
+      { x: cx - fpCrotchHalfW, y: fpHeight },
+      { x: cx - fpHalfW, y: fpHipY },
     ],
     grainLine: { start: { x: cx, y: 2 }, end: { x: cx, y: fpHeight - 2 } },
     notches: [
-      // Tek centik — yan dikiste, kasik baslangicinda
-      { x: cx + fpHipHalfW, y: fpHipY },
-      { x: cx - fpHipHalfW, y: fpHipY },
+      { x: cx + fpHalfW, y: fpHipY },
+      { x: cx - fpHalfW, y: fpHipY },
     ],
     color: PIECE_COLORS.front_panel,
     width: r1(fpW),
@@ -271,31 +265,33 @@ function generateMaleBoxerPieces(
 
   // ──────── ARKA PANEL ────────
   // Trapez sekli — ustte dar, altta genis; daha derin kasik egrisi
-  const bpWaistHalf = (hipCirc / 4) * HIP_RATIOS.back * 2 * (1 + ease.hip) * shrinkX;
-  const backRise = 3.5; // cm
+  const hipBack = hipCirc * HIP_RATIOS.back; // toplam arka kalca (M: 30.7cm)
+  const bpHalfW = (hipBack / 2) * (1 - ease.hip) * shrinkX; // yarim genislik (M: ~14.3cm)
+  const backRise = 3.5; // cm ek yukseklik
   const bpHeight = (patternH + backRise) * shrinkY;
-  const bpCrotchW = gussetW * 0.55;
+  const bpCrotchHalfW = gussetW * 0.55; // kasik daralma (3.85cm)
 
+  // Bel — arka bel kalcadan dar (oturma konforu)
+  const bpWaistHalfW = bpHalfW * 0.88;
   const bpWaistDip = 2.5; // Daha belirgin icbukey
   const bpHipY = bpHeight * 0.30;
-  const bpHipHalfW = bpWaistHalf * 1.08;
-  const bpCx = bpHipHalfW;
-  const bpW = bpHipHalfW * 2;
+  const bpCx = bpHalfW;
+  const bpW = bpHalfW * 2;
 
   const bpPath = [
-    `M ${r2(bpCx - bpWaistHalf)} 0`,
+    `M ${r2(bpCx - bpWaistHalfW)} 0`,
     // Bel egrisi — daha belirgin icbukey
-    `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalf)} 0`,
-    // Sag yan
-    `L ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY)}`,
-    // Sag kasik — daha derin ve genis cubic bezier
-    `C ${r2(bpCx + bpHipHalfW * 1.02)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.45)}, ${r2(bpCx + bpCrotchW * 1.5)} ${r2(bpHeight * 0.82)}, ${r2(bpCx + bpCrotchW)} ${r2(bpHeight)}`,
+    `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalfW)} 0`,
+    // Sag yan — kalcaya dogru genisleme
+    `L ${r2(bpCx + bpHalfW)} ${r2(bpHipY)}`,
+    // Sag kasik — daha derin cubic bezier (FreeSewing: cp mesafesi 1.5x gusset)
+    `C ${r2(bpCx + bpHalfW)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.40)}, ${r2(bpCx + bpCrotchHalfW + 3)} ${r2(bpHeight * 0.78)}, ${r2(bpCx + bpCrotchHalfW)} ${r2(bpHeight)}`,
     // Kasik tabani
-    `L ${r2(bpCx - bpCrotchW)} ${r2(bpHeight)}`,
+    `L ${r2(bpCx - bpCrotchHalfW)} ${r2(bpHeight)}`,
     // Sol kasik (simetrik)
-    `C ${r2(bpCx - bpCrotchW * 1.5)} ${r2(bpHeight * 0.82)}, ${r2(bpCx - bpHipHalfW * 1.02)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.45)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY)}`,
+    `C ${r2(bpCx - bpCrotchHalfW - 3)} ${r2(bpHeight * 0.78)}, ${r2(bpCx - bpHalfW)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.40)}, ${r2(bpCx - bpHalfW)} ${r2(bpHipY)}`,
     // Sol yan
-    `L ${r2(bpCx - bpWaistHalf)} 0`,
+    `L ${r2(bpCx - bpWaistHalfW)} 0`,
     `Z`,
   ].join(" ");
 
@@ -304,20 +300,19 @@ function generateMaleBoxerPieces(
     label: "Arka Panel",
     svgPath: bpPath,
     points: [
-      { x: bpCx - bpWaistHalf, y: 0 },
-      { x: bpCx + bpWaistHalf, y: 0 },
-      { x: bpCx + bpHipHalfW, y: bpHipY },
-      { x: bpCx + bpCrotchW, y: bpHeight },
-      { x: bpCx - bpCrotchW, y: bpHeight },
-      { x: bpCx - bpHipHalfW, y: bpHipY },
+      { x: bpCx - bpWaistHalfW, y: 0 },
+      { x: bpCx + bpWaistHalfW, y: 0 },
+      { x: bpCx + bpHalfW, y: bpHipY },
+      { x: bpCx + bpCrotchHalfW, y: bpHeight },
+      { x: bpCx - bpCrotchHalfW, y: bpHeight },
+      { x: bpCx - bpHalfW, y: bpHipY },
     ],
     grainLine: { start: { x: bpCx, y: 2 }, end: { x: bpCx, y: bpHeight - 2 } },
     notches: [
-      // Cift centik — yan dikiste
-      { x: bpCx + bpHipHalfW, y: bpHipY },
-      { x: bpCx + bpHipHalfW, y: bpHipY + 1 },
-      { x: bpCx - bpHipHalfW, y: bpHipY },
-      { x: bpCx - bpHipHalfW, y: bpHipY + 1 },
+      { x: bpCx + bpHalfW, y: bpHipY },
+      { x: bpCx + bpHalfW, y: bpHipY + 1 },
+      { x: bpCx - bpHalfW, y: bpHipY },
+      { x: bpCx - bpHalfW, y: bpHipY + 1 },
     ],
     color: PIECE_COLORS.back_panel,
     width: r1(bpW),
@@ -331,7 +326,8 @@ function generateMaleBoxerPieces(
 
   // ──────── YAN PANEL ────────
   // Yamuk dikdortgen — ust dar, alt genis (bacak)
-  const spTopW = (hipCirc / 4) * HIP_RATIOS.side * 2 * (1 + ease.hip) * shrinkX;
+  const hipSide = hipCirc * HIP_RATIOS.side; // toplam yan kalca (M: 18.2cm)
+  const spTopW = (hipSide / 2) * (1 - ease.hip) * shrinkX; // M: ~8.5cm
   const spBotW = spTopW * 1.12; // Alt kenar biraz daha genis
   const spHeight = patternH * shrinkY;
   const spW = Math.max(spTopW, spBotW);
@@ -437,8 +433,10 @@ function generateMaleBoxerPieces(
     waistCirc,
     patternHeight: patternH,
     frontPanelWidth: r1(fpW),
+    frontPanelHalfWidth: r1(fpHalfW),
     frontPanelHeight: r1(fpHeight),
     backPanelWidth: r1(bpW),
+    backPanelHalfWidth: r1(bpHalfW),
     backPanelHeight: r1(bpHeight),
     sidePanelWidth: r1(spW),
     sidePanelHeight: r1(spHeight),
