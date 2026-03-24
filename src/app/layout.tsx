@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Bebas_Neue } from "next/font/google";
 import { Providers } from "@/components/Providers";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { ScrollToTop } from "@/components/ui/ScrollToTop";
-import { CookieConsent } from "@/components/ui/CookieConsent";
+import { ShopShell } from "@/components/layout/ShopShell";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AnalyticsScripts } from "@/components/seo/AnalyticsScripts";
-import ChatWidget from "@/components/chat/ChatWidget";
 import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
@@ -220,14 +216,7 @@ export default async function RootLayout({
           }}
         />
         <Providers>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <ScrollToTop />
-            <CookieConsent />
-            <ChatWidget />
-          </div>
+          <ShopShell>{children}</ShopShell>
         </Providers>
       </body>
     </html>
