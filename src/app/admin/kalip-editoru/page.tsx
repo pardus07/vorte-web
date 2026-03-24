@@ -139,16 +139,20 @@ export default function KalipEditoruPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: `${MODEL_LABELS_TR[pattern.modelType]} ${pattern.size}`,
           modelType: pattern.modelType,
-          size: pattern.size,
           gender: pattern.gender,
-          sizes: selectedSizes,
+          baseSize: pattern.size,
+          parameters: {
+            sizes: selectedSizes,
+            totalAreaCm2: pattern.totalAreaCm2,
+            totalAreaWithSeamCm2: pattern.totalAreaWithSeamCm2,
+            fabricAreaM2: pattern.fabricAreaM2,
+            metadata: pattern.metadata,
+            svg: svgContent,
+          },
           pieces: pattern.pieces,
-          totalAreaCm2: pattern.totalAreaCm2,
-          totalAreaWithSeamCm2: pattern.totalAreaWithSeamCm2,
-          fabricAreaM2: pattern.fabricAreaM2,
-          metadata: pattern.metadata,
-          svg: svgContent,
+          grading: selectedSizes.length > 1 ? { sizes: selectedSizes } : undefined,
         }),
       });
       if (res.ok) {
@@ -496,39 +500,32 @@ export default function KalipEditoruPage() {
                       </div>
                     ))}
 
-                    {/* Basarili kontroller */}
-                    {validation.errors.length === 0 && (
-                      <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-emerald-700">
-                          Yan dikis uzunluklari tolerans icinde
+                    {/* Dogrulama kontrolleri — gercek validation.checks */}
+                    {validation.checks.map((check, i) => (
+                      <div
+                        key={`check-${i}`}
+                        className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+                          check.passed
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-red-200 bg-red-50"
+                        }`}
+                      >
+                        {check.passed ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        )}
+                        <span
+                          className={
+                            check.passed
+                              ? "text-emerald-700"
+                              : "text-red-700"
+                          }
+                        >
+                          {check.name}: {check.message}
                         </span>
                       </div>
-                    )}
-
-                    <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-emerald-700">
-                        Ag parcasi boyut kontrolu basarili
-                      </span>
-                    </div>
-
-                    {validation.warnings.length === 0 && (
-                      <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-emerald-700">
-                          Bel cevresi uyumlu
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-emerald-700">
-                        Toplam alan kontrol: {pattern.totalAreaCm2.toFixed(0)}{" "}
-                        cm2 (200-5000 araligi)
-                      </span>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>

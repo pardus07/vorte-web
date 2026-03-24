@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Scissors,
   Ruler,
@@ -14,6 +15,8 @@ import {
   Loader2,
   ArrowRight,
   ChevronDown,
+  CheckCircle2,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -120,9 +123,10 @@ function renderNestingSVG(
     back: "#22C55E",
     gusset: "#F97316",
     waistband: "#8B5CF6",
+    side: "#EC4899",
   };
 
-  const rects = placements
+  const pieces = placements
     .map((p) => {
       const color = p.pieceId.includes("front")
         ? colors.front
@@ -130,14 +134,35 @@ function renderNestingSVG(
           ? colors.back
           : p.pieceId.includes("gusset")
             ? colors.gusset
-            : colors.waistband;
+            : p.pieceId.includes("side")
+              ? colors.side
+              : colors.waistband;
       const shortName = p.pieceId.split("_").slice(0, 2).join(" ");
+      const cx = (p.x + p.width / 2) * scale;
+      const cy = (p.y + p.height / 2) * scale;
+
+      // Gerçek Bezier path varsa kullan, yoksa dikdörtgen fallback
+      if (p.svgPath) {
+        // svgPath parça-lokal koordinatlarda (cm). Scale + translate uygula.
+        // Rotasyon: parçanın merkezi etrafında döndür.
+        const tx = p.x * scale;
+        const ty = p.y * scale;
+        const rotStr = p.rotation !== 0
+          ? ` rotate(${p.rotation}, ${cx - tx}, ${cy - ty})`
+          : "";
+        return `<g transform="translate(${tx}, ${ty}) scale(${scale})${rotStr}">
+      <path d="${p.svgPath}" fill="${color}" fill-opacity="0.7" stroke="${color}" stroke-width="${0.3}" stroke-linejoin="round"/>
+    </g>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="white" pointer-events="none">${shortName}</text>`;
+      }
+
+      // Dikdörtgen fallback (svgPath olmayan parçalar için)
       return `<rect x="${p.x * scale}" y="${p.y * scale}" width="${p.width * scale}" height="${p.height * scale}" fill="${color}" fill-opacity="0.7" stroke="${color}" stroke-width="1" rx="2"/>
-    <text x="${(p.x + p.width / 2) * scale}" y="${(p.y + p.height / 2) * scale}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="white">${shortName}</text>`;
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="white">${shortName}</text>`;
     })
     .join("\n");
 
-  // Olcu cizgileri
+  // Ölçü çizgileri
   const rulerTop = `<line x1="0" y1="2" x2="${svgWidth}" y2="2" stroke="#666" stroke-width="0.5"/>
     <text x="${svgWidth / 2}" y="14" text-anchor="middle" font-size="11" fill="#666">${fabricWidth} cm</text>`;
   const rulerLeft = `<line x1="2" y1="0" x2="2" y2="${svgHeight}" stroke="#666" stroke-width="0.5"/>
@@ -147,7 +172,7 @@ function renderNestingSVG(
     <rect width="${svgWidth}" height="${svgHeight}" fill="#f8f9fa" stroke="#ddd" stroke-dasharray="5,5"/>
     ${rulerTop}
     ${rulerLeft}
-    ${rects}
+    ${pieces}
   </svg>`;
 }
 
@@ -165,12 +190,29 @@ function patternToNestingPieces(
     height: piece.height,
     quantity,
     allowedRotations: [0, 180],
+    svgPath: piece.svgPath || "",
   }));
 }
 
-// ─── Ana Bileşen ────────────────────────────────────────────
+// ─── Ana Bileşen (Suspense wrapper — useSearchParams icin) ──
 
 export default function PastalPlanlamaPage() {
+  return (
+    <Suspense fallback={null}>
+      <PastalPlanlamaInner />
+    </Suspense>
+  );
+}
+
+function PastalPlanlamaInner() {
+  // URL params — kalip editorunden gelen patternId
+  const searchParams = useSearchParams();
+  const urlPatternId = searchParams.get("patternId");
+
+  // Yuklenen kalip (URL'den)
+  const [loadedPatternId, setLoadedPatternId] = useState<string | null>(null);
+  const [loadedPatternName, setLoadedPatternName] = useState("");
+
   // Tab & mode
   const [tabMode, setTabMode] = useState<TabMode>("stand");
 
@@ -199,6 +241,20 @@ export default function PastalPlanlamaPage() {
   const cancelRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
+
+  // ─── Fetch pattern from URL param ───────────────────────
+  useEffect(() => {
+    if (!urlPatternId || urlPatternId === "saved") return;
+    fetch(`/api/admin/patterns/${urlPatternId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.id) {
+          setLoadedPatternId(data.id);
+          setLoadedPatternName(data.name || `${data.modelType} ${data.baseSize}`);
+        }
+      })
+      .catch(() => {});
+  }, [urlPatternId]);
 
   // ─── Fetch orders ────────────────────────────────────────
   useEffect(() => {
@@ -414,24 +470,101 @@ export default function PastalPlanlamaPage() {
     if (!nestingResult || markerPlans.length === 0) return;
     setSaving(true);
     try {
-      await fetch("/api/admin/nesting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fabricWidth,
-          fabricGSM,
-          cuttingMethod,
-          markerPlans,
-          nestingResult,
-        }),
-      });
+      // patternId: URL'den geliyorsa kullan, yoksa yeni kaydet
+      let patternId = loadedPatternId;
+
+      if (!patternId) {
+        // Temsili model belirle (ilk aktif stand'in ilk urunu)
+        let repModel: ModelType = "boxer_brief";
+        let repGender: "male" | "female" = "male";
+
+        if (tabMode === "stand") {
+          const stands: [number, keyof typeof STAND_DEFS][] = [
+            [standA, "A"], [standB, "B"], [standC, "C"],
+          ];
+          for (const [count, key] of stands) {
+            if (count > 0) {
+              repModel = STAND_DEFS[key].products[0].model;
+              repGender = STAND_DEFS[key].products[0].gender;
+              break;
+            }
+          }
+        }
+
+        // Plan adi olustur
+        const parts: string[] = [];
+        if (tabMode === "stand") {
+          if (standA > 0) parts.push(`A\u00d7${standA}`);
+          if (standB > 0) parts.push(`B\u00d7${standB}`);
+          if (standC > 0) parts.push(`C\u00d7${standC}`);
+        } else {
+          const order = orders.find((o) => o.id === selectedOrderId);
+          if (order) parts.push(order.orderNumber);
+        }
+        const planName = `Pastal ${parts.join(", ")} \u2014 ${new Date().toLocaleDateString("tr-TR")}`;
+
+        // Temsili pattern kaydet → patternId al
+        const repPattern = generatePattern(repModel, "M");
+        const patternRes = await fetch("/api/admin/patterns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: planName,
+            modelType: repModel,
+            gender: repGender,
+            baseSize: "M",
+            parameters: {
+              source: "pastal-planlama",
+              fabricWidth,
+              fabricGSM,
+              cuttingMethod,
+              totalProducts: tabMode === "stand"
+                ? standA * 50 + standB * 100 + standC * 150
+                : (orders.find((o) => o.id === selectedOrderId)?.totalQuantity ?? 0),
+            },
+            pieces: repPattern.pieces,
+          }),
+        });
+        if (!patternRes.ok) {
+          const err = await patternRes.json();
+          throw new Error(err.error || "Kalip kaydedilemedi");
+        }
+        const savedPattern = await patternRes.json();
+        patternId = savedPattern.id;
+      }
+
+      // Her marker plani nesting result olarak kaydet
+      for (const plan of markerPlans) {
+        const nestRes = await fetch("/api/admin/nesting", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patternId,
+            fabricWidth,
+            cuttingMethod,
+            sizeCombo: plan.sizeCombo,
+            placements: plan.placements,
+            markerLength: plan.markerLength,
+            efficiency: plan.efficiency,
+            totalFabricM2: plan.totalFabricM2,
+            totalFabricKg: plan.totalFabricKg,
+            layCount: plan.layCount,
+            markerRepeats: plan.markerRepeats,
+          }),
+        });
+        if (!nestRes.ok) {
+          const err = await nestRes.json();
+          throw new Error(err.error || "Nesting sonucu kaydedilemedi");
+        }
+      }
+
       alert("Pastal plani kaydedildi.");
-    } catch {
-      alert("Kaydetme basarisiz oldu.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Kaydetme basarisiz oldu.");
     } finally {
       setSaving(false);
     }
-  }, [nestingResult, markerPlans, fabricWidth, fabricGSM, cuttingMethod]);
+  }, [nestingResult, markerPlans, fabricWidth, fabricGSM, cuttingMethod, tabMode, standA, standB, standC, orders, selectedOrderId, loadedPatternId]);
 
   // ─── Summary calculations ───────────────────────────────
   const totalFabricKg = markerPlans.reduce((s, m) => s + m.totalFabricKg, 0);
@@ -469,6 +602,18 @@ export default function PastalPlanlamaPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        {/* Yuklenen kalip banner */}
+        {loadedPatternId && (
+          <div className="flex items-center gap-3 bg-[#7AC143]/5 border border-[#7AC143]/20 rounded-xl px-5 py-3">
+            <Link2 className="w-4 h-4 text-[#7AC143] flex-shrink-0" />
+            <span className="text-sm text-[#1A1A1A]">
+              Kalip editorunden yuklendi:{" "}
+              <span className="font-semibold">{loadedPatternName}</span>
+            </span>
+            <CheckCircle2 className="w-4 h-4 text-[#7AC143]" />
+          </div>
+        )}
+
         {/* ══════════════════════════════════════════════════════
             BOLUM 1: Siparis / Stand Secimi
            ══════════════════════════════════════════════════════ */}
@@ -794,12 +939,15 @@ export default function PastalPlanlamaPage() {
                   dangerouslySetInnerHTML={{ __html: svgContent }}
                 />
                 {/* Legend */}
-                <div className="flex items-center gap-6 text-xs text-gray-600">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-[#3B82F6]" /> On Panel
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-[#22C55E]" /> Arka Panel
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded bg-[#EC4899]" /> Yan Panel
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded bg-[#F97316]" /> Kasik

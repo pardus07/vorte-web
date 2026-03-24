@@ -417,7 +417,46 @@ function generateMaleBoxerPieces(
     offsetY: 0,
   };
 
-  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece];
+  // ──────── BEL BANDI (WAISTBAND) ────────
+  // Duz serit — belCevresi/2 × 4cm (2 adet kesilir: on + arka)
+  // "enclosed" tip: kumas lastik uzerine katlanir
+  const wbHeight = 4; // cm — lastik genisligi (MALE_WAIST_WIDTH_CM)
+  const wbWidth = r1(waistCirc / 2 * (1 + ease.waist) * shrinkX);
+
+  const wbPath = [
+    `M 0 0`,
+    `L ${r2(wbWidth)} 0`,
+    `L ${r2(wbWidth)} ${r2(wbHeight)}`,
+    `L 0 ${r2(wbHeight)}`,
+    `Z`,
+  ].join(" ");
+
+  const waistbandPiece: PatternPiece = {
+    name: "waistband",
+    label: "Bel Bandi",
+    svgPath: wbPath,
+    points: [
+      { x: 0, y: 0 },
+      { x: wbWidth, y: 0 },
+      { x: wbWidth, y: wbHeight },
+      { x: 0, y: wbHeight },
+    ],
+    grainLine: { start: { x: 2, y: wbHeight / 2 }, end: { x: wbWidth - 2, y: wbHeight / 2 } },
+    notches: [
+      { x: wbWidth / 2, y: 0 },
+      { x: wbWidth / 2, y: wbHeight },
+    ],
+    color: PIECE_COLORS.waistband,
+    width: wbWidth,
+    height: wbHeight,
+    areaCm2: r1(wbWidth * wbHeight),
+    grainAngle: 90, // enine kesim — lastik yonunde
+    seamType: "coverlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece, waistbandPiece];
 
   // Yerlesimleri hesapla — yan yana, 3cm bosluk
   const gap = 3; // cm
@@ -442,6 +481,8 @@ function generateMaleBoxerPieces(
     sidePanelHeight: r1(spHeight),
     gussetWidth: gussetW,
     gussetHeight: gussetH,
+    waistbandWidth: wbWidth,
+    waistbandHeight: wbHeight,
   };
 
   return { pieces, measurements };
@@ -469,12 +510,13 @@ function generateFemalePantyPieces(
 
   // ──────── ON PANEL ────────
   // Kelebek/kalkan sekli — belden kasiga daralan, V kesim bacak acikligi
-  const fpWaistHalf = (waistCirc / 4) * 0.9 * (1 + ease.hip) * shrinkX;
+  // Endustri standardi: on panel bel = waistCirc/4 - 0.5cm, kalca = hipCirc/4 - 1cm
+  const fpWaistHalf = (waistCirc / 4 - 0.5) * (1 + ease.waist) * shrinkX;
   const fpHeight = patternH * shrinkY;
   const fpCrotchW = gussetW * 0.5 * 0.5; // ~2cm — dar kasik
   const fpWaistDip = 1.2;
   const fpHipY = fpHeight * 0.38;
-  const fpHipHalfW = fpWaistHalf * 1.08;
+  const fpHipHalfW = (hipCirc / 4 - 1) * (1 + ease.hip) * shrinkX;
   const fpCx = fpHipHalfW;
   const fpW = fpHipHalfW * 2;
 
@@ -532,13 +574,14 @@ function generateFemalePantyPieces(
 
   // ──────── ARKA PANEL ────────
   // On panele benzer ama daha genis, oturma bolgesi genis, kasik derin
-  const bpWaistHalf = ((waistCirc / 4) * 0.9 + 2) * (1 + ease.hip) * shrinkX * 0.5;
+  // Endustri standardi: arka panel bel = waistCirc/4 + 0.5cm (onden 1cm genis)
+  const bpWaistHalf = (waistCirc / 4 + 0.5) * (1 + ease.waist) * shrinkX;
   const bpRise = 2; // cm
   const bpHeight = (patternH + bpRise) * shrinkY;
   const bpCrotchW = gussetW * 0.5 * 0.55;
   const bpWaistDip = 1.8;
   const bpHipY = bpHeight * 0.33;
-  const bpHipHalfW = bpWaistHalf * 1.12; // Oturma bolgesi daha genis
+  const bpHipHalfW = (hipCirc / 4 + 1) * (1 + ease.hip) * shrinkX; // Oturma bolgesi — hipCirc/4 + 1cm
   const bpCx = bpHipHalfW;
   const bpW = bpHipHalfW * 2;
   const bpLegY = bpHeight * 0.60;
@@ -887,22 +930,31 @@ export function gradePattern(basePattern: Pattern, targetSize: SizeKey): Pattern
 
 /** SVG path'deki X ve Y koordinatlarini scale et */
 function scalePathXY(path: string, fx: number, fy: number): string {
-  return path.replace(
-    /([MLCQZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/gi,
-    (match, cmd: string, coords: string) => {
-      if (cmd.toUpperCase() === "Z") return cmd;
-      const nums = coords.trim().split(/\s+/).map(Number);
-      const scaled: number[] = [];
-      for (let i = 0; i < nums.length; i++) {
-        if (i % 2 === 0) {
-          scaled.push(r2(nums[i] * fx));
-        } else {
-          scaled.push(r2(nums[i] * fy));
-        }
+  // SVG path'teki tum sayi ciftlerini (x,y) scale et
+  // Virgul ve bosluk ayiricilari desteklenir
+  const tokens = path.match(/[A-Za-z]|[-+]?\d*\.?\d+/g);
+  if (!tokens) return path;
+
+  const result: string[] = [];
+  let isX = true; // x,y sirayla
+
+  for (const token of tokens) {
+    if (/^[A-Za-z]$/.test(token)) {
+      result.push(token);
+      isX = true; // yeni komut, x ile basla
+      if (token.toUpperCase() === "Z") continue;
+    } else {
+      const num = parseFloat(token);
+      if (isX) {
+        result.push(r2(num * fx).toString());
+      } else {
+        result.push(r2(num * fy).toString());
       }
-      return `${cmd} ${scaled.join(" ")}`;
-    },
-  );
+      isX = !isX;
+    }
+  }
+
+  return result.join(" ");
 }
 
 /**
