@@ -16,7 +16,12 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "@prisma/client", "prisma", "esbuild"]
+    "onlyBuiltDependencies": [
+      "sharp",
+      "@prisma/client",
+      "prisma",
+      "esbuild"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -35,6 +40,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fabric": "^7.2.0",
     "jose": "^6.2.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.575.0",

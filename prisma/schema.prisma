@@ -1152,3 +1152,43 @@ model SupplierQuote {
 
   @@map("supplier_quotes")
 }
+
+// ─── Kalıp ve Pastal Planlama ─────────────────────────────
+
+model Pattern {
+  id            String          @id @default(cuid())
+  name          String          // "Erkek Boxer Brief M"
+  modelType     String          // "boxer_brief", "trunk", "bikini", "hipster"
+  gender        String          // "male", "female"
+  baseSize      String          @default("M")
+  parameters    Json            // tüm parametrik ölçüler
+  pieces        Json            // parça geometrileri [{name, points, grainAngle, seamAllowances}]
+  grading       Json?           // grade kuralları
+  version       Int             @default(1)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  nestingResults NestingResult[]
+  @@map("patterns")
+}
+
+model NestingResult {
+  id             String   @id @default(cuid())
+  patternId      String
+  pattern        Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  orderId        String?
+  fabricWidth    Float
+  cuttingMethod  String   @default("straightKnife")
+  sizeCombo      String
+  placements     Json
+  markerLength   Float
+  efficiency     Float
+  totalFabricM2  Float
+  totalFabricKg  Float
+  layCount       Int      @default(1)
+  markerRepeats  Int      @default(1)
+  createdAt      DateTime @default(now())
+
+  @@map("nesting_results")
+}
