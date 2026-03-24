@@ -44,7 +44,7 @@ export const PATTERN_TEMPLATES: Record<ModelType, PatternTemplate> = {
     name: "Boxer Brief",
     nameTR: "Boxer Külot",
     gender: "male",
-    pieces: ["front_panel", "back_panel", "gusset", "waistband"],
+    pieces: ["front_panel", "back_panel", "side_panel", "gusset", "waistband"],
     ease: EASE_PROFILES.MALE_BOXER,
     seamTypes: {
       side: "flatlock",
@@ -62,7 +62,7 @@ export const PATTERN_TEMPLATES: Record<ModelType, PatternTemplate> = {
     name: "Trunk",
     nameTR: "Trunk",
     gender: "male",
-    pieces: ["front_panel", "back_panel", "gusset", "waistband"],
+    pieces: ["front_panel", "back_panel", "side_panel", "gusset", "waistband"],
     ease: EASE_PROFILES.MALE_BOXER,
     seamTypes: {
       side: "flatlock",
@@ -119,6 +119,7 @@ export const PATTERN_TEMPLATES: Record<ModelType, PatternTemplate> = {
 export const PIECE_LABELS_TR: Record<string, string> = {
   front_panel: "Ön Panel",
   back_panel: "Arka Panel",
+  side_panel: "Yan Panel",
   gusset: "Ağ Parçası",
   gusset_lining: "Ağ Astarı",
   waistband: "Bel Bandı",

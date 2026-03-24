@@ -204,7 +204,7 @@ function generateMaleBoxerPieces(
   // Kalkan/kelebek sekli — belden kasiga daralan
   // FreeSewing Bruce referansi: hipFront = hips * 0.30
   const hipFront = hipCirc * HIP_RATIOS.front; // toplam on kalca (M: 28.8cm)
-  const fpHalfW = (hipFront / 2) * (1 - ease.hip) * shrinkX; // yarim genislik (M: ~13.4cm)
+  const fpHalfW = (hipFront / 2) * (1 + ease.hip) * shrinkX; // yarim genislik (M: ~18.0cm)
   const fpHeight = patternH * shrinkY;
   const fpCrotchHalfW = gussetW * 0.5; // kasik noktasinda daralma (3.5cm)
 
@@ -266,7 +266,7 @@ function generateMaleBoxerPieces(
   // ──────── ARKA PANEL ────────
   // Trapez sekli — ustte dar, altta genis; daha derin kasik egrisi
   const hipBack = hipCirc * HIP_RATIOS.back; // toplam arka kalca (M: 30.7cm)
-  const bpHalfW = (hipBack / 2) * (1 - ease.hip) * shrinkX; // yarim genislik (M: ~14.3cm)
+  const bpHalfW = (hipBack / 2) * (1 + ease.hip) * shrinkX; // yarim genislik (M: ~19.2cm)
   const backRise = 3.5; // cm ek yukseklik
   const bpHeight = (patternH + backRise) * shrinkY;
   const bpCrotchHalfW = gussetW * 0.55; // kasik daralma (3.85cm)
@@ -327,7 +327,7 @@ function generateMaleBoxerPieces(
   // ──────── YAN PANEL ────────
   // Yamuk dikdortgen — ust dar, alt genis (bacak)
   const hipSide = hipCirc * HIP_RATIOS.side; // toplam yan kalca (M: 18.2cm)
-  const spTopW = (hipSide / 2) * (1 - ease.hip) * shrinkX; // M: ~8.5cm
+  const spTopW = (hipSide / 2) * (1 + ease.hip) * shrinkX; // M: ~11.4cm
   const spBotW = spTopW * 1.12; // Alt kenar biraz daha genis
   const spHeight = patternH * shrinkY;
   const spW = Math.max(spTopW, spBotW);
@@ -771,11 +771,11 @@ export function generatePattern(
       const data = generateMaleBoxerPieces(size, options);
       const pattern = buildPattern(modelType, "male", size, data, options);
 
-      // Trunk icin bacak boyunu kisalt
+      // Trunk icin bacak boyunu kisalt (on, arka VE yan panel)
       if (modelType === "trunk") {
         const heightReduction = 0.75;
         pattern.pieces = pattern.pieces.map((p) => {
-          if (p.name === "front_panel" || p.name === "back_panel") {
+          if (p.name === "front_panel" || p.name === "back_panel" || p.name === "side_panel") {
             return {
               ...p,
               height: r1(p.height * heightReduction),
@@ -826,23 +826,8 @@ export function generatePattern(
 
 /** SVG path'deki Y koordinatlarini scale et */
 function scalePathY(path: string, factor: number): string {
-  // SVG path komutlarini parse et ve Y degerlerini carp
-  return path.replace(
-    /([MLCQZ])\s*([-\d.]+(?:\s+[-\d.]+)*)/gi,
-    (match, cmd: string, coords: string) => {
-      if (cmd.toUpperCase() === "Z") return cmd;
-      const nums = coords.trim().split(/\s+/).map(Number);
-      const scaled: number[] = [];
-      for (let i = 0; i < nums.length; i++) {
-        if (i % 2 === 0) {
-          scaled.push(r2(nums[i])); // X — degistirme
-        } else {
-          scaled.push(r2(nums[i] * factor)); // Y — scale
-        }
-      }
-      return `${cmd} ${scaled.join(" ")}`;
-    },
-  );
+  // scalePathXY tokenizer'i virgul/bosluk ayiricilari dogru isler
+  return scalePathXY(path, 1, factor);
 }
 
 /**
