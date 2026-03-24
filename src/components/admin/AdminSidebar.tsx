@@ -36,6 +36,8 @@ import {
   Warehouse,
   CheckSquare,
   TrendingUp,
+  Scissors,
+  Ruler,
   type LucideIcon,
 } from "lucide-react";
 
@@ -74,6 +76,8 @@ const menuItems: MenuEntry[] = [
     icon: Factory,
     children: [
       { label: "Üretim Siparişleri", href: "/admin/uretim", icon: ClipboardList },
+      { label: "Kalıp Editörü", href: "/admin/kalip-editoru", icon: Scissors },
+      { label: "Pastal Planlama", href: "/admin/pastal-planlama", icon: Ruler },
       { label: "Tedarikçiler", href: "/admin/tedarikciler", icon: Building2 },
       { label: "Malzeme Stok", href: "/admin/malzeme-stok", icon: Warehouse },
       { label: "Kalite Kontrol", href: "/admin/kalite", icon: CheckSquare },
