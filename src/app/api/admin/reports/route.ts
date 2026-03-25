@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       items: {
         include: {
           product: { select: { name: true, costPrice: true, categoryId: true } },
+          variant: { select: { size: true } },
         },
       },
     },
@@ -75,10 +76,11 @@ export async function GET(request: NextRequest) {
       const cost = (item.product.costPrice || 0) * item.quantity;
       totalCost += cost;
 
-      const key = item.productId;
+      const sizeLabel = item.variant?.size ? ` ${item.variant.size}` : "";
+      const key = `${item.productId}_${item.variant?.size || "default"}`;
       if (!productStats[key]) {
         productStats[key] = {
-          name: item.product.name,
+          name: `${item.product.name}${sizeLabel}`,
           revenue: 0,
           cost: 0,
           quantity: 0,
