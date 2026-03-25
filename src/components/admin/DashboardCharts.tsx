@@ -207,11 +207,14 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
         {sorted.slice(0, 7).map((item, i) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0;
           const barW = (item.value / maxVal) * 100;
-          const shortName = item.name.length > 28 ? item.name.slice(0, 28) + "…" : item.name;
+          const displayName = item.name
+            .replace(/^Vorte\s+Premium\s+Penye\s+/i, "")
+            .replace(/^Vorte\s+/i, "");
+          const shortName = displayName.length > 24 ? displayName.slice(0, 24) + "…" : displayName;
           return (
             <div key={i}>
               <div className="mb-1 flex items-center justify-between">
-                <span className="max-w-[65%] truncate text-[12px] font-medium text-gray-700">{shortName}</span>
+                <span className="max-w-[65%] truncate text-[12px] font-medium text-gray-700" title={item.name}>{shortName}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] font-semibold text-gray-900">{formatPrice(item.value)}</span>
                   <span className="min-w-[36px] text-right text-[11px] text-gray-400">{pct.toFixed(0)}%</span>
