@@ -204,20 +204,15 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
         </div>
       </div>
       <div className="space-y-3">
-        {sorted.slice(0, 7).map((item, i) => {
+        {sorted.slice(0, 8).map((item, i) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0;
           const barW = (item.value / maxVal) * 100;
-          const cleaned = item.name
-            .replace(/^Vorte\s+Premium\s+Penye\s+/i, "")
-            .replace(/^Vorte\s+/i, "");
-          const displayName = cleaned.trim() || item.name;
-          const shortName = displayName.length > 28 ? displayName.slice(0, 28) + "…" : displayName;
           return (
             <div key={i}>
               <div className="mb-1 flex items-center justify-between">
-                <span className="max-w-[65%] truncate text-[12px] font-medium text-gray-700" title={item.name}>{shortName}</span>
+                <span className="text-[13px] font-medium text-gray-700">{item.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold text-gray-900">{formatPrice(item.value)}</span>
+                  <span className="text-[13px] font-semibold text-gray-900">{formatPrice(item.value)}</span>
                   <span className="min-w-[36px] text-right text-[11px] text-gray-400">{pct.toFixed(0)}%</span>
                 </div>
               </div>
@@ -230,8 +225,8 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
             </div>
           );
         })}
-        {sorted.length > 7 && (
-          <p className="text-center text-[11px] text-gray-400">+ {sorted.length - 7} ürün daha</p>
+        {sorted.length > 8 && (
+          <p className="text-center text-[11px] text-gray-400">+ {sorted.length - 8} ürün daha</p>
         )}
       </div>
     </div>

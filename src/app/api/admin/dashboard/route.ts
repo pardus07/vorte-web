@@ -151,11 +151,11 @@ export async function GET() {
       }
     }
 
-    // Category sales (from order items grouped by productId)
+    // Category sales — varyant bazli (urun + renk + beden kirilimi)
     let categorySales: { name: string; value: number }[] = [];
     try {
-      const categoryData = await db.orderItem.groupBy({
-        by: ["productId"],
+      const variantSales = await db.orderItem.groupBy({
+        by: ["variantId"],
         where: {
           order: {
             createdAt: { gte: thirtyDaysAgo },
@@ -163,24 +163,30 @@ export async function GET() {
           },
         },
         _sum: { totalPrice: true },
+        orderBy: { _sum: { totalPrice: "desc" } },
+        take: 8,
       });
-      // Get product names
-      const productIds = categoryData.map((c) => c.productId);
-      const products = await db.product.findMany({
-        where: { id: { in: productIds } },
-        select: { id: true, name: true },
+
+      const variantIds = variantSales.map((v) => v.variantId);
+      const variants = await db.variant.findMany({
+        where: { id: { in: variantIds } },
+        select: { id: true, color: true, size: true, product: { select: { name: true } } },
       });
-      const nameMap = new Map(products.map((p) => [p.id, p.name]));
-      categorySales = categoryData
-        .map((c) => {
-          const name = nameMap.get(c.productId) || "Bilinmeyen";
-          return {
-            name: name.length > 20 ? name.slice(0, 20) + "..." : name,
-            value: Number(c._sum.totalPrice || 0),
-          };
-        })
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 6);
+      const varMap = new Map(variants.map((v) => [v.id, v]));
+
+      categorySales = variantSales.map((v) => {
+        const variant = varMap.get(v.variantId);
+        let name = "Bilinmeyen";
+        if (variant) {
+          // "Vorte Premium Penye Erkek Boxer Siyah" → "Erkek Boxer Siyah M"
+          const shortName = variant.product.name
+            .replace(/^Vorte\s+Premium\s+Penye\s+/i, "")
+            .replace(/^Vorte\s+/i, "")
+            .trim();
+          name = `${shortName} ${variant.size}`;
+        }
+        return { name, value: Number(v._sum.totalPrice || 0) };
+      });
     } catch {
       // No order items yet
     }
