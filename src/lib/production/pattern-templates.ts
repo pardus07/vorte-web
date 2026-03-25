@@ -118,8 +118,14 @@ export const PATTERN_TEMPLATES: Record<ModelType, PatternTemplate> = {
 /** Parça adı -> Türkçe etiket */
 export const PIECE_LABELS_TR: Record<string, string> = {
   front_panel: "Ön Panel",
+  front_panel_right: "Ön Sağ",
+  front_panel_left: "Ön Sol",
   back_panel: "Arka Panel",
   side_panel: "Yan Panel",
+  side_panel_right: "Yan Sağ",
+  side_panel_left: "Yan Sol",
+  inset_right: "İç Sağ",
+  inset_left: "İç Sol",
   gusset: "Ağ Parçası",
   gusset_lining: "Ağ Astarı",
   waistband: "Bel Bandı",

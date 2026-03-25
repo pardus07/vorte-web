@@ -180,7 +180,7 @@ function r2(n: number): number {
 }
 
 // ─── ERKEK BOXER BRİEF — FreeSewing Bruce Referansı ─────────
-// 4 parça: Arka (1 katlı) + Ön (×2 ayna) + Yan (×2 ayna) + İç Parça (×2 ayna)
+// 7 parça: Arka (1) + Ön Sağ (1) + Ön Sol (1) + Yan Sağ (1) + Yan Sol (1) + İç Sağ (1) + İç Sol (1)
 // Toplam kesim: 7 adet kumaş parçası + bel lastiği
 
 function generateMaleBoxerPieces(
@@ -312,8 +312,8 @@ function generateMaleBoxerPieces(
   ].join(" ");
 
   const frontPiece: PatternPiece = {
-    name: "front_panel",
-    label: "On Panel (x2)",
+    name: "front_panel_right",
+    label: "On Sag",
     svgPath: frontPath,
     points: [
       { x: fcx - frontWaistW / 2, y: frontWaistDip },
@@ -357,8 +357,8 @@ function generateMaleBoxerPieces(
   ].join(" ");
 
   const sidePiece: PatternPiece = {
-    name: "side_panel",
-    label: "Yan Panel (x2)",
+    name: "side_panel_right",
+    label: "Yan Sag",
     svgPath: sidePath,
     points: [
       { x: 0, y: 0 },
@@ -398,8 +398,8 @@ function generateMaleBoxerPieces(
   ].join(" ");
 
   const insetPiece: PatternPiece = {
-    name: "inset",
-    label: "Ic Parca (x2)",
+    name: "inset_right",
+    label: "Ic Sag",
     svgPath: insetPath,
     points: [
       { x: 0, y: 0 },
@@ -423,7 +423,20 @@ function generateMaleBoxerPieces(
     offsetY: 0,
   };
 
-  const pieces = [backPiece, frontPiece, sidePiece, insetPiece];
+  // Ayna kopyalari olustur (Sag → Sol)
+  const frontLeftPiece = mirrorPiece(frontPiece, "front_panel_left", "On Sol");
+  const sideLeftPiece = mirrorPiece(sidePiece, "side_panel_left", "Yan Sol");
+  const insetLeftPiece = mirrorPiece(insetPiece, "inset_left", "Ic Sol");
+
+  const pieces = [
+    backPiece,
+    frontPiece,      // On Sag
+    frontLeftPiece,  // On Sol
+    sidePiece,       // Yan Sag
+    sideLeftPiece,   // Yan Sol
+    insetPiece,      // Ic Sag
+    insetLeftPiece,  // Ic Sol
+  ];
 
   // Yerlesimleri hesapla — yan yana, 3cm bosluk
   const gap = 3;
@@ -759,7 +772,7 @@ export function generatePattern(
       if (modelType === "trunk") {
         const heightReduction = 0.75;
         pattern.pieces = pattern.pieces.map((p) => {
-          if (p.name === "back_panel" || p.name === "side_panel" || p.name === "inset") {
+          if (p.name === "back_panel" || p.name.startsWith("side_panel") || p.name.startsWith("inset")) {
             return {
               ...p,
               height: r1(p.height * heightReduction),
@@ -785,6 +798,50 @@ export function generatePattern(
     default:
       throw new Error(`Bilinmeyen model tipi: ${modelType}`);
   }
+}
+
+/** SVG path'i yatay eksende aynala (X koordinatlari: width - x) */
+function mirrorPathHorizontal(path: string, width: number): string {
+  const tokens = path.match(/[A-Za-z]|[-+]?\d*\.?\d+/g);
+  if (!tokens) return path;
+
+  const result: string[] = [];
+  let isX = true;
+
+  for (const token of tokens) {
+    if (/^[A-Za-z]$/.test(token)) {
+      result.push(token);
+      isX = true;
+      if (token.toUpperCase() === "Z") continue;
+    } else {
+      const num = parseFloat(token);
+      if (isX) {
+        result.push(r2(width - num).toString());
+      } else {
+        result.push(token);
+      }
+      isX = !isX;
+    }
+  }
+
+  return result.join(" ");
+}
+
+/** Bir kalip parcasinin yatay ayna kopyasini olusturur (Sag→Sol) */
+function mirrorPiece(piece: PatternPiece, newName: string, newLabel: string): PatternPiece {
+  const w = piece.width;
+  return {
+    ...piece,
+    name: newName,
+    label: newLabel,
+    svgPath: mirrorPathHorizontal(piece.svgPath, w),
+    points: piece.points.map((p) => ({ x: r2(w - p.x), y: p.y })),
+    grainLine: {
+      start: { x: r2(w - piece.grainLine.start.x), y: piece.grainLine.start.y },
+      end: { x: r2(w - piece.grainLine.end.x), y: piece.grainLine.end.y },
+    },
+    notches: piece.notches.map((n) => ({ x: r2(w - n.x), y: n.y })),
+  };
 }
 
 /** SVG path'deki Y koordinatlarini scale et */
@@ -913,9 +970,9 @@ export function validatePattern(pattern: Pattern): ValidationResult {
   const warnings: string[] = [];
   const checks: { name: string; passed: boolean; message: string; value?: number }[] = [];
 
-  const front = pattern.pieces.find((p) => p.name === "front_panel");
+  const front = pattern.pieces.find((p) => p.name === "front_panel" || p.name === "front_panel_right");
   const back = pattern.pieces.find((p) => p.name === "back_panel");
-  const inset = pattern.pieces.find((p) => p.name === "inset");
+  const inset = pattern.pieces.find((p) => p.name === "inset" || p.name === "inset_right");
   const gusset = pattern.pieces.find((p) =>
     p.name === "gusset" || p.name === "gusset_lining",
   );
@@ -992,7 +1049,7 @@ export function validatePattern(pattern: Pattern): ValidationResult {
     : EASE_PROFILES.FEMALE_PANTY.waist;
 
   const wb = pattern.pieces.find((p) => p.name === "waistband");
-  const side = pattern.pieces.find((p) => p.name === "side_panel");
+  const side = pattern.pieces.find((p) => p.name === "side_panel" || p.name === "side_panel_right");
 
   let calculatedCirc: number;
   let expectedCirc: number;
@@ -1199,17 +1256,7 @@ export function calculateRealFabricArea(pattern: Pattern): number {
     totalCm2 += area;
   }
 
-  // Cift kesilen parcalar — label'inda "(x2)" olanlar ayna cift kesilir
-  // Katli kesim parcalar (arka panel, kadin on/arka) tekil kalir
-  const mirrorArea = pattern.pieces.reduce((sum, p) => {
-    if (p.label.includes("(x2)")) {
-      return sum + p.areaCm2;
-    }
-    return sum;
-  }, 0);
-
-  // Toplam: tum parcalar + ayna parcalarin fazladan 1 kopyasi
-  const finalCm2 = totalCm2 + mirrorArea * (1 + SHRINKAGE.lengthwise) * (1 + SHRINKAGE.crosswise);
-
-  return finalCm2 / 10000; // m2'ye cevir
+  // Tum parcalar bireysel olarak tanimli (ayna kopyalari dahil)
+  // Ekstra cift hesaplama gerekmez
+  return totalCm2 / 10000; // m2'ye cevir
 }
