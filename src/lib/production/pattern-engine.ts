@@ -1128,106 +1128,83 @@ export function validatePattern(pattern: Pattern): ValidationResult {
  * @param scale - 1cm = kac px (varsayilan 4)
  */
 export function patternToSVG(pattern: Pattern, scale: number = 4): string {
-  const paddingCm = 2; // cm padding
-  const pad = paddingCm * scale;
+  // ── viewBox cm biriminde — scale YAPILMAZ, SVG kendi olcekler ──
+  const padCm = 2;
   const gapCm = 3;
-  const gap = gapCm * scale;
+  const headerCm = 4; // baslik icin ust bosluk
+  const labelCm = 3;  // etiket icin alt bosluk
 
-  // Baslik icin ust bosluk
-  const headerHeight = 24; // px
-
-  // Toplam genislik ve yukseklik hesapla
-  let totalWidthCm = paddingCm;
-  let maxHeightCm = 0;
-
+  // Toplam genislik ve yukseklik hesapla (cm)
+  let totalW = padCm;
+  let maxH = 0;
   for (let i = 0; i < pattern.pieces.length; i++) {
-    totalWidthCm += pattern.pieces[i].width;
-    if (i < pattern.pieces.length - 1) totalWidthCm += gapCm;
-    maxHeightCm = Math.max(maxHeightCm, pattern.pieces[i].height);
+    totalW += pattern.pieces[i].width;
+    if (i < pattern.pieces.length - 1) totalW += gapCm;
+    maxH = Math.max(maxH, pattern.pieces[i].height);
   }
-  totalWidthCm += paddingCm;
+  totalW += padCm;
+  const totalH = maxH + padCm * 2 + headerCm + labelCm;
 
-  const svgWidth = Math.ceil(totalWidthCm * scale);
-  const svgHeight = Math.ceil(maxHeightCm * scale + pad * 2 + headerHeight + 20); // +20 etiketler icin
+  // Piksel boyutu (gorunum icin)
+  const pxW = Math.ceil(totalW * scale);
+  const pxH = Math.ceil(totalH * scale);
 
   const parts: string[] = [];
 
+  // viewBox cm biriminde, width/height piksel
   parts.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r1(totalW)} ${r1(totalH)}" width="${pxW}" height="${pxH}">`,
   );
 
   // Arka plan
-  parts.push(`  <rect width="${svgWidth}" height="${svgHeight}" fill="#FAFAFA" />`);
+  parts.push(`  <rect width="${r1(totalW)}" height="${r1(totalH)}" fill="#FAFAFA" />`);
 
   // Baslik
   const genderLabel = pattern.gender === "male" ? "Erkek" : "Kadin";
   parts.push(
-    `  <text x="${svgWidth / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#374151">${pattern.modelType.toUpperCase()} - ${pattern.size} - ${genderLabel}</text>`,
+    `  <text x="${r1(totalW / 2)}" y="${r1(headerCm * 0.6)}" text-anchor="middle" font-family="sans-serif" font-size="2.5" font-weight="bold" fill="#374151">${pattern.modelType.toUpperCase()} - ${pattern.size} - ${genderLabel}</text>`,
   );
 
-  // Her parca icin SVG olustur
-  let offsetXpx = pad;
+  // Her parca — cm biriminde, scale yok
+  let curX = padCm;
 
   for (const piece of pattern.pieces) {
-    const pxW = piece.width * scale;
-    const pxH = piece.height * scale;
-    const originY = pad + headerHeight;
+    const originY = headerCm + padCm;
 
-    parts.push(`  <g transform="translate(${r1(offsetXpx)}, ${r1(originY)})">`);
+    parts.push(`  <g transform="translate(${r1(curX)}, ${r1(originY)})">`);
 
-    // Path olustur — svgPath'i scale et
-    const scaledPath = piece.svgPath.replace(
-      /(-?\d+\.?\d*)/g,
-      (match, num, offset, fullStr) => {
-        // Komut harflerini atla
-        const prevChar = fullStr[offset - 1];
-        if (prevChar && /[A-Za-z]/.test(prevChar) && !/\d/.test(prevChar)) {
-          // Ilk koordinat (hemen komuttan sonra)
-        }
-        return r2(parseFloat(num) * scale).toString();
-      },
+    // Path OLDUĞU GİBİ — cm biriminde, scale yapılmıyor
+    parts.push(
+      `    <path d="${piece.svgPath}" fill="${piece.color}" fill-opacity="0.15" stroke="${piece.color}" stroke-width="0.4" />`,
     );
 
-    // Daha guvenilir scale: path'i parse edip tekrar olustur
-    const finalPath = scalePathXY(piece.svgPath, scale, scale);
-
+    // Grain line (kesikli cizgi) — cm biriminde
     parts.push(
-      `    <path d="${finalPath}" fill="${piece.color}" fill-opacity="0.15" stroke="${piece.color}" stroke-width="2" />`,
-    );
-
-    // Grain line (kesikli cizgi)
-    const glX1 = r1(piece.grainLine.start.x * scale);
-    const glY1 = r1(piece.grainLine.start.y * scale);
-    const glX2 = r1(piece.grainLine.end.x * scale);
-    const glY2 = r1(piece.grainLine.end.y * scale);
-    parts.push(
-      `    <line x1="${glX1}" y1="${glY1}" x2="${glX2}" y2="${glY2}" stroke="#94A3B8" stroke-width="0.8" stroke-dasharray="4 4" />`,
+      `    <line x1="${r1(piece.grainLine.start.x)}" y1="${r1(piece.grainLine.start.y)}" x2="${r1(piece.grainLine.end.x)}" y2="${r1(piece.grainLine.end.y)}" stroke="#94A3B8" stroke-width="0.15" stroke-dasharray="0.8 0.8" />`,
     );
 
     // Grain line ok ucu
-    const arrowX = glX2;
-    const arrowY = glY2;
+    const ax = piece.grainLine.end.x;
+    const ay = piece.grainLine.end.y;
     parts.push(
-      `    <polygon points="${r1(arrowX - 3)},${r1(arrowY - 6)} ${r1(arrowX + 3)},${r1(arrowY - 6)} ${r1(arrowX)},${r1(arrowY)}" fill="#94A3B8" />`,
+      `    <polygon points="${r1(ax - 0.6)},${r1(ay - 1.2)} ${r1(ax + 0.6)},${r1(ay - 1.2)} ${r1(ax)},${r1(ay)}" fill="#94A3B8" />`,
     );
 
-    // Notch (centik) noktalari — kucuk ucgenler (3px)
+    // Notch (centik) noktalari
     for (const notch of piece.notches) {
-      const nx = r1(notch.x * scale);
-      const ny = r1(notch.y * scale);
       parts.push(
-        `    <polygon points="${r1(nx - 3)},${ny} ${r1(nx + 3)},${ny} ${nx},${r1(ny + 5)}" fill="${piece.color}" />`,
+        `    <polygon points="${r1(notch.x - 0.5)},${r1(notch.y)} ${r1(notch.x + 0.5)},${r1(notch.y)} ${r1(notch.x)},${r1(notch.y + 0.8)}" fill="${piece.color}" />`,
       );
     }
 
-    // Parca etiketi — altinda
+    // Parca etiketi — altinda (cm biriminde font-size)
     parts.push(
-      `    <text x="${r1(pxW / 2)}" y="${r1(pxH + 14)}" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#6B7280">${piece.label} (${piece.width.toFixed(1)}\u00D7${piece.height.toFixed(1)}cm)</text>`,
+      `    <text x="${r1(piece.width / 2)}" y="${r1(piece.height + 2)}" text-anchor="middle" font-family="sans-serif" font-size="1.5" fill="#6B7280">${piece.label} (${piece.width.toFixed(1)}\u00D7${piece.height.toFixed(1)}cm)</text>`,
     );
 
     parts.push(`  </g>`);
 
-    offsetXpx += pxW + gap;
+    curX += piece.width + gapCm;
   }
 
   parts.push(`</svg>`);
