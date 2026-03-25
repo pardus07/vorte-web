@@ -195,7 +195,7 @@ export function Footer() {
       <div className="border-t border-gray-100">
         <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 py-4 lg:px-8">
           <a
-            href="https://etbis.ticaret.gov.tr/tr/Anasayfa/SiteAraSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
+            href="https://etbis.ticaret.gov.tr/tr/SiteSorgulamaSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
             target="_blank"
             rel="noopener noreferrer"
           >
