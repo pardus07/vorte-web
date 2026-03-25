@@ -199,15 +199,15 @@ function generateMaleBoxerPieces(
   const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
   const pacaCirc = sd.pacaCevresiCm;
 
-  // ── FreeSewing Bruce oranlari ──
-  const BACK_HIP = 0.315;   // Arka: kalca cevresinin %31.5'i
-  const FRONT_HIP = 0.245;  // On: kalca cevresinin %24.5'i
-  const SIDE_HIP = (1 - BACK_HIP - FRONT_HIP) / 2; // ~0.22 per side
-  const FRONT_H = 0.35;     // On yukseklik: toplam boy × %35
-  const INSET_H = 0.65;     // Ic parca yukseklik: toplam boy × %65
+  // ── FreeSewing Bruce oranlari (duzeltilmis) ──
+  const BACK_HIP = 0.32;    // Arka: kalca cevresinin %32'si
+  const FRONT_HIP = 0.30;   // On: kalca cevresinin %30'u
+  const SIDE_HIP = (1 - BACK_HIP - FRONT_HIP) / 2; // ~0.19 per side (~9cm)
+  const FRONT_H = 0.88;     // On yukseklik: toplam boy × %88 (bel-kasik arasi)
+  const INSET_H = 0.42;     // Ic parca yukseklik: toplam boy × %42
   const LEG_BACK = 0.32;    // Arka bacak payi
   const LEG_INSET = 0.30;   // Ic parca bacak payi
-  const GUSSET_R = 0.0666;  // Kasik genisligi: kalca × %6.66
+  const GUSSET_R = 0.07;    // Kasik genisligi: kalca × %7
   const BACK_RISE = 3.5;    // Arka yukselme (cm)
 
   const gussetW = r1(hipCirc * GUSSET_R); // ~7.5cm (M)
@@ -278,16 +278,16 @@ function generateMaleBoxerPieces(
   };
 
   // ════════════ 2. ON PANEL (×2 ayna cift) ════════════
-  // Kisa, genis parca — tusk (dis) cikintilariyla pouch olusturur
-  // Iki adet kesilir, ust uste katlanir, dart dikilerek 3D kese olusur
+  // Kalkan/kelebek sekli — belden kasiga daralan, alt kisimda tusk cikintisi
+  // Iki adet kesilir (sag+sol), inset parcalari arasina dikilir
   const frontW = hipCirc * FRONT_HIP * (1 + ease.hip) * shrinkX;
   const frontH = totalH * FRONT_H * shrinkY;
-  const frontWaistW = frontW * 0.92;
-  const frontWaistDip = 1.0;
-  const tuskW = gussetW * 0.40;
-  const tuskH = frontH * 0.35;
+  const frontWaistW = frontW * 0.94;
+  const frontWaistDip = 1.5;
+  const tuskW = gussetW * 0.45;
+  const tuskH = 4.5; // sabit ~4.5cm tusk uzantisi
   const frontTotalH = frontH + tuskH;
-  const frontCurveY = frontH * 0.45; // inset egri baslangici
+  const frontCurveY = frontH * 0.35; // inset egri baslangici (ust 1/3)
   const fcx = frontW / 2;
 
   const frontPath = [
