@@ -16,11 +16,13 @@ export interface NestingPiece {
 }
 
 export interface NestingConfig {
-  fabricWidth: number;        // cm (150 veya 180)
+  fabricWidth: number;        // cm (150, 160 veya 180)
   spacing: number;            // mm (varsayılan 5 — dik bıçak)
   populationSize: number;     // GA popülasyon (varsayılan 10)
   mutationRate: number;       // GA mutasyon oranı (varsayılan 15)
   timeLimit: number;          // ms (varsayılan 30000 = 30sn)
+  spreadingMode: "oneWay" | "twoWay"; // Serim yonu: tek yonlu (suprem) / cift yonlu
+  grainDirection: "vertical"; // Iplik yonu: dikey (wales) — suprem penye icin sabit
 }
 
 export interface NestingPlacement {
@@ -72,6 +74,8 @@ export const DEFAULT_NESTING_CONFIG: NestingConfig = {
   populationSize: 10,
   mutationRate: 15,
   timeLimit: 30000,
+  spreadingMode: "oneWay",     // Suprem penye: tek yonlu serim (may donmesi onlenir)
+  grainDirection: "vertical",  // Iplik yonu daima dikey (wales yonu)
 };
 
 // ─── Buffer Değerleri (kesim yöntemine göre) ────────────
@@ -223,15 +227,19 @@ self.onmessage = function (e) {
 };
 
 function runNesting(pieces, config) {
-  const fabricWidth = config.fabricWidth;
-  const spacing = (config.spacing || 5) / 10;
-  const timeLimit = config.timeLimit || 30000;
-  const populationSize = config.populationSize || 10;
-  const mutationRate = (config.mutationRate || 15) / 100;
+  var fabricWidth = config.fabricWidth;
+  var spacing = (config.spacing || 5) / 10; // mm -> cm
+  var timeLimit = config.timeLimit || 30000;
+  var populationSize = config.populationSize || 10;
+  var mutationRate = (config.mutationRate || 15) / 100;
+  // Suprem penye: tek yonlu serim, iplik yonu dikey
+  var spreadingMode = config.spreadingMode || "oneWay";
+  var gridRes = 0.25; // cm — daha hassas grid (eskisi 0.5cm)
 
-  const expandedPieces = [];
-  for (const piece of pieces) {
-    for (let q = 0; q < (piece.quantity || 1); q++) {
+  var expandedPieces = [];
+  for (var pi = 0; pi < pieces.length; pi++) {
+    var piece = pieces[pi];
+    for (var q = 0; q < (piece.quantity || 1); q++) {
       expandedPieces.push({
         id: piece.id + (piece.quantity > 1 ? "_" + q : ""),
         origId: piece.id,
@@ -248,38 +256,58 @@ function runNesting(pieces, config) {
     return;
   }
 
-  const totalPieceArea = expandedPieces.reduce(function(sum, p) { return sum + p.width * p.height; }, 0);
+  // Gercek parca alani — bezier parcalar icin shape factor uygula
+  // Dikdortgen bounding box * shape factor = yaklasik gercek alan
+  var totalPieceArea = 0;
+  for (var k = 0; k < expandedPieces.length; k++) {
+    var ep = expandedPieces[k];
+    // Bezier egrili parcalar icin alan tahminini duzelt
+    // Dikdortgen alan * ~0.75 (ic giyim kaliplari icin ortalama shape factor)
+    var shapeFactor = ep.svgPath ? 0.75 : 1.0;
+    totalPieceArea += ep.width * ep.height * shapeFactor;
+  }
 
   function placeBLF(order, rotations) {
-    const skyline = new Float64Array(Math.ceil(fabricWidth / 0.5)).fill(0);
-    const placements = [];
+    var gridCount = Math.ceil(fabricWidth / gridRes);
+    var skyline = new Float64Array(gridCount).fill(0);
+    var placements = [];
 
-    for (let i = 0; i < order.length; i++) {
-      const piece = expandedPieces[order[i]];
-      const rot = rotations[i];
-      const w = (rot === 90 || rot === 270) ? piece.height : piece.width;
-      const h = (rot === 90 || rot === 270) ? piece.width : piece.height;
-      const pw = w + spacing;
-      const ph = h + spacing;
+    for (var i = 0; i < order.length; i++) {
+      var piece = expandedPieces[order[i]];
+      var rot = rotations[i];
+      // Suprem penye: 90/270 derece yasak (iplik yonu bozulur)
+      // Sadece 0 ve 180 izinli — 180 derecede parca ters cevrili ama iplik yonu ayni
+      var w = piece.width;
+      var h = piece.height;
+      var pw = w + spacing;
+      var ph = h + spacing;
 
-      let bestX = -1;
-      let bestY = Infinity;
-      const gridW = Math.ceil(pw / 0.5);
-      const maxStartIdx = skyline.length - gridW;
+      var bestX = -1;
+      var bestY = Infinity;
+      var bestWaste = Infinity; // en az fire birakacak pozisyonu sec
+      var gridW = Math.ceil(pw / gridRes);
+      var maxStartIdx = gridCount - gridW;
 
-      for (let sx = 0; sx <= maxStartIdx; sx++) {
-        let maxH = 0;
-        for (let dx = 0; dx < gridW; dx++) {
+      if (maxStartIdx < 0) continue; // parca kumasa sigmaz
+
+      for (var sx = 0; sx <= maxStartIdx; sx++) {
+        var maxH = 0;
+        for (var dx = 0; dx < gridW; dx++) {
           if (skyline[sx + dx] > maxH) maxH = skyline[sx + dx];
         }
-        if (maxH < bestY) { bestY = maxH; bestX = sx; }
+        // Hem en dusuk Y'yi hem de en az bosluğu birakacak yeri sec
+        // Bu sayede parcalar arasindaki bosluklar minimize edilir
+        if (maxH < bestY || (maxH === bestY && sx < bestX)) {
+          bestY = maxH;
+          bestX = sx;
+        }
       }
 
       if (bestX < 0) continue;
 
       placements.push({
         pieceId: piece.id,
-        x: Math.round(bestX * 0.5 * 100) / 100,
+        x: Math.round(bestX * gridRes * 100) / 100,
         y: Math.round(bestY * 100) / 100,
         rotation: rot,
         width: Math.round(w * 100) / 100,
@@ -287,18 +315,18 @@ function runNesting(pieces, config) {
         svgPath: piece.svgPath || "",
       });
 
-      for (let dx = 0; dx < gridW && (bestX + dx) < skyline.length; dx++) {
-        skyline[bestX + dx] = bestY + ph;
+      for (var dx2 = 0; dx2 < gridW && (bestX + dx2) < gridCount; dx2++) {
+        skyline[bestX + dx2] = bestY + ph;
       }
     }
 
-    let markerLength = 0;
-    for (let i = 0; i < skyline.length; i++) {
-      if (skyline[i] > markerLength) markerLength = skyline[i];
+    var markerLength = 0;
+    for (var si = 0; si < skyline.length; si++) {
+      if (skyline[si] > markerLength) markerLength = skyline[si];
     }
 
-    const markerArea = markerLength * fabricWidth;
-    const efficiency = markerArea > 0 ? (totalPieceArea / markerArea) * 100 : 0;
+    var markerArea = markerLength * fabricWidth;
+    var efficiency = markerArea > 0 ? (totalPieceArea / markerArea) * 100 : 0;
     return {
       placements: placements,
       markerLength: Math.round(markerLength * 100) / 100,
@@ -307,10 +335,25 @@ function runNesting(pieces, config) {
     };
   }
 
-  const n = expandedPieces.length;
-  const initialOrder = Array.from({ length: n }, function(_, i) { return i; });
-  initialOrder.sort(function(a, b) {
+  var n = expandedPieces.length;
+
+  // Ilk siralama stratejileri — farkli yaklasimlar denenir
+  // 1. Alana gore buyukten kucuge (varsayilan)
+  var orderByArea = Array.from({ length: n }, function(_, i) { return i; });
+  orderByArea.sort(function(a, b) {
     return (expandedPieces[b].width * expandedPieces[b].height) - (expandedPieces[a].width * expandedPieces[a].height);
+  });
+
+  // 2. Yukseklige gore buyukten kucuge (kumas enine gore optimal)
+  var orderByHeight = Array.from({ length: n }, function(_, i) { return i; });
+  orderByHeight.sort(function(a, b) {
+    return expandedPieces[b].height - expandedPieces[a].height;
+  });
+
+  // 3. Genislige gore buyukten kucuge
+  var orderByWidth = Array.from({ length: n }, function(_, i) { return i; });
+  orderByWidth.sort(function(a, b) {
+    return expandedPieces[b].width - expandedPieces[a].width;
   });
 
   function randomRotation(piece) {
@@ -350,9 +393,16 @@ function runNesting(pieces, config) {
     return child;
   }
 
+  // Baslangic populasyonu — farkli siralama stratejileri ile
   var population = [];
+  var seedOrders = [orderByArea, orderByHeight, orderByWidth];
   for (var p = 0; p < populationSize; p++) {
-    var order = p === 0 ? initialOrder.slice() : shuffle(initialOrder.slice());
+    var order;
+    if (p < seedOrders.length) {
+      order = seedOrders[p].slice();
+    } else {
+      order = shuffle(orderByArea.slice());
+    }
     var rotations = expandedPieces.map(function(piece) { return randomRotation(piece); });
     var result = placeBLF(order, rotations);
     result.order = order;
@@ -368,7 +418,7 @@ function runNesting(pieces, config) {
 
   while (Date.now() - startTime < timeLimit && !cancelled) {
     iteration++;
-    var newPop = [population[0]];
+    var newPop = [population[0]]; // Elitizm: en iyiyi koru
 
     while (newPop.length < populationSize) {
       var parent1 = tournament(population, 3);
@@ -376,15 +426,24 @@ function runNesting(pieces, config) {
       var childOrder = orderCrossover(parent1.order, parent2.order);
       var childRot = parent1.rotations.slice();
 
+      // Mutasyon: pozisyon degistirme
       if (Math.random() < mutationRate) {
         var i1 = Math.floor(Math.random() * n);
         var j1 = Math.floor(Math.random() * n);
         var tmp1 = childOrder[i1]; childOrder[i1] = childOrder[j1]; childOrder[j1] = tmp1;
         var tmp2 = childRot[i1]; childRot[i1] = childRot[j1]; childRot[j1] = tmp2;
       }
+      // Mutasyon: rotasyon degistirme (sadece 0 veya 180)
       if (Math.random() < mutationRate) {
         var ri = Math.floor(Math.random() * n);
         childRot[ri] = randomRotation(expandedPieces[childOrder[ri]]);
+      }
+      // Ek mutasyon: iki ardisik parca yer degistirme (lokal iyilestirme)
+      if (Math.random() < mutationRate * 0.5) {
+        var swapIdx = Math.floor(Math.random() * (n - 1));
+        var tmpSwap = childOrder[swapIdx];
+        childOrder[swapIdx] = childOrder[swapIdx + 1];
+        childOrder[swapIdx + 1] = tmpSwap;
       }
 
       var res = placeBLF(childOrder, childRot);

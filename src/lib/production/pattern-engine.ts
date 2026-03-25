@@ -480,37 +480,41 @@ function generateFemalePantyPieces(
   const gussetLen = 14; // cm sabit
 
   // ──────── ON PANEL ────────
-  // Kelebek/kalkan sekli — belden kasiga daralan, V kesim bacak acikligi
+  // V-kesim bikini/hipster — belden kasiga daralan, keskin V-acili bacak hatti
   // Endustri standardi: on panel bel = waistCirc/4 - 0.5cm, kalca = hipCirc/4 - 1cm
   const fpWaistHalf = (waistCirc / 4 - 0.5) * (1 + ease.waist) * shrinkX;
   const fpHeight = patternH * shrinkY;
   const fpCrotchW = gussetW / 2; // kasik tabani = ag astari genisligine esit
   const fpWaistDip = 1.2;
-  const fpHipY = fpHeight * 0.38;
+  const fpHipY = fpHeight * 0.35;
   const fpHipHalfW = (hipCirc / 4 - 1) * (1 + ease.hip) * shrinkX;
   const fpCx = fpHipHalfW;
   const fpW = fpHipHalfW * 2;
 
-  // V-kesim: Bacak acikligi yukari dogru V seklinde
-  // V-kesim: Bikini yuksek kesim, Hipster daha genis bacak bandi
-  const fpLegY = fpHeight * (modelType === "hipster" ? 0.60 : 0.65);
+  // V-kesim: Bacak hatti yüksekte baslar, kalcadan kasiga keskin V olusturur
+  // Bikini: yuksek V-kesim (bacak hatti daha yukari)
+  // Hipster: orta V-kesim (dusuk bel ama V-acisi korunur)
+  const fpLegY = fpHeight * (modelType === "hipster" ? 0.52 : 0.48);
 
+  // V-kesim acisi: Kalcadan kasiga dogru diyagonal hat olusturur
+  // Kontrol noktalari siki tutularak keskin V elde edilir (U-kesimden farkli)
   const fpPath = [
     `M ${r2(fpCx - fpWaistHalf)} 0`,
     // Bel egrisi — icbukey
     `Q ${r2(fpCx)} ${r2(fpWaistDip)}, ${r2(fpCx + fpWaistHalf)} 0`,
     // Sag yan: belden kalcaya
     `L ${r2(fpCx + fpHipHalfW)} ${r2(fpHipY)}`,
-    // Sag bacak V-kesimi — cubic bezier
-    `C ${r2(fpCx + fpHipHalfW)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.6)}, ${r2(fpCx + fpHipHalfW * 0.7)} ${r2(fpLegY)}, ${r2(fpCx + fpCrotchW * 1.8)} ${r2(fpLegY)}`,
-    // Kasiga inis
-    `C ${r2(fpCx + fpCrotchW * 1.4)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.5)}, ${r2(fpCx + fpCrotchW * 1.1)} ${r2(fpHeight * 0.92)}, ${r2(fpCx + fpCrotchW)} ${r2(fpHeight)}`,
+    // Sag V-kesim — kalcadan kasiga keskin diyagonal hat
+    // Kontrol noktalari duz hatta yakin = V-sekli (yumusak degil, acili)
+    `C ${r2(fpCx + fpHipHalfW * 0.95)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.35)}, ${r2(fpCx + fpHipHalfW * 0.55)} ${r2(fpLegY * 0.80)}, ${r2(fpCx + fpCrotchW * 1.3)} ${r2(fpLegY)}`,
+    // Kasiga inis — kisa ve dik gecis
+    `C ${r2(fpCx + fpCrotchW * 1.15)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.35)}, ${r2(fpCx + fpCrotchW * 1.05)} ${r2(fpHeight * 0.88)}, ${r2(fpCx + fpCrotchW)} ${r2(fpHeight)}`,
     // Kasik tabani
     `L ${r2(fpCx - fpCrotchW)} ${r2(fpHeight)}`,
     // Sol kasiga cikis (simetrik)
-    `C ${r2(fpCx - fpCrotchW * 1.1)} ${r2(fpHeight * 0.92)}, ${r2(fpCx - fpCrotchW * 1.4)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.5)}, ${r2(fpCx - fpCrotchW * 1.8)} ${r2(fpLegY)}`,
-    // Sol bacak V-kesimi
-    `C ${r2(fpCx - fpHipHalfW * 0.7)} ${r2(fpLegY)}, ${r2(fpCx - fpHipHalfW)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.6)}, ${r2(fpCx - fpHipHalfW)} ${r2(fpHipY)}`,
+    `C ${r2(fpCx - fpCrotchW * 1.05)} ${r2(fpHeight * 0.88)}, ${r2(fpCx - fpCrotchW * 1.15)} ${r2(fpLegY + (fpHeight - fpLegY) * 0.35)}, ${r2(fpCx - fpCrotchW * 1.3)} ${r2(fpLegY)}`,
+    // Sol V-kesim — simetrik diyagonal hat
+    `C ${r2(fpCx - fpHipHalfW * 0.55)} ${r2(fpLegY * 0.80)}, ${r2(fpCx - fpHipHalfW * 0.95)} ${r2(fpHipY + (fpLegY - fpHipY) * 0.35)}, ${r2(fpCx - fpHipHalfW)} ${r2(fpHipY)}`,
     // Sol yan
     `L ${r2(fpCx - fpWaistHalf)} 0`,
     `Z`,
@@ -545,29 +549,34 @@ function generateFemalePantyPieces(
   };
 
   // ──────── ARKA PANEL ────────
-  // On panele benzer ama daha genis, oturma bolgesi genis, kasik derin
+  // V-kesim arka panel — on panelden daha genis, oturma bolgesi genis, kasik derin
   // Endustri standardi: arka panel bel = waistCirc/4 + 0.5cm (onden 1cm genis)
   const bpWaistHalf = (waistCirc / 4 + 0.5) * (1 + ease.waist) * shrinkX;
   const bpRise = 2; // cm
   const bpHeight = (patternH + bpRise) * shrinkY;
   const bpCrotchW = gussetW / 2 * 1.1; // arka daha genis — oturma bolgesi
   const bpWaistDip = 1.8;
-  const bpHipY = bpHeight * 0.33;
+  const bpHipY = bpHeight * 0.30;
   const bpHipHalfW = (hipCirc / 4 + 1) * (1 + ease.hip) * shrinkX; // Oturma bolgesi — hipCirc/4 + 1cm
   const bpCx = bpHipHalfW;
   const bpW = bpHipHalfW * 2;
-  const bpLegY = bpHeight * (modelType === "hipster" ? 0.55 : 0.60);
+  // Arka V-kesim: On panelden biraz daha asagi baslayarak yeterli ortume saglar
+  const bpLegY = bpHeight * (modelType === "hipster" ? 0.50 : 0.45);
 
   const bpPath = [
     `M ${r2(bpCx - bpWaistHalf)} 0`,
     `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalf)} 0`,
     `L ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY)}`,
-    // Sag bacak V-kesimi — daha derin
-    `C ${r2(bpCx + bpHipHalfW)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.55)}, ${r2(bpCx + bpHipHalfW * 0.65)} ${r2(bpLegY)}, ${r2(bpCx + bpCrotchW * 2)} ${r2(bpLegY)}`,
-    `C ${r2(bpCx + bpCrotchW * 1.5)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.5)}, ${r2(bpCx + bpCrotchW * 1.2)} ${r2(bpHeight * 0.90)}, ${r2(bpCx + bpCrotchW)} ${r2(bpHeight)}`,
+    // Sag V-kesim — kalcadan kasiga keskin diyagonal
+    `C ${r2(bpCx + bpHipHalfW * 0.92)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.30)}, ${r2(bpCx + bpHipHalfW * 0.50)} ${r2(bpLegY * 0.78)}, ${r2(bpCx + bpCrotchW * 1.4)} ${r2(bpLegY)}`,
+    // Kasiga inis — dik gecis
+    `C ${r2(bpCx + bpCrotchW * 1.2)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.35)}, ${r2(bpCx + bpCrotchW * 1.05)} ${r2(bpHeight * 0.88)}, ${r2(bpCx + bpCrotchW)} ${r2(bpHeight)}`,
+    // Kasik tabani
     `L ${r2(bpCx - bpCrotchW)} ${r2(bpHeight)}`,
-    `C ${r2(bpCx - bpCrotchW * 1.2)} ${r2(bpHeight * 0.90)}, ${r2(bpCx - bpCrotchW * 1.5)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.5)}, ${r2(bpCx - bpCrotchW * 2)} ${r2(bpLegY)}`,
-    `C ${r2(bpCx - bpHipHalfW * 0.65)} ${r2(bpLegY)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.55)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY)}`,
+    // Sol kasiga cikis (simetrik)
+    `C ${r2(bpCx - bpCrotchW * 1.05)} ${r2(bpHeight * 0.88)}, ${r2(bpCx - bpCrotchW * 1.2)} ${r2(bpLegY + (bpHeight - bpLegY) * 0.35)}, ${r2(bpCx - bpCrotchW * 1.4)} ${r2(bpLegY)}`,
+    // Sol V-kesim — simetrik diyagonal
+    `C ${r2(bpCx - bpHipHalfW * 0.50)} ${r2(bpLegY * 0.78)}, ${r2(bpCx - bpHipHalfW * 0.92)} ${r2(bpHipY + (bpLegY - bpHipY) * 0.30)}, ${r2(bpCx - bpHipHalfW)} ${r2(bpHipY)}`,
     `L ${r2(bpCx - bpWaistHalf)} 0`,
     `Z`,
   ].join(" ");

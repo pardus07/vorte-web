@@ -87,8 +87,8 @@ const CUTTING_METHODS = [
   { value: "laser", label: "Lazer" },
 ];
 
-const FABRIC_WIDTHS = [150, 180];
-const FABRIC_GSMS = [160, 180];
+const FABRIC_WIDTHS = [150, 160, 180];
+const FABRIC_GSMS = [160, 180, 190];
 
 interface ProductionOrder {
   id: string;
@@ -144,14 +144,19 @@ function renderNestingSVG(
       // Gerçek Bezier path varsa kullan, yoksa dikdörtgen fallback
       if (p.svgPath) {
         // svgPath parça-lokal koordinatlarda (cm). Scale + translate uygula.
-        // Rotasyon: parçanın merkezi etrafında döndür.
+        // Rotasyon: parcainin merkezi etrafinda dondur.
+        // Suprem penye: sadece 0 ve 180 derece izinli (iplik yonu korunur)
         const tx = p.x * scale;
         const ty = p.y * scale;
+        const pcx = (p.width / 2) * scale; // parca merkez x (lokal)
+        const pcy = (p.height / 2) * scale; // parca merkez y (lokal)
         const rotStr = p.rotation !== 0
-          ? ` rotate(${p.rotation}, ${cx - tx}, ${cy - ty})`
+          ? ` rotate(${p.rotation}, ${pcx}, ${pcy})`
           : "";
-        return `<g transform="translate(${tx}, ${ty}) scale(${scale})${rotStr}">
-      <path d="${p.svgPath}" fill="${color}" fill-opacity="0.7" stroke="${color}" stroke-width="${0.3}" stroke-linejoin="round"/>
+        return `<g transform="translate(${tx}, ${ty})">
+      <g transform="scale(${scale})${rotStr}">
+        <path d="${p.svgPath}" fill="${color}" fill-opacity="0.7" stroke="${color}" stroke-width="${0.3}" stroke-linejoin="round"/>
+      </g>
     </g>
     <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="white" pointer-events="none">${shortName}</text>`;
       }
@@ -222,7 +227,7 @@ function PastalPlanlamaInner() {
   const [standC, setStandC] = useState(0);
   const [fabricWidth, setFabricWidth] = useState(150);
   const [cuttingMethod, setCuttingMethod] = useState("straightKnife");
-  const [fabricGSM, setFabricGSM] = useState(180);
+  const [fabricGSM, setFabricGSM] = useState(190);
 
   // Order mode
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
@@ -745,6 +750,28 @@ function PastalPlanlamaInner() {
                       ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Serim Bilgileri */}
+              <div className="rounded-xl border border-amber-100 bg-amber-50/40 px-5 py-3.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers className="h-4 w-4 text-amber-600" />
+                  <span className="text-[12px] font-semibold uppercase tracking-wider text-amber-700">Serim Kurallari — %95 Pamuk %5 Elastan Suprem Penye</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12px] text-amber-900/80">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span><strong>Tek yonlu serim</strong> — may donmesi ve renk tonu farki onlenir</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span><strong>Iplik yonu dikey</strong> — parcalar wales yonune paralel, 90° yasak</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span><strong>Min. 24 saat dinlendirme</strong> — kesim oncesi kumas gerilimi salimi</span>
                   </div>
                 </div>
               </div>
