@@ -6,8 +6,11 @@ export default async function DealerDuyurularPage() {
   const session = await getDealerSession();
   if (!session) return null;
 
-  // Get notifications (all types visible to dealers)
+  // Get notifications visible to dealers (exclude internal records like voice calls)
   const notifications = await db.notification.findMany({
+    where: {
+      type: { notIn: ["VOICE_CALL", "STOCK_ALERT"] },
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   });

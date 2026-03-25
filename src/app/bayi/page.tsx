@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  ArrowUpRight,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -20,34 +22,13 @@ const ORDER_STATUS_MAP: Record<
   string,
   { label: string; className: string }
 > = {
-  PENDING: {
-    label: "Bekliyor",
-    className: "bg-yellow-100 text-yellow-800",
-  },
-  PAID: {
-    label: "Ödendi",
-    className: "bg-green-100 text-green-800",
-  },
-  PROCESSING: {
-    label: "Hazırlanıyor",
-    className: "bg-blue-100 text-blue-800",
-  },
-  SHIPPED: {
-    label: "Kargoda",
-    className: "bg-purple-100 text-purple-800",
-  },
-  DELIVERED: {
-    label: "Teslim Edildi",
-    className: "bg-green-100 text-green-800",
-  },
-  CANCELLED: {
-    label: "İptal",
-    className: "bg-red-100 text-red-800",
-  },
-  REFUNDED: {
-    label: "İade",
-    className: "bg-gray-100 text-gray-800",
-  },
+  PENDING: { label: "Bekliyor", className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" },
+  PAID: { label: "Ödendi", className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
+  PROCESSING: { label: "Hazırlanıyor", className: "bg-blue-50 text-blue-700 ring-1 ring-blue-200" },
+  SHIPPED: { label: "Kargoda", className: "bg-purple-50 text-purple-700 ring-1 ring-purple-200" },
+  DELIVERED: { label: "Teslim Edildi", className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
+  CANCELLED: { label: "İptal", className: "bg-red-50 text-red-700 ring-1 ring-red-200" },
+  REFUNDED: { label: "İade", className: "bg-gray-50 text-gray-700 ring-1 ring-gray-200" },
 };
 
 const TIER_LABELS: Record<string, string> = {
@@ -104,6 +85,7 @@ export default async function DealerDashboardPage() {
           totalAmount: true,
           status: true,
           createdAt: true,
+          _count: { select: { items: true } },
         },
       }),
     ]);
@@ -123,220 +105,197 @@ export default async function DealerDashboardPage() {
   let BalanceIcon: typeof CheckCircle;
 
   if (creditLimit > 0 && creditBalance > creditLimit) {
-    balanceColor = "border-red-300 bg-red-50";
+    balanceColor = "from-red-500 to-red-600";
     balanceStatusText = "Cari limitiniz aşıldı!";
     BalanceIcon = AlertTriangle;
   } else if (creditBalance > 0) {
-    balanceColor = "border-orange-300 bg-orange-50";
-    balanceStatusText = `Bakiyeniz: ${formatPrice(creditBalance)}`;
+    balanceColor = "from-orange-500 to-amber-600";
+    balanceStatusText = `Bakiye: ${formatPrice(creditBalance)}`;
     BalanceIcon = Clock;
   } else {
-    balanceColor = "border-green-300 bg-green-50";
+    balanceColor = "from-emerald-500 to-emerald-600";
     balanceStatusText = "Bakiyeniz güncel";
     BalanceIcon = CheckCircle;
   }
 
-  // Payment due date (from most recent unpaid order or general term)
-  const paymentDueText =
-    paymentTermDays > 0
-      ? `${paymentTermDays} gün vadeli`
-      : "Peşin ödeme";
+  const greeting = (() => {
+    const h = now.getHours();
+    if (h < 12) return "Günaydın";
+    if (h < 18) return "İyi günler";
+    return "İyi akşamlar";
+  })();
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Hoş Geldiniz, {dealer.companyName}
+          <h1 className="text-xl font-semibold text-gray-900">
+            {greeting}, {dealer.companyName}
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Bayi panelinize genel bakış &middot; {dealer.dealerCode}
+          <p className="mt-0.5 text-[13px] text-gray-500">
+            {now.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })} · {dealer.dealerCode}
           </p>
         </div>
         <Link
           href="/bayi/urunler"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#7AC143] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#6aad38]"
+          className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm shadow-purple-600/25 transition-all hover:bg-purple-700 hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           Yeni Sipariş Ver
         </Link>
       </div>
 
-      {/* Summary Cards */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {/* 1. Cari Bakiye Card — Large & Prominent */}
-        <div
-          className={`rounded-lg border-2 p-6 sm:col-span-2 lg:col-span-1 ${balanceColor}`}
-        >
+      {/* Main Stats Row */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* 1. Cari Bakiye — gradient card */}
+        <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${balanceColor} p-5 text-white shadow-lg sm:col-span-2 lg:col-span-1`}>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Cari Bakiye</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
-                {formatPrice(creditBalance)}
-              </p>
-              {creditLimit > 0 && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Limit: {formatPrice(creditLimit)}
-                </p>
-              )}
+              <p className="text-[11px] font-medium uppercase tracking-wider text-white/70">Cari Bakiye</p>
+              <p className="mt-1.5 text-2xl font-bold">{formatPrice(creditBalance)}</p>
             </div>
-            <div className="rounded-lg bg-white/60 p-2">
-              <Wallet className="h-5 w-5 text-gray-700" />
+            <div className="rounded-xl bg-white/15 p-2.5">
+              <Wallet className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5">
-            <BalanceIcon className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">{balanceStatusText}</span>
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-white/80">
+            <BalanceIcon className="h-3 w-3" />
+            {balanceStatusText}
           </div>
+          <div className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/5" />
         </div>
 
-        {/* 2. Payment Due Info */}
-        <div className="rounded-lg border bg-white p-6">
+        {/* 2. Payment Term */}
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500">Ödeme Vadesi</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Ödeme Vadesi</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">
                 {paymentTermDays > 0 ? `${paymentTermDays} gün` : "Peşin"}
               </p>
             </div>
-            <div className="rounded-lg bg-blue-100 p-3 text-blue-600">
-              <CalendarClock className="h-5 w-5" />
+            <div className="rounded-xl bg-blue-50 p-2.5">
+              <CalendarClock className="h-5 w-5 text-blue-500" />
             </div>
           </div>
-          <p className="mt-2 text-xs text-gray-400">{paymentDueText}</p>
-        </div>
-
-        {/* 3. This Month's Order Count */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Bu Ay Sipariş</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
-                {monthlyOrders}
-              </p>
-            </div>
-            <div className="rounded-lg bg-purple-100 p-3 text-purple-600">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
-          </div>
-          <p className="mt-2 text-xs text-gray-400">Toplam sipariş adedi</p>
-        </div>
-
-        {/* 4. This Month's Order Amount */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Bu Ay Tutar</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
-                {formatPrice(monthlyAmount)}
-              </p>
-            </div>
-            <div className="rounded-lg bg-green-100 p-3 text-green-600">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-          </div>
-          <p className="mt-2 text-xs text-gray-400">
-            Onaylanan siparişler toplamı
+          <p className="mt-2 text-[11px] text-gray-400">
+            {paymentTermDays > 0 ? `${paymentTermDays} gün vadeli` : "Peşin ödeme"}
           </p>
         </div>
 
-        {/* 5. Discount Rate Badge */}
-        <div className="rounded-lg border bg-white p-6">
+        {/* 3. Monthly Orders */}
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500">İskonto Oranı</p>
-              <p className="mt-1 text-2xl font-bold text-[#7AC143]">
-                %{discountRate}
-              </p>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Bu Ay Sipariş</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">{monthlyOrders}</p>
             </div>
-            <div className="rounded-lg bg-yellow-100 p-3 text-yellow-600">
-              <Award className="h-5 w-5" />
+            <div className="rounded-xl bg-purple-50 p-2.5">
+              <ShoppingCart className="h-5 w-5 text-purple-500" />
             </div>
           </div>
-          <div className="mt-2">
-            <span className="rounded-full bg-[#7AC143]/10 px-2 py-0.5 text-xs font-medium text-[#7AC143]">
-              {tierLabel} Bayi — %{discountRate} İskonto
+          <p className="mt-2 text-[11px] text-gray-400">Toplam sipariş adedi</p>
+        </div>
+
+        {/* 4. Monthly Amount */}
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Bu Ay Tutar</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">{formatPrice(monthlyAmount)}</p>
+            </div>
+            <div className="rounded-xl bg-emerald-50 p-2.5">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-gray-400">Onaylanan toplamı</p>
+        </div>
+
+        {/* 5. Discount Rate */}
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">İskonto</p>
+              <p className="mt-1.5 text-2xl font-bold text-purple-600">%{discountRate}</p>
+            </div>
+            <div className="rounded-xl bg-amber-50 p-2.5">
+              <Award className="h-5 w-5 text-amber-500" />
+            </div>
+          </div>
+          <p className="mt-2">
+            <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-600 ring-1 ring-purple-100">
+              {tierLabel} Bayi
             </span>
-          </div>
+          </p>
         </div>
       </div>
 
       {/* Recent Orders */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Son Siparişler</h2>
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-50 px-5 py-3.5">
+          <h2 className="flex items-center gap-2 text-[14px] font-semibold text-gray-900">
+            <Package className="h-4 w-4 text-gray-400" />
+            Son Siparişler
+          </h2>
           <Link
             href="/bayi/siparislerim"
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#7AC143] hover:underline"
+            className="flex items-center gap-1 text-[12px] font-medium text-purple-600 hover:underline"
           >
             Tümünü Gör
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
         {recentOrders.length === 0 ? (
-          <div className="mt-4 rounded-lg border bg-white p-8 text-center">
-            <ShoppingCart className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-3 text-sm text-gray-400">
-              Henüz sipariş bulunmuyor
-            </p>
+          <div className="flex flex-col items-center gap-3 p-10">
+            <div className="rounded-full bg-purple-50 p-3">
+              <ShoppingCart className="h-6 w-6 text-purple-400" />
+            </div>
+            <p className="text-[13px] text-gray-400">Henüz sipariş bulunmuyor</p>
             <Link
               href="/bayi/urunler"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#7AC143] px-4 py-2 text-sm font-medium text-white hover:bg-[#6aad38]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-purple-700"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               İlk Siparişinizi Verin
             </Link>
           </div>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 font-medium text-gray-700">
-                    Sipariş No
-                  </th>
-                  <th className="px-4 py-3 font-medium text-gray-700">
-                    Tarih
-                  </th>
-                  <th className="px-4 py-3 font-medium text-gray-700">
-                    Tutar
-                  </th>
-                  <th className="px-4 py-3 font-medium text-gray-700">
-                    Durum
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {recentOrders.map((order) => {
-                  const statusInfo = ORDER_STATUS_MAP[order.status] ?? {
-                    label: order.status,
-                    className: "bg-gray-100 text-gray-800",
-                  };
-                  return (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+          <div className="divide-y divide-gray-50">
+            {recentOrders.map((order) => {
+              const statusInfo = ORDER_STATUS_MAP[order.status] ?? {
+                label: order.status,
+                className: "bg-gray-50 text-gray-700 ring-1 ring-gray-200",
+              };
+              return (
+                <Link
+                  key={order.id}
+                  href={`/bayi/siparislerim/${order.id}`}
+                  className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-gray-50/50"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-mono font-medium text-gray-700">
                         #{order.orderNumber}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString("tr-TR")}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {formatPrice(order.totalAmount)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
-                        >
-                          {statusInfo.label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${statusInfo.className}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-gray-400">
+                      {order._count.items} kalem · {new Date(order.createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[13px] font-semibold text-gray-700">
+                      {formatPrice(order.totalAmount)}
+                    </span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-gray-300" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
