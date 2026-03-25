@@ -207,10 +207,11 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
         {sorted.slice(0, 7).map((item, i) => {
           const pct = total > 0 ? (item.value / total) * 100 : 0;
           const barW = (item.value / maxVal) * 100;
-          const displayName = item.name
+          const cleaned = item.name
             .replace(/^Vorte\s+Premium\s+Penye\s+/i, "")
             .replace(/^Vorte\s+/i, "");
-          const shortName = displayName.length > 24 ? displayName.slice(0, 24) + "…" : displayName;
+          const displayName = cleaned.trim() || item.name;
+          const shortName = displayName.length > 28 ? displayName.slice(0, 28) + "…" : displayName;
           return (
             <div key={i}>
               <div className="mb-1 flex items-center justify-between">
