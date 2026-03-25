@@ -115,6 +115,7 @@ const PIECE_COLORS: Record<string, string> = {
   side_panel:    "#A855F7",
   gusset:        "#F97316",
   gusset_lining: "#F97316",
+  inset:         "#EF4444",
   waistband:     "#8B5CF6",
 };
 
@@ -178,7 +179,9 @@ function r2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-// ─── ERKEK BOXER BRİEF — 4 PARCA ───────────────────────────
+// ─── ERKEK BOXER BRİEF — FreeSewing Bruce Referansı ─────────
+// 4 parça: Arka (1 katlı) + Ön (×2 ayna) + Yan (×2 ayna) + İç Parça (×2 ayna)
+// Toplam kesim: 7 adet kumaş parçası + bel lastiği
 
 function generateMaleBoxerPieces(
   size: SizeKey,
@@ -187,287 +190,243 @@ function generateMaleBoxerPieces(
   const sd = MALE_BOXER_SIZES[size];
   const ease = { ...EASE_PROFILES.MALE_BOXER, ...options.easeOverride };
 
-  // Temel olculer
+  // Temel ölçüler
   const hipCirc = sd.yarimGenCm * 4;
   const waistCirc = sd.belCevresiCm;
-  const patternH = sd.kalipBoyCm;
+  const totalH = sd.kalipBoyCm;
 
-  // Ease + cekme paylari
   const shrinkX = options.includeShrinkage ? (1 + SHRINKAGE.crosswise) : 1;
   const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
-
-  // Gusset sabitleri
-  const gussetW = 7;    // cm
-  const gussetH = 3.5;  // cm
-
-  // ──────── PACA (BACAK ACIKLIGI) HESABI ────────
-  // pacaCevresiCm = bir bacak acikliginin cevresi (M: 48cm)
-  // Sort seklinde kalip icin paca genislikleri her panele dagitilir
   const pacaCirc = sd.pacaCevresiCm;
-  const normTotal = HIP_RATIOS.front + HIP_RATIOS.back + HIP_RATIOS.side; // 0.81
-  const legOpeningFlat = pacaCirc / 2; // Yarim cevre = duz olcu (M: 24cm)
-  const legDistributable = legOpeningFlat - gussetH; // Gusset'in bacak payini cikart
 
-  // Panel basina bacak payi (bir bacak icin, duz olcu)
-  const frontLegFlat = legDistributable * (HIP_RATIOS.front / normTotal) * (1 + ease.leg) * shrinkX;
-  const backLegFlat = legDistributable * (HIP_RATIOS.back / normTotal) * (1 + ease.leg) * shrinkX;
-  const sideLegFlat = legDistributable * (HIP_RATIOS.side / normTotal) * (1 + ease.leg) * shrinkX;
+  // ── FreeSewing Bruce oranlari ──
+  const BACK_HIP = 0.315;   // Arka: kalca cevresinin %31.5'i
+  const FRONT_HIP = 0.245;  // On: kalca cevresinin %24.5'i
+  const SIDE_HIP = (1 - BACK_HIP - FRONT_HIP) / 2; // ~0.22 per side
+  const FRONT_H = 0.35;     // On yukseklik: toplam boy × %35
+  const INSET_H = 0.65;     // Ic parca yukseklik: toplam boy × %65
+  const LEG_BACK = 0.32;    // Arka bacak payi
+  const LEG_INSET = 0.30;   // Ic parca bacak payi
+  const GUSSET_R = 0.0666;  // Kasik genisligi: kalca × %6.66
+  const BACK_RISE = 3.5;    // Arka yukselme (cm)
 
-  // ──────── ON PANEL ────────
-  // Sort sekli — belden kalcaya genisler, kasik centigi ile iki bacak acikligi olusturur
-  // FreeSewing Bruce referansi: hipFront = hips * 0.30
-  const hipFront = hipCirc * HIP_RATIOS.front; // toplam on kalca (M: 33.6cm)
-  const fpHalfW = (hipFront / 2) * (1 + ease.hip) * shrinkX; // yarim genislik (M: ~18.0cm)
-  const fpHeight = patternH * shrinkY;
-  const fpCrotchHalfW = gussetW * 0.5; // kasik koprusu yarim genisligi (3.5cm)
+  const gussetW = r1(hipCirc * GUSSET_R); // ~7.5cm (M)
+  const gussetHW = gussetW / 2;
 
-  // Bacak alt genisligi — sort seklinin temeli
-  const fpBottomHalfW = frontLegFlat + fpCrotchHalfW; // M: ~11.8cm (mevcut: 3.5cm!)
-  // Kasik centigi derinligi (paca kenarindan yukari)
-  const fpCrotchDepth = fpHeight * 0.15; // ~4.8cm — on kasik sigi
-  const fpCrotchY = fpHeight - fpCrotchDepth; // Kasik tepe noktasi Y
+  // Bel lastigi (kalip parcasi degil — hazir logolu lastik)
+  const elasticWidthCm = 4;
+  const elasticLengthCm = r1(waistCirc * 0.85);
 
-  // Bel — kalcadan biraz dar
-  const fpWaistHalfW = fpHalfW * 0.92;
-  // Bel egrisi icbukey derinligi
-  const fpWaistDip = 1.5;
-  // Kalca hatti yuksekligi (belden asagi ~%35)
-  const fpHipY = fpHeight * 0.35;
+  // ════════════ 1. ARKA PANEL ════════════
+  // Pentagon/kalkan sekli — en buyuk parca, katli kesim (simetrik)
+  // Altta kasik kavisi, yanlarda paca acikliklari
+  const backHipHW = (hipCirc * BACK_HIP * (1 + ease.hip) * shrinkX) / 2;
+  const backWaistHW = backHipHW * 0.88;
+  const backH = (totalH + BACK_RISE) * shrinkY;
+  const backHipY = backH * 0.28;
+  const backWaistDip = 2.0; // bel egrisi — yanlar merkeze gore dusuk
+  const crotchArchH = backH * 0.18; // kasik kavisi derinligi
+  const backLegW = (pacaCirc / 2) * LEG_BACK * (1 + ease.leg) * shrinkX;
 
-  // Merkez x = yarim genislik (parca simetrik)
-  const cx = fpHalfW;
-  const fpW = fpHalfW * 2;
+  const bcx = backHipHW;
+  const backW = backHipHW * 2;
+  const backLegInnerX = gussetHW + backLegW; // ic bacak noktasi (merkezden)
 
-  const fpPath = [
-    `M ${r2(cx - fpWaistHalfW)} 0`,
-    // Bel egrisi — quadratic bezier, ortada asagi (icbukey)
-    `Q ${r2(cx)} ${r2(fpWaistDip)}, ${r2(cx + fpWaistHalfW)} 0`,
-    // Sag yan: belden kalcaya hafif disari acilan
-    `L ${r2(cx + fpHalfW)} ${r2(fpHipY)}`,
-    // Sag yan: kalcadan paca kenarindaki bacak genisligine — hafif daralan cubic bezier
-    `C ${r2(cx + fpHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.55)}, ${r2(cx + fpBottomHalfW + 1)} ${r2(fpHeight * 0.88)}, ${r2(cx + fpBottomHalfW)} ${r2(fpHeight)}`,
-    // Sag paca alt kenari — bacak acikligi (duz, disaridan kasik koprusune)
-    `L ${r2(cx + fpCrotchHalfW)} ${r2(fpHeight)}`,
-    // Kasik centigi — quadratic bezier, ortada yukari cikar
-    `Q ${r2(cx + fpCrotchHalfW * 0.5)} ${r2(fpCrotchY)}, ${r2(cx)} ${r2(fpCrotchY)}`,
-    `Q ${r2(cx - fpCrotchHalfW * 0.5)} ${r2(fpCrotchY)}, ${r2(cx - fpCrotchHalfW)} ${r2(fpHeight)}`,
-    // Sol paca alt kenari
-    `L ${r2(cx - fpBottomHalfW)} ${r2(fpHeight)}`,
-    // Sol yan: pacadan kalcaya — cubic bezier (simetrik)
-    `C ${r2(cx - fpBottomHalfW - 1)} ${r2(fpHeight * 0.88)}, ${r2(cx - fpHalfW)} ${r2(fpHipY + (fpHeight - fpHipY) * 0.55)}, ${r2(cx - fpHalfW)} ${r2(fpHipY)}`,
-    // Sol yan: kalcadan bele
-    `L ${r2(cx - fpWaistHalfW)} 0`,
-    `Z`,
-  ].join(" ");
-
-  const frontPiece: PatternPiece = {
-    name: "front_panel",
-    label: "On Panel",
-    svgPath: fpPath,
-    points: [
-      { x: cx - fpWaistHalfW, y: 0 },
-      { x: cx + fpWaistHalfW, y: 0 },
-      { x: cx + fpHalfW, y: fpHipY },
-      { x: cx + fpBottomHalfW, y: fpHeight },
-      { x: cx + fpCrotchHalfW, y: fpHeight },
-      { x: cx, y: fpCrotchY },
-      { x: cx - fpCrotchHalfW, y: fpHeight },
-      { x: cx - fpBottomHalfW, y: fpHeight },
-      { x: cx - fpHalfW, y: fpHipY },
-    ],
-    grainLine: { start: { x: cx, y: 2 }, end: { x: cx, y: fpCrotchY - 2 } },
-    notches: [
-      { x: cx + fpHalfW, y: fpHipY },
-      { x: cx - fpHalfW, y: fpHipY },
-      { x: cx, y: fpCrotchY },
-    ],
-    color: PIECE_COLORS.front_panel,
-    width: r1(fpW),
-    height: r1(fpHeight),
-    areaCm2: r1(estimateArea(fpW, fpHeight, 0.80)),
-    grainAngle: 0,
-    seamType: "flatlock",
-    offsetX: 0,
-    offsetY: 0,
-  };
-
-  // ──────── ARKA PANEL ────────
-  // Sort sekli — onden daha genis, kasik centigi daha derin
-  const hipBack = hipCirc * HIP_RATIOS.back; // toplam arka kalca (M: 35.8cm)
-  const bpHalfW = (hipBack / 2) * (1 + ease.hip) * shrinkX; // yarim genislik (M: ~19.2cm)
-  const backRise = 3.5; // cm ek yukseklik
-  const bpHeight = (patternH + backRise) * shrinkY;
-  const bpCrotchHalfW = gussetW * 0.55; // kasik koprusu (3.85cm)
-
-  // Arka bacak alt genisligi
-  const bpBottomHalfW = backLegFlat + bpCrotchHalfW; // M: ~12.7cm
-  // Arka kasik centigi daha derin (oturma konforu)
-  const bpCrotchDepth = bpHeight * 0.20; // ~7.1cm
-  const bpCrotchY = bpHeight - bpCrotchDepth;
-
-  // Bel — arka bel kalcadan dar (oturma konforu)
-  const bpWaistHalfW = bpHalfW * 0.88;
-  const bpWaistDip = 2.5; // Daha belirgin icbukey
-  const bpHipY = bpHeight * 0.30;
-  const bpCx = bpHalfW;
-  const bpW = bpHalfW * 2;
-
-  const bpPath = [
-    `M ${r2(bpCx - bpWaistHalfW)} 0`,
-    // Bel egrisi — daha belirgin icbukey
-    `Q ${r2(bpCx)} ${r2(bpWaistDip)}, ${r2(bpCx + bpWaistHalfW)} 0`,
-    // Sag yan — kalcaya dogru genisleme
-    `L ${r2(bpCx + bpHalfW)} ${r2(bpHipY)}`,
-    // Sag yan: kalcadan paca kenarindaki bacak genisligine — daha belirgin daralan
-    `C ${r2(bpCx + bpHalfW)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.50)}, ${r2(bpCx + bpBottomHalfW + 1.5)} ${r2(bpHeight * 0.85)}, ${r2(bpCx + bpBottomHalfW)} ${r2(bpHeight)}`,
-    // Sag paca alt kenari
-    `L ${r2(bpCx + bpCrotchHalfW)} ${r2(bpHeight)}`,
-    // Arka kasik centigi — daha derin (yukari cikar)
-    `Q ${r2(bpCx + bpCrotchHalfW * 0.4)} ${r2(bpCrotchY)}, ${r2(bpCx)} ${r2(bpCrotchY)}`,
-    `Q ${r2(bpCx - bpCrotchHalfW * 0.4)} ${r2(bpCrotchY)}, ${r2(bpCx - bpCrotchHalfW)} ${r2(bpHeight)}`,
-    // Sol paca alt kenari
-    `L ${r2(bpCx - bpBottomHalfW)} ${r2(bpHeight)}`,
-    // Sol yan: pacadan kalcaya (simetrik)
-    `C ${r2(bpCx - bpBottomHalfW - 1.5)} ${r2(bpHeight * 0.85)}, ${r2(bpCx - bpHalfW)} ${r2(bpHipY + (bpHeight - bpHipY) * 0.50)}, ${r2(bpCx - bpHalfW)} ${r2(bpHipY)}`,
-    // Sol yan
-    `L ${r2(bpCx - bpWaistHalfW)} 0`,
+  const backPath = [
+    `M ${r2(bcx - backWaistHW)} ${r2(backWaistDip)}`,
+    `Q ${r2(bcx)} 0, ${r2(bcx + backWaistHW)} ${r2(backWaistDip)}`,
+    `L ${r2(bcx + backHipHW)} ${r2(backHipY)}`,
+    `L ${r2(bcx + backHipHW)} ${r2(backH)}`,
+    `L ${r2(bcx + backLegInnerX)} ${r2(backH)}`,
+    `Q ${r2(bcx + gussetHW)} ${r2(backH - crotchArchH * 0.55)}, ${r2(bcx)} ${r2(backH - crotchArchH)}`,
+    `Q ${r2(bcx - gussetHW)} ${r2(backH - crotchArchH * 0.55)}, ${r2(bcx - backLegInnerX)} ${r2(backH)}`,
+    `L ${r2(bcx - backHipHW)} ${r2(backH)}`,
+    `L ${r2(bcx - backHipHW)} ${r2(backHipY)}`,
+    `L ${r2(bcx - backWaistHW)} ${r2(backWaistDip)}`,
     `Z`,
   ].join(" ");
 
   const backPiece: PatternPiece = {
     name: "back_panel",
     label: "Arka Panel",
-    svgPath: bpPath,
+    svgPath: backPath,
     points: [
-      { x: bpCx - bpWaistHalfW, y: 0 },
-      { x: bpCx + bpWaistHalfW, y: 0 },
-      { x: bpCx + bpHalfW, y: bpHipY },
-      { x: bpCx + bpBottomHalfW, y: bpHeight },
-      { x: bpCx + bpCrotchHalfW, y: bpHeight },
-      { x: bpCx, y: bpCrotchY },
-      { x: bpCx - bpCrotchHalfW, y: bpHeight },
-      { x: bpCx - bpBottomHalfW, y: bpHeight },
-      { x: bpCx - bpHalfW, y: bpHipY },
+      { x: bcx - backWaistHW, y: backWaistDip },
+      { x: bcx + backWaistHW, y: backWaistDip },
+      { x: bcx + backHipHW, y: backHipY },
+      { x: bcx + backHipHW, y: backH },
+      { x: bcx + backLegInnerX, y: backH },
+      { x: bcx, y: backH - crotchArchH },
+      { x: bcx - backLegInnerX, y: backH },
+      { x: bcx - backHipHW, y: backH },
+      { x: bcx - backHipHW, y: backHipY },
     ],
-    grainLine: { start: { x: bpCx, y: 2 }, end: { x: bpCx, y: bpCrotchY - 2 } },
+    grainLine: { start: { x: bcx, y: 3 }, end: { x: bcx, y: backH - crotchArchH - 3 } },
     notches: [
-      { x: bpCx + bpHalfW, y: bpHipY },
-      { x: bpCx - bpHalfW, y: bpHipY },
-      { x: bpCx, y: bpCrotchY },
+      { x: bcx + backHipHW, y: backHipY },
+      { x: bcx - backHipHW, y: backHipY },
+      { x: bcx, y: backH - crotchArchH },
     ],
     color: PIECE_COLORS.back_panel,
-    width: r1(bpW),
-    height: r1(bpHeight),
-    areaCm2: r1(estimateArea(bpW, bpHeight, 0.78)),
+    width: r1(backW),
+    height: r1(backH),
+    areaCm2: r1(estimateArea(backW, backH, 0.78)),
     grainAngle: 0,
     seamType: "flatlock",
     offsetX: 0,
     offsetY: 0,
   };
 
-  // ──────── YAN PANEL ────────
-  // Yamuk dikdortgen — ustte genis (kalca), altta dar (paca)
-  const hipSide = hipCirc * HIP_RATIOS.side; // bir yan panelin kalca payi (M: 21.3cm)
-  const spTopW = hipSide * (1 + ease.hip) * shrinkX; // tam yan panel genisligi (M: ~22.8cm)
-  const spBotW = sideLegFlat; // Paca seviyesinde — kalcadan dar (M: ~5.3cm)
-  const spHeight = patternH * shrinkY;
-  const spW = Math.max(spTopW, spBotW); // En genis kenar = ust (kalca)
+  // ════════════ 2. ON PANEL (×2 ayna cift) ════════════
+  // Kisa, genis parca — tusk (dis) cikintilariyla pouch olusturur
+  // Iki adet kesilir, ust uste katlanir, dart dikilerek 3D kese olusur
+  const frontW = hipCirc * FRONT_HIP * (1 + ease.hip) * shrinkX;
+  const frontH = totalH * FRONT_H * shrinkY;
+  const frontWaistW = frontW * 0.92;
+  const frontWaistDip = 1.0;
+  const tuskW = gussetW * 0.40;
+  const tuskH = frontH * 0.35;
+  const frontTotalH = frontH + tuskH;
+  const frontCurveY = frontH * 0.45; // inset egri baslangici
+  const fcx = frontW / 2;
 
-  // Yamuk: sol kenar iceride, sag kenar disaridda
-  const spInsetTop = (spW - spTopW) / 2;
-  const spInsetBot = (spW - spBotW) / 2;
+  const frontPath = [
+    `M ${r2(fcx - frontWaistW / 2)} ${r2(frontWaistDip)}`,
+    `Q ${r2(fcx)} 0, ${r2(fcx + frontWaistW / 2)} ${r2(frontWaistDip)}`,
+    // Sag yan kenar (side panel'e baglanir)
+    `L ${r2(frontW)} ${r2(frontCurveY)}`,
+    // Sag egri (inset'e baglanan kavis) → tusk
+    `C ${r2(frontW)} ${r2(frontH * 0.72)}, ${r2(fcx + tuskW * 2)} ${r2(frontH * 0.88)}, ${r2(fcx + tuskW)} ${r2(frontTotalH)}`,
+    // Sag tusk ici
+    `L ${r2(fcx + tuskW * 0.2)} ${r2(frontTotalH)}`,
+    // Dart noktasi (merkez)
+    `L ${r2(fcx)} ${r2(frontH * 0.82)}`,
+    // Sol tusk
+    `L ${r2(fcx - tuskW * 0.2)} ${r2(frontTotalH)}`,
+    `L ${r2(fcx - tuskW)} ${r2(frontTotalH)}`,
+    // Sol egri (simetrik)
+    `C ${r2(fcx - tuskW * 2)} ${r2(frontH * 0.88)}, 0 ${r2(frontH * 0.72)}, 0 ${r2(frontCurveY)}`,
+    // Sol yan kenar
+    `L ${r2(fcx - frontWaistW / 2)} ${r2(frontWaistDip)}`,
+    `Z`,
+  ].join(" ");
 
-  const spPath = [
-    `M ${r2(spInsetTop)} 0`,
-    `L ${r2(spW - spInsetTop)} 0`,
-    `L ${r2(spW - spInsetBot)} ${r2(spHeight)}`,
-    `L ${r2(spInsetBot)} ${r2(spHeight)}`,
+  const frontPiece: PatternPiece = {
+    name: "front_panel",
+    label: "On Panel (x2)",
+    svgPath: frontPath,
+    points: [
+      { x: fcx - frontWaistW / 2, y: frontWaistDip },
+      { x: fcx + frontWaistW / 2, y: frontWaistDip },
+      { x: frontW, y: frontCurveY },
+      { x: fcx + tuskW, y: frontTotalH },
+      { x: fcx, y: frontH * 0.82 },
+      { x: fcx - tuskW, y: frontTotalH },
+      { x: 0, y: frontCurveY },
+    ],
+    grainLine: { start: { x: fcx, y: 1 }, end: { x: fcx, y: frontH * 0.78 } },
+    notches: [
+      { x: frontW, y: frontCurveY },
+      { x: 0, y: frontCurveY },
+      { x: fcx, y: frontH * 0.82 },
+    ],
+    color: PIECE_COLORS.front_panel,
+    width: r1(frontW),
+    height: r1(frontTotalH),
+    areaCm2: r1(estimateArea(frontW, frontTotalH, 0.48)),
+    grainAngle: 0,
+    seamType: "flatlock",
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  // ════════════ 3. YAN PANEL (×2 ayna cift) ════════════
+  // Asimetrik yamuk — sol kenar (arka) daha uzun, sag kenar (on) daha kisa
+  const sideW = hipCirc * SIDE_HIP * (1 + ease.hip) * shrinkX;
+  const sideBackH = backH;
+  const sideFrontH = totalH * shrinkY;
+  const sideTopDiff = sideBackH - sideFrontH; // ~3.5cm (backRise)
+  const sideH = sideBackH;
+
+  const sidePath = [
+    `M 0 0`,
+    `L ${r2(sideW)} ${r2(sideTopDiff)}`,
+    `L ${r2(sideW)} ${r2(sideH)}`,
+    `L 0 ${r2(sideH)}`,
     `Z`,
   ].join(" ");
 
   const sidePiece: PatternPiece = {
     name: "side_panel",
-    label: "Yan Panel",
-    svgPath: spPath,
+    label: "Yan Panel (x2)",
+    svgPath: sidePath,
     points: [
-      { x: spInsetTop, y: 0 },
-      { x: spW - spInsetTop, y: 0 },
-      { x: spW - spInsetBot, y: spHeight },
-      { x: spInsetBot, y: spHeight },
+      { x: 0, y: 0 },
+      { x: sideW, y: sideTopDiff },
+      { x: sideW, y: sideH },
+      { x: 0, y: sideH },
     ],
-    grainLine: { start: { x: spW / 2, y: 2 }, end: { x: spW / 2, y: spHeight - 2 } },
+    grainLine: { start: { x: sideW / 2, y: sideTopDiff + 2 }, end: { x: sideW / 2, y: sideH - 2 } },
     notches: [
-      { x: spInsetTop, y: spHeight * 0.5 },
-      { x: spW - spInsetTop, y: spHeight * 0.5 },
+      { x: 0, y: sideH * 0.5 },
+      { x: sideW, y: sideTopDiff + (sideH - sideTopDiff) * 0.5 },
     ],
     color: PIECE_COLORS.side_panel,
-    width: r1(spW),
-    height: r1(spHeight),
-    areaCm2: r1((spTopW + spBotW) / 2 * spHeight),
+    width: r1(sideW),
+    height: r1(sideH),
+    areaCm2: r1(sideW * (sideH + sideFrontH) / 2),
     grainAngle: 0,
     seamType: "flatlock",
     offsetX: 0,
     offsetY: 0,
   };
 
-  // ──────── AG PARCASI (GUSSET) ────────
-  // Kucuk dikdortgen/oval — kenarlar hafif yuvarlak
-  const gRx = 1.2; // rx
-  const gRy = 0.8; // ry
+  // ════════════ 4. IC PARCA / INSET (×2 ayna cift) ════════════
+  // Damla/ucgen sekli — kasik koprusu
+  // Sol kenar: duz dikey (uzun), alt: duz yatay, sag+ust: bezier egri (on panele dikilen)
+  const insetH = totalH * INSET_H * shrinkY;
+  const insetLegW = (pacaCirc / 2) * LEG_INSET * (1 + ease.leg) * shrinkX;
+  const insetW = insetLegW;
 
-  // Yuvarlak kenarli dikdortgen path
-  const gPath = [
-    `M ${r2(gRx)} 0`,
-    `L ${r2(gussetW - gRx)} 0`,
-    `Q ${r2(gussetW)} 0, ${r2(gussetW)} ${r2(gRy)}`,
-    `L ${r2(gussetW)} ${r2(gussetH - gRy)}`,
-    `Q ${r2(gussetW)} ${r2(gussetH)}, ${r2(gussetW - gRx)} ${r2(gussetH)}`,
-    `L ${r2(gRx)} ${r2(gussetH)}`,
-    `Q 0 ${r2(gussetH)}, 0 ${r2(gussetH - gRy)}`,
-    `L 0 ${r2(gRy)}`,
-    `Q 0 0, ${r2(gRx)} 0`,
+  const insetPath = [
+    `M 0 0`,
+    `L 0 ${r2(insetH)}`,
+    `L ${r2(insetW)} ${r2(insetH)}`,
+    `L ${r2(insetW)} ${r2(insetH * 0.55)}`,
+    `C ${r2(insetW)} ${r2(insetH * 0.28)}, ${r2(insetW * 0.65)} ${r2(insetH * 0.08)}, 0 0`,
     `Z`,
   ].join(" ");
 
-  const gussetPiece: PatternPiece = {
-    name: "gusset",
-    label: "Ag Parcasi",
-    svgPath: gPath,
+  const insetPiece: PatternPiece = {
+    name: "inset",
+    label: "Ic Parca (x2)",
+    svgPath: insetPath,
     points: [
-      { x: gRx, y: 0 },
-      { x: gussetW - gRx, y: 0 },
-      { x: gussetW, y: gRy },
-      { x: gussetW, y: gussetH - gRy },
-      { x: gussetW - gRx, y: gussetH },
-      { x: gRx, y: gussetH },
-      { x: 0, y: gussetH - gRy },
-      { x: 0, y: gRy },
+      { x: 0, y: 0 },
+      { x: 0, y: insetH },
+      { x: insetW, y: insetH },
+      { x: insetW, y: insetH * 0.55 },
     ],
-    grainLine: { start: { x: gussetW / 2, y: 0.5 }, end: { x: gussetW / 2, y: gussetH - 0.5 } },
+    grainLine: { start: { x: insetW * 0.3, y: 2 }, end: { x: insetW * 0.3, y: insetH - 2 } },
     notches: [
-      { x: 0, y: gussetH / 2 },
-      { x: gussetW, y: gussetH / 2 },
+      { x: 0, y: insetH * 0.5 },
+      { x: insetW, y: insetH },
+      { x: insetW, y: insetH * 0.55 },
     ],
-    color: PIECE_COLORS.gusset,
-    width: gussetW,
-    height: gussetH,
-    areaCm2: r1(gussetW * gussetH * 0.92), // kenar yuvarlama kompanzasyonu
+    color: PIECE_COLORS.inset,
+    width: r1(insetW),
+    height: r1(insetH),
+    areaCm2: r1(estimateArea(insetW, insetH, 0.45)),
     grainAngle: 0,
     seamType: "overlock",
     offsetX: 0,
     offsetY: 0,
   };
 
-  // ──────── BEL LASTİĞİ (KALIP PARCASI DEĞİL) ────────
-  // 4cm genislikte logolu hazir lastik — kumastan kesilmez
-  // Lastik uzunlugu: bel cevresi × %85 (elastik germe)
-  const elasticWidthCm = 4; // cm — lastik genisligi
-  const elasticLengthCm = r1(waistCirc * 0.85); // kesim uzunlugu (germe oncesi)
-
-  const pieces = [frontPiece, backPiece, sidePiece, gussetPiece];
+  const pieces = [backPiece, frontPiece, sidePiece, insetPiece];
 
   // Yerlesimleri hesapla — yan yana, 3cm bosluk
-  const gap = 3; // cm
+  const gap = 3;
   let curX = 0;
   for (const p of pieces) {
     p.offsetX = curX;
@@ -478,23 +437,19 @@ function generateMaleBoxerPieces(
   const measurements: Record<string, number> = {
     hipCirc,
     waistCirc,
-    patternHeight: patternH,
-    frontPanelWidth: r1(fpW),
-    frontPanelHalfWidth: r1(fpHalfW),
-    frontPanelHeight: r1(fpHeight),
-    backPanelWidth: r1(bpW),
-    backPanelHalfWidth: r1(bpHalfW),
-    backPanelHeight: r1(bpHeight),
-    sidePanelWidth: r1(spW),
-    sidePanelHeight: r1(spHeight),
-    gussetWidth: gussetW,
-    gussetHeight: gussetH,
+    patternHeight: totalH,
+    backPanelWidth: r1(backW),
+    backPanelHeight: r1(backH),
+    frontPanelWidth: r1(frontW),
+    frontPanelHeight: r1(frontTotalH),
+    sidePanelWidth: r1(sideW),
+    sidePanelHeight: r1(sideH),
+    insetWidth: r1(insetW),
+    insetHeight: r1(insetH),
+    gussetWidth: r1(gussetW),
     elasticLengthCm,
     elasticWidthCm,
     legOpeningCirc: pacaCirc,
-    frontLegHemWidth: r1(fpBottomHalfW * 2),
-    backLegHemWidth: r1(bpBottomHalfW * 2),
-    sideLegHemWidth: r1(sideLegFlat),
   };
 
   return { pieces, measurements };
@@ -783,16 +738,17 @@ export function generatePattern(
       const data = generateMaleBoxerPieces(size, options);
       const pattern = buildPattern(modelType, "male", size, data, options);
 
-      // Trunk icin bacak boyunu kisalt (on, arka VE yan panel)
+      // Trunk icin bacak boyunu kisalt
+      // Bruce yapisinda: back_panel, side_panel ve inset bacak iceriyor
+      // front_panel zaten kisa (bel-kasik arasi) — degistirme
       if (modelType === "trunk") {
         const heightReduction = 0.75;
         pattern.pieces = pattern.pieces.map((p) => {
-          if (p.name === "front_panel" || p.name === "back_panel" || p.name === "side_panel") {
+          if (p.name === "back_panel" || p.name === "side_panel" || p.name === "inset") {
             return {
               ...p,
               height: r1(p.height * heightReduction),
               areaCm2: r1(p.areaCm2 * heightReduction),
-              // svgPath'i Y ekseninde scale et
               svgPath: scalePathY(p.svgPath, heightReduction),
               points: p.points.map((pt) => ({ x: pt.x, y: pt.y * heightReduction })),
             };
@@ -964,6 +920,7 @@ export function validatePattern(pattern: Pattern): ValidationResult {
 
   const front = pattern.pieces.find((p) => p.name === "front_panel");
   const back = pattern.pieces.find((p) => p.name === "back_panel");
+  const inset = pattern.pieces.find((p) => p.name === "inset");
   const gusset = pattern.pieces.find((p) =>
     p.name === "gusset" || p.name === "gusset_lining",
   );
@@ -976,21 +933,28 @@ export function validatePattern(pattern: Pattern): ValidationResult {
   }
   checks.push({ name: "Temel parcalar", passed: true, message: "On ve arka panel mevcut" });
 
-  // 2. Yan dikis uzunlugu kontrolu (+-2mm tolerans)
-  const frontSideLen = front.height;
-  const backSideLen = back.height;
-  const sideDiff = Math.abs(frontSideLen - backSideLen);
-
-  if (pattern.gender === "male" && pattern.modelType !== "trunk") {
-    if (sideDiff > 5) {
-      errors.push(
-        `Yan dikis farki cok buyuk: on=${frontSideLen.toFixed(1)}cm, arka=${backSideLen.toFixed(1)}cm (fark: ${sideDiff.toFixed(1)}cm)`,
+  // 2. Yan dikis / parca uyumu kontrolu
+  if (pattern.gender === "male" && inset) {
+    // Bruce yapisi: front kisa (bel-kasik), inset uzun (kasik-paca)
+    // front.height + inset.height ≈ back.height
+    const compositeHeight = front.height + inset.height;
+    const heightDiff = Math.abs(compositeHeight - back.height);
+    const ok = heightDiff <= 5;
+    if (!ok) {
+      warnings.push(
+        `Parca uyumu: on(${front.height.toFixed(1)})+inset(${inset.height.toFixed(1)})=${compositeHeight.toFixed(1)}cm vs arka=${back.height.toFixed(1)}cm (fark: ${heightDiff.toFixed(1)}cm)`,
       );
-      checks.push({ name: "Yan dikis", passed: false, message: `Fark: ${sideDiff.toFixed(1)}cm`, value: sideDiff });
-    } else {
-      checks.push({ name: "Yan dikis", passed: true, message: `Fark: ${sideDiff.toFixed(1)}cm (backRise dahil)`, value: sideDiff });
     }
+    checks.push({
+      name: "Parca uyumu",
+      passed: ok,
+      message: `On+inset=${compositeHeight.toFixed(1)}cm, arka=${back.height.toFixed(1)}cm`,
+      value: heightDiff,
+    });
   } else if (pattern.gender === "female") {
+    const frontSideLen = front.height;
+    const backSideLen = back.height;
+    const sideDiff = Math.abs(frontSideLen - backSideLen);
     const ok = sideDiff <= 5;
     if (!ok) {
       warnings.push(
@@ -1000,8 +964,20 @@ export function validatePattern(pattern: Pattern): ValidationResult {
     checks.push({ name: "Yan dikis", passed: ok, message: `Fark: ${sideDiff.toFixed(1)}cm`, value: sideDiff });
   }
 
-  // 3. Ag parcasi kontrolu
-  if (gusset) {
+  // 3. Inset / Ag parcasi kontrolu
+  if (inset) {
+    const iW = inset.width;
+    let iOk = true;
+    if (iW < 3) {
+      warnings.push(`Inset genisligi cok dar: ${iW.toFixed(1)}cm`);
+      iOk = false;
+    }
+    if (iW > 15) {
+      warnings.push(`Inset genisligi cok genis: ${iW.toFixed(1)}cm`);
+      iOk = false;
+    }
+    checks.push({ name: "Inset parcasi", passed: iOk, message: `Genislik: ${iW.toFixed(1)}cm`, value: iW });
+  } else if (gusset) {
     const gW = gusset.width;
     let gOk = true;
     if (gW < 5) {
@@ -1033,7 +1009,8 @@ export function validatePattern(pattern: Pattern): ValidationResult {
     expectedCirc = pattern.metadata.waistCirc * (1 + easeWaist);
     circLabel = "Bel cevresi";
   } else {
-    // Kadin kulot — bel bandi yok, panel genislikleri = kalca cevresi
+    // Bel bandi yok — panel genislikleri ile kalca cevresi kontrolu
+    // Bruce boxer: back + front + side×2 (front ×2 katmanli, sadece biri cevre ekler)
     const easeHip = pattern.gender === "male"
       ? EASE_PROFILES.MALE_BOXER.hip
       : EASE_PROFILES.FEMALE_PANTY.hip;
