@@ -460,13 +460,17 @@ function generateMaleBoxerPieces(
 function generateFemalePantyPieces(
   size: SizeKey,
   options: PatternOptions = {},
+  modelType: "bikini" | "hipster" = "bikini",
 ): { pieces: PatternPiece[]; measurements: Record<string, number> } {
   const sd = FEMALE_PANTY_SIZES[size];
   const ease = { ...EASE_PROFILES.FEMALE_PANTY, ...options.easeOverride };
 
   const waistCirc = sd.belCevresiCm;
   const hipCirc = sd.yarimGenCm * 4;
-  const patternH = sd.kalipBoyCm;
+
+  // Hipster: dusuk bel hatti — kasik geometrisi ayni kalir
+  const riseReduction = modelType === "hipster" ? 0.88 : 1.0;
+  const patternH = sd.kalipBoyCm * riseReduction;
 
   const shrinkX = options.includeShrinkage ? (1 + SHRINKAGE.crosswise) : 1;
   const shrinkY = options.includeShrinkage ? (1 + SHRINKAGE.lengthwise) : 1;
@@ -480,7 +484,7 @@ function generateFemalePantyPieces(
   // Endustri standardi: on panel bel = waistCirc/4 - 0.5cm, kalca = hipCirc/4 - 1cm
   const fpWaistHalf = (waistCirc / 4 - 0.5) * (1 + ease.waist) * shrinkX;
   const fpHeight = patternH * shrinkY;
-  const fpCrotchW = gussetW * 0.5 * 0.5; // ~2cm — dar kasik
+  const fpCrotchW = gussetW / 2; // kasik tabani = ag astari genisligine esit
   const fpWaistDip = 1.2;
   const fpHipY = fpHeight * 0.38;
   const fpHipHalfW = (hipCirc / 4 - 1) * (1 + ease.hip) * shrinkX;
@@ -488,7 +492,8 @@ function generateFemalePantyPieces(
   const fpW = fpHipHalfW * 2;
 
   // V-kesim: Bacak acikligi yukari dogru V seklinde
-  const fpLegY = fpHeight * 0.65; // V noktasi yuksekligi
+  // V-kesim: Bikini yuksek kesim, Hipster daha genis bacak bandi
+  const fpLegY = fpHeight * (modelType === "hipster" ? 0.60 : 0.65);
 
   const fpPath = [
     `M ${r2(fpCx - fpWaistHalf)} 0`,
@@ -532,7 +537,7 @@ function generateFemalePantyPieces(
     color: PIECE_COLORS.front_panel,
     width: r1(fpW),
     height: r1(fpHeight),
-    areaCm2: r1(estimateArea(fpW, fpHeight, 0.55)),
+    areaCm2: r1(estimateArea(fpW, fpHeight, 0.58)),
     grainAngle: 0,
     seamType: "flatlock",
     offsetX: 0,
@@ -545,13 +550,13 @@ function generateFemalePantyPieces(
   const bpWaistHalf = (waistCirc / 4 + 0.5) * (1 + ease.waist) * shrinkX;
   const bpRise = 2; // cm
   const bpHeight = (patternH + bpRise) * shrinkY;
-  const bpCrotchW = gussetW * 0.5 * 0.55;
+  const bpCrotchW = gussetW / 2 * 1.1; // arka daha genis — oturma bolgesi
   const bpWaistDip = 1.8;
   const bpHipY = bpHeight * 0.33;
   const bpHipHalfW = (hipCirc / 4 + 1) * (1 + ease.hip) * shrinkX; // Oturma bolgesi — hipCirc/4 + 1cm
   const bpCx = bpHipHalfW;
   const bpW = bpHipHalfW * 2;
-  const bpLegY = bpHeight * 0.60;
+  const bpLegY = bpHeight * (modelType === "hipster" ? 0.55 : 0.60);
 
   const bpPath = [
     `M ${r2(bpCx - bpWaistHalf)} 0`,
@@ -589,7 +594,7 @@ function generateFemalePantyPieces(
     color: PIECE_COLORS.back_panel,
     width: r1(bpW),
     height: r1(bpHeight),
-    areaCm2: r1(estimateArea(bpW, bpHeight, 0.52)),
+    areaCm2: r1(estimateArea(bpW, bpHeight, 0.55)),
     grainAngle: 0,
     seamType: "flatlock",
     offsetX: 0,
@@ -664,6 +669,7 @@ function generateFemalePantyPieces(
     backPanelHeight: r1(bpHeight),
     gussetWidth: r1(gussetW),
     gussetLength: gussetLen,
+    crotchWidth: r1(fpCrotchW * 2),
   };
 
   return { pieces, measurements };
@@ -763,29 +769,9 @@ export function generatePattern(
     }
     case "bikini":
     case "hipster": {
-      const data = generateFemalePantyPieces(size, options);
-      const pattern = buildPattern(modelType, "female", size, data, options);
-
-      // Hipster icin bel hattini dusur
-      if (modelType === "hipster") {
-        const heightReduction = 0.88;
-        pattern.pieces = pattern.pieces.map((p) => {
-          if (p.name === "front_panel" || p.name === "back_panel") {
-            return {
-              ...p,
-              height: r1(p.height * heightReduction),
-              areaCm2: r1(p.areaCm2 * heightReduction),
-              svgPath: scalePathY(p.svgPath, heightReduction),
-              points: p.points.map((pt) => ({ x: pt.x, y: pt.y * heightReduction })),
-            };
-          }
-          return p;
-        });
-        pattern.totalAreaCm2 = r1(pattern.pieces.reduce((s, p) => s + p.areaCm2, 0));
-        pattern.totalAreaWithSeamCm2 = r1(pattern.totalAreaCm2 * 1.05);
-        pattern.fabricAreaM2 = r2(pattern.totalAreaWithSeamCm2 / 10000);
-      }
-      return pattern;
+      // Hipster parametreleri dogrudan uretilir (scalePathY yerine)
+      const data = generateFemalePantyPieces(size, options, modelType);
+      return buildPattern(modelType, "female", size, data, options);
     }
     default:
       throw new Error(`Bilinmeyen model tipi: ${modelType}`);
@@ -1204,16 +1190,17 @@ export function calculateRealFabricArea(pattern: Pattern): number {
     totalCm2 += area;
   }
 
-  // Simetrik parcalar (on/arka panel, yan panel) 2 adet kesilir — ag tekil
-  const symmetricArea = pattern.pieces.reduce((sum, p) => {
-    if (p.name === "gusset" || p.name === "gusset_lining" || p.name === "waistband") {
-      return sum; // tekil parcalar
+  // Cift kesilen parcalar — label'inda "(x2)" olanlar ayna cift kesilir
+  // Katli kesim parcalar (arka panel, kadin on/arka) tekil kalir
+  const mirrorArea = pattern.pieces.reduce((sum, p) => {
+    if (p.label.includes("(x2)")) {
+      return sum + p.areaCm2;
     }
-    return sum + p.areaCm2;
+    return sum;
   }, 0);
 
-  // Toplam: tum parcalar + simetrik parcalarin fazladan 1 kopyasi
-  const finalCm2 = totalCm2 + symmetricArea * (1 + SHRINKAGE.lengthwise) * (1 + SHRINKAGE.crosswise);
+  // Toplam: tum parcalar + ayna parcalarin fazladan 1 kopyasi
+  const finalCm2 = totalCm2 + mirrorArea * (1 + SHRINKAGE.lengthwise) * (1 + SHRINKAGE.crosswise);
 
   return finalCm2 / 10000; // m2'ye cevir
 }
