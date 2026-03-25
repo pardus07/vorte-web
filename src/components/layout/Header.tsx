@@ -2,10 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, Heart, User, ShoppingBag, X } from "lucide-react";
+import { Search, Heart, User, ShoppingBag, X, Truck } from "lucide-react";
 import { MobileMenu } from "./MobileMenu";
 import { SearchBar } from "./SearchBar";
 import { useCart } from "@/contexts/CartContext";
+
+const MARQUEE_ITEMS = [
+  "Ücretsiz Kargo — 300₺ Üzeri Siparişlerde",
+  "Güvenli Ödeme — 3D Secure ile",
+  "Kolay İade — 14 Gün İçinde",
+];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,6 +41,33 @@ export function Header() {
             : "bg-transparent border-b border-transparent"
         }`}
       >
+        {/* ─── Announcement Marquee Bar ─── */}
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-out ${
+            scrolled ? "h-0 opacity-0" : "h-8 opacity-100"
+          }`}
+        >
+          <div className="relative flex h-8 items-center bg-[#1A1A1A]">
+            <div className="animate-marquee flex whitespace-nowrap">
+              {/* Content duplicated 2x for seamless infinite loop */}
+              {[0, 1].map((set) => (
+                <div key={set} className="flex shrink-0 items-center">
+                  {MARQUEE_ITEMS.map((text, i) => (
+                    <span
+                      key={`${set}-${i}`}
+                      className="mx-6 inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.08em] text-white/90 sm:mx-10"
+                    >
+                      <Truck className="h-3 w-3 text-[#7AC143]" />
+                      {text}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Main Navigation ─── */}
         <div className="mx-auto flex h-14 max-w-[1440px] items-center px-4 lg:h-[60px] lg:px-8">
           {/* Left: Hamburger + Desktop Nav */}
           <div className="flex items-center gap-7 flex-1 min-w-0">
