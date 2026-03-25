@@ -164,7 +164,7 @@ export async function GET() {
         },
         _sum: { totalPrice: true },
         orderBy: { _sum: { totalPrice: "desc" } },
-        take: 8,
+        take: 30,
       });
 
       const variantIds = variantSales.map((v) => v.variantId);
