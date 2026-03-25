@@ -6,6 +6,7 @@ import { Footer } from "./Footer";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
 import { CookieConsent } from "@/components/ui/CookieConsent";
 import { ToastProvider } from "@/components/ui/Toast";
+import { CompareDrawer } from "@/components/product/CompareDrawer";
 import ChatWidget from "@/components/chat/ChatWidget";
 
 export function ShopShell({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export function ShopShell({ children }: { children: React.ReactNode }) {
         <Header />
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
+        <CompareDrawer />
         <ScrollToTop />
         <CookieConsent />
         <ChatWidget />

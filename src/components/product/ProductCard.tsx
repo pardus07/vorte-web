@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, Eye, GitCompareArrows } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { ProductWithVariants } from "@/lib/types";
+import { QuickView } from "./QuickView";
+import { addToCompare, isInCompare } from "./CompareDrawer";
 
 interface ProductCardProps {
   product: ProductWithVariants;
@@ -87,31 +89,69 @@ export function ProductCard({ product }: ProductCardProps) {
             {isOutOfStock && <Badge variant="outline">Tükendi</Badge>}
           </div>
 
-          {/* Favorite button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const favorites = getFavorites();
-              let updated: string[];
-              if (favorites.includes(product.id)) {
-                updated = favorites.filter((id) => id !== product.id);
-              } else {
-                updated = [...favorites, product.id];
+          {/* Action buttons */}
+          <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100">
+            {/* Favori */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const favorites = getFavorites();
+                let updated: string[];
+                if (favorites.includes(product.id)) {
+                  updated = favorites.filter((id) => id !== product.id);
+                } else {
+                  updated = [...favorites, product.id];
+                }
+                localStorage.setItem("favorites", JSON.stringify(updated));
+                setIsFavorite(!isFavorite);
+                window.dispatchEvent(new CustomEvent("favorites-updated"));
+              }}
+              className="rounded-full bg-white/80 p-2 backdrop-blur-sm transition-all hover:bg-white"
+              aria-label="Favorilere ekle"
+            >
+              <Heart
+                className={`h-4 w-4 ${
+                  isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+                }`}
+              />
+            </button>
+
+            {/* Karşılaştır */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCompare({
+                  id: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  image: product.images[0] || "",
+                  price: lowestPrice,
+                });
+              }}
+              className="rounded-full bg-white/80 p-2 backdrop-blur-sm transition-all hover:bg-white"
+              aria-label="Karşılaştırmaya ekle"
+            >
+              <GitCompareArrows className={`h-4 w-4 ${isInCompare(product.id) ? "text-[#7AC143]" : "text-gray-600"}`} />
+            </button>
+          </div>
+
+          {/* QuickView */}
+          <div className="absolute bottom-2 left-2 right-2 opacity-0 transition-opacity md:group-hover:opacity-100">
+            <QuickView
+              product={product}
+              trigger={
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-white/90 py-2 text-xs font-medium text-[#1A1A1A] backdrop-blur-sm transition-all hover:bg-white"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Hızlı Bak
+                </button>
               }
-              localStorage.setItem("favorites", JSON.stringify(updated));
-              setIsFavorite(!isFavorite);
-              window.dispatchEvent(new CustomEvent("favorites-updated"));
-            }}
-            className="absolute right-2 top-2 rounded-full bg-white/80 p-2 opacity-100 backdrop-blur-sm transition-all hover:bg-white md:opacity-0 md:group-hover:opacity-100"
-            aria-label="Favorilere ekle"
-          >
-            <Heart
-              className={`h-4 w-4 ${
-                isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
-              }`}
             />
-          </button>
+          </div>
 
           {/* Out of stock overlay */}
           {isOutOfStock && (

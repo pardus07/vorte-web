@@ -9,6 +9,8 @@ import { ProductReviews } from "@/components/product/ProductReviews";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import { getBannersByPosition } from "@/lib/banners";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { RecentlyViewed } from "@/components/home/RecentlyViewed";
+import { RecentlyViewedTracker } from "./RecentlyViewedTracker";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -190,6 +192,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <ProductGrid products={relatedProducts} />
         </div>
       )}
+
+      {/* Son görüntülenenler */}
+      <RecentlyViewed />
+
+      {/* Son görüntülenen ürün kaydı */}
+      <RecentlyViewedTracker
+        product={{
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          image: product.images[0] || "",
+          price: product.basePrice,
+        }}
+      />
     </div>
   );
 }
