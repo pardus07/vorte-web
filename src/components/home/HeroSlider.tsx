@@ -284,49 +284,28 @@ function VideoHeroSlider() {
         })}
       </div>
 
-      {/* Giant VORTE logo — right-aligned vertical, Zara style */}
-      <div className="absolute right-0 top-0 z-[15] h-full select-none pointer-events-none flex items-end justify-end">
-        <img
-          src="/images/vorte-logo-white.png"
-          alt=""
-          className="h-[75%] w-auto object-contain object-right-bottom opacity-50 mr-2 mb-16 md:h-[80%] md:mr-6 md:mb-20 lg:mr-10"
-          aria-hidden="true"
-          draggable={false}
-        />
-      </div>
-
-      {/* Navigation dots — Zara style thin bars */}
-      <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-10">
+      {/* Navigation dots — thin progress bars */}
+      <div className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 md:bottom-12">
         {videoSlides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
-            className="group relative h-5 flex items-center"
+            className="group relative h-6 flex items-center"
             aria-label={`Slayt ${i + 1}`}
             aria-current={i === current ? "true" : undefined}
           >
-            <span
-              className="block h-[2px] rounded-full bg-white/40 transition-all duration-500 group-hover:bg-white/70"
-              style={{
-                width: i === current ? "32px" : "12px",
-                backgroundColor: i === current ? "rgba(255,255,255,0.9)" : undefined,
-              }}
-            />
+            <span className="block h-[1.5px] w-8 rounded-full bg-white/25 overflow-hidden">
+              <span
+                className="block h-full rounded-full bg-white transition-all"
+                style={{
+                  width: i === current ? "100%" : i < current ? "100%" : "0%",
+                  opacity: i === current ? 1 : i < current ? 0.5 : 0,
+                  transition: i === current ? "width 8s linear" : "width 0.4s ease",
+                }}
+              />
+            </span>
           </button>
         ))}
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-2 left-1/2 z-30 -translate-x-1/2 flex flex-col items-center gap-1 opacity-60 md:bottom-3">
-        <svg
-          className="h-4 w-4 animate-bounce text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
       </div>
     </section>
   );

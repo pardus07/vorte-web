@@ -18,142 +18,102 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    // Check initial scroll position
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
+  const textColor = scrolled ? "text-[#1A1A1A]" : "text-white";
+  const hoverColor = "hover:opacity-60";
+
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-out ${
           scrolled
-            ? "bg-white border-b border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+            ? "bg-white/95 backdrop-blur-md border-b border-gray-100"
             : "bg-transparent border-b border-transparent"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center px-4 lg:px-8">
-          {/* Left: Hamburger + Nav Links (desktop) */}
-          <div className="flex items-center gap-6 flex-1">
-            {/* Hamburger - visible on all screens (Zara style) */}
+        <div className="mx-auto flex h-14 max-w-[1440px] items-center px-4 lg:h-[60px] lg:px-8">
+          {/* Left: Hamburger + Desktop Nav */}
+          <div className="flex items-center gap-7 flex-1 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="group p-1 hover:opacity-70 transition-opacity"
+              className={`p-1 ${hoverColor} transition-opacity`}
               aria-label="Menüyü aç"
             >
               <div className="flex flex-col gap-[5px]">
-                <span
-                  className={`block h-[1.5px] w-5 transition-all duration-300 ${
-                    scrolled ? "bg-[#1A1A1A]" : "bg-white"
-                  }`}
-                />
-                <span
-                  className={`block h-[1.5px] w-5 transition-all duration-300 ${
-                    scrolled ? "bg-[#1A1A1A]" : "bg-white"
-                  }`}
-                />
-                <span
-                  className={`block h-[1.5px] w-5 transition-all duration-300 ${
-                    scrolled ? "bg-[#1A1A1A]" : "bg-white"
-                  }`}
-                />
+                <span className={`block h-[1.5px] w-5 transition-colors duration-500 ${scrolled ? "bg-[#1A1A1A]" : "bg-white"}`} />
+                <span className={`block h-[1.5px] w-5 transition-colors duration-500 ${scrolled ? "bg-[#1A1A1A]" : "bg-white"}`} />
+                <span className={`block h-[1.5px] w-5 transition-colors duration-500 ${scrolled ? "bg-[#1A1A1A]" : "bg-white"}`} />
               </div>
             </button>
 
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6">
-              <Link
-                href="/erkek-ic-giyim"
-                className={`text-xs font-medium uppercase tracking-[0.1em] transition-colors duration-300 hover:opacity-70 ${
-                  scrolled ? "text-[#1A1A1A]" : "text-white"
-                }`}
-              >
-                ERKEK
-              </Link>
-              <Link
-                href="/kadin-ic-giyim"
-                className={`text-xs font-medium uppercase tracking-[0.1em] transition-colors duration-300 hover:opacity-70 ${
-                  scrolled ? "text-[#1A1A1A]" : "text-white"
-                }`}
-              >
-                KADIN
-              </Link>
-              <Link
-                href="/toptan"
-                className={`text-xs font-medium uppercase tracking-[0.1em] transition-colors duration-300 hover:opacity-70 ${
-                  scrolled ? "text-[#1A1A1A]" : "text-white"
-                }`}
-              >
-                TOPTAN SATIŞ
-              </Link>
-              <Link
-                href="/blog"
-                className={`text-xs font-medium uppercase tracking-[0.1em] transition-colors duration-300 hover:opacity-70 ${
-                  scrolled ? "text-[#1A1A1A]" : "text-white"
-                }`}
-              >
-                BLOG
-              </Link>
+            <nav className="hidden lg:flex items-center gap-7">
+              {[
+                { href: "/erkek-ic-giyim", label: "ERKEK" },
+                { href: "/kadin-ic-giyim", label: "KADIN" },
+                { href: "/toptan", label: "TOPTAN" },
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[11px] font-medium uppercase tracking-[0.15em] transition-all duration-500 ${hoverColor} ${textColor}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
           </div>
 
+          {/* Center: Logo */}
+          <Link
+            href="/"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          >
+            <span
+              className={`text-[22px] lg:text-[26px] tracking-[0.35em] transition-colors duration-500 ${textColor}`}
+              style={{ fontFamily: "var(--font-baron), sans-serif", lineHeight: 1 }}
+            >
+              VORTE
+            </span>
+          </Link>
+
           {/* Right: Icons */}
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            {/* Search toggle */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className={`p-1.5 transition-all duration-300 hover:opacity-70 ${
-                scrolled ? "text-[#1A1A1A]" : "text-white"
-              }`}
-              aria-label="Ara"
+              className={`p-2 transition-all duration-500 ${hoverColor} ${textColor}`}
+              aria-label={searchOpen ? "Aramayı kapat" : "Ara"}
             >
-              {searchOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Search className="h-5 w-5" />
-              )}
+              {searchOpen ? <X className="h-[18px] w-[18px]" /> : <Search className="h-[18px] w-[18px]" />}
             </button>
-
-            {/* Bayi Girisi - minimal version */}
-            <Link
-              href="/bayi-girisi"
-              className={`hidden sm:inline-flex items-center px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.1em] transition-all duration-300 border ${
-                scrolled
-                  ? "border-[#1A1A1A]/20 text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white"
-                  : "border-white/40 text-white hover:bg-white hover:text-[#1A1A1A]"
-              }`}
-            >
-              BAYİ
-            </Link>
 
             <Link
               href="/hesabim/favorilerim"
-              className={`p-1.5 transition-all duration-300 hover:opacity-70 ${
-                scrolled ? "text-[#1A1A1A]" : "text-white"
-              }`}
+              className={`hidden sm:flex p-2 transition-all duration-500 ${hoverColor} ${textColor}`}
+              aria-label="Favorilerim"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className="h-[18px] w-[18px]" />
             </Link>
 
             <Link
               href="/hesabim"
-              className={`p-1.5 transition-all duration-300 hover:opacity-70 ${
-                scrolled ? "text-[#1A1A1A]" : "text-white"
-              }`}
+              className={`p-2 transition-all duration-500 ${hoverColor} ${textColor}`}
+              aria-label="Hesabım"
             >
-              <User className="h-5 w-5" />
+              <User className="h-[18px] w-[18px]" />
             </Link>
 
             <Link
               href="/sepet"
-              className={`relative p-1.5 transition-all duration-300 hover:opacity-70 ${
-                scrolled ? "text-[#1A1A1A]" : "text-white"
-              }`}
+              className={`relative p-2 transition-all duration-500 ${hoverColor} ${textColor}`}
+              aria-label="Sepet"
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-[18px] w-[18px]" />
               {cartCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#7AC143] text-[10px] font-bold text-white">
+                <span className="absolute top-0.5 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#1A1A1A] text-[9px] font-medium text-white">
                   {cartCount}
                 </span>
               )}
@@ -161,13 +121,13 @@ export function Header() {
           </div>
         </div>
 
-        {/* Search bar dropdown */}
+        {/* Search dropdown */}
         {searchOpen && (
           <div
             className={`transition-all duration-300 px-4 py-3 ${
               scrolled
-                ? "bg-white border-t border-gray-200"
-                : "bg-black/30 backdrop-blur-md border-t border-white/10"
+                ? "bg-white border-t border-gray-100"
+                : "bg-black/20 backdrop-blur-xl border-t border-white/10"
             }`}
           >
             <div className="mx-auto max-w-xl">
@@ -176,11 +136,6 @@ export function Header() {
           </div>
         )}
       </header>
-
-      {/* Spacer - prevents content from hiding behind fixed header
-           This is intentionally NOT added here because the header should
-           overlay the hero section. Pages that need spacing should add
-           their own pt-16 or similar. */}
 
       <MobileMenu
         open={mobileMenuOpen}

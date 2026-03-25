@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Facebook, Instagram, MapPin, Phone, Mail } from "lucide-react";
+import { Instagram, Facebook } from "lucide-react";
 import { NewsletterForm } from "./NewsletterForm";
 
 const footerLinks = {
@@ -21,70 +20,53 @@ const footerLinks = {
     { label: "İade ve Değişim", href: "/iade-politikasi" },
     { label: "Sıkça Sorulan Sorular", href: "/sss" },
   ],
-  kategoriler: [
-    { label: "Erkek Boxer", href: "/erkek-ic-giyim" },
-    { label: "Kadın Külot", href: "/kadin-ic-giyim" },
-  ],
 };
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-gray-200 bg-white">
+    <footer className="mt-auto border-t border-gray-100 bg-white">
       {/* Newsletter */}
-      <div className="mx-auto max-w-[1440px] px-4 py-10 lg:px-8">
-        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-lg font-bold tracking-wide text-[#1A1A1A]">
-              E-BÜLTENE KAYIT OLUN, GÜNCEL KALIN!
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Kampanya ve yeniliklerden ilk siz haberdar olun.
-            </p>
+      <div className="mx-auto max-w-[1440px] px-4 py-14 lg:px-8">
+        <div className="mx-auto max-w-xl text-center">
+          <p
+            className="text-[10px] font-medium uppercase text-gray-400"
+            style={{ letterSpacing: "0.3em" }}
+          >
+            Bülten
+          </p>
+          <h3
+            className="mt-3 text-lg font-light text-[#1A1A1A] md:text-xl"
+            style={{ letterSpacing: "0.08em" }}
+          >
+            Yeniliklerden ilk siz haberdar olun
+          </h3>
+          <div className="mt-6">
+            <NewsletterForm />
           </div>
-          <NewsletterForm />
         </div>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-gray-200" />
+      <div className="border-t border-gray-100" />
 
       {/* Links */}
-      <div className="mx-auto max-w-[1440px] px-4 py-10 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Image
-              src="/logo-dark.jpg"
-              alt="Vorte Tekstil"
-              width={100}
-              height={34}
-              className="h-8 w-auto object-contain"
-            />
-            <p className="mt-4 text-xs leading-relaxed text-gray-500">
-              Vorte Tekstil Toptan — Kaliteli iç giyim ürünleri.
-            </p>
-            <div className="mt-3 space-y-1.5 text-xs text-gray-500">
-              <p className="flex items-center gap-1.5">
-                <MapPin className="h-3 w-3 shrink-0 text-[#7AC143]" /> Nilüfer, Bursa / Türkiye
-              </p>
-              <p className="flex items-center gap-1.5">
-                <Phone className="h-3 w-3 shrink-0 text-[#7AC143]" />
-                <a href="tel:+908503058635" className="hover:text-[#1A1A1A]">0850 305 86 35</a>
-              </p>
-              <p className="flex items-center gap-1.5">
-                <Mail className="h-3 w-3 shrink-0 text-[#7AC143]" />
-                <a href="mailto:info@vorte.com.tr" className="hover:text-[#1A1A1A]">info@vorte.com.tr</a>
-              </p>
-            </div>
-          </div>
-
+      <div className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* Kurumsal */}
           <div>
-            <h4 className="mb-4 text-sm font-bold text-[#1A1A1A]">Kurumsal</h4>
-            <ul className="space-y-2.5">
+            <h4
+              className="mb-5 text-[10px] font-semibold uppercase text-[#1A1A1A]"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              Kurumsal
+            </h4>
+            <ul className="space-y-3">
               {footerLinks.kurumsal.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-xs text-gray-400 transition-colors hover:text-[#1A1A1A]"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -94,11 +76,19 @@ export function Footer() {
 
           {/* Hesap */}
           <div>
-            <h4 className="mb-4 text-sm font-bold text-[#1A1A1A]">Hesap</h4>
-            <ul className="space-y-2.5">
+            <h4
+              className="mb-5 text-[10px] font-semibold uppercase text-[#1A1A1A]"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              Hesap
+            </h4>
+            <ul className="space-y-3">
               {footerLinks.hesap.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-xs text-gray-400 transition-colors hover:text-[#1A1A1A]"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -108,11 +98,19 @@ export function Footer() {
 
           {/* Yardım */}
           <div>
-            <h4 className="mb-4 text-sm font-bold text-[#1A1A1A]">Müşteri Hizmetleri</h4>
-            <ul className="space-y-2.5">
+            <h4
+              className="mb-5 text-[10px] font-semibold uppercase text-[#1A1A1A]"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              Müşteri Hizmetleri
+            </h4>
+            <ul className="space-y-3">
               {footerLinks.yardim.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-xs text-gray-400 transition-colors hover:text-[#1A1A1A]"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -120,69 +118,95 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Kategoriler */}
+          {/* Contact + Social */}
           <div>
-            <h4 className="mb-4 text-sm font-bold text-[#1A1A1A]">Kategoriler</h4>
-            <ul className="space-y-2.5">
-              {footerLinks.kategoriler.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <h4
+              className="mb-5 text-[10px] font-semibold uppercase text-[#1A1A1A]"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              İletişim
+            </h4>
+            <div className="space-y-3 text-xs text-gray-400">
+              <p>Nilüfer, Bursa / Türkiye</p>
+              <p>
+                <a href="tel:+908503058635" className="transition-colors hover:text-[#1A1A1A]">
+                  0850 305 86 35
+                </a>
+              </p>
+              <p>
+                <a href="mailto:info@vorte.com.tr" className="transition-colors hover:text-[#1A1A1A]">
+                  info@vorte.com.tr
+                </a>
+              </p>
+            </div>
+            <div className="mt-5 flex items-center gap-4">
+              <a
+                href="https://www.instagram.com/vortetekstil"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 transition-colors hover:text-[#1A1A1A]"
+                aria-label="Instagram"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a
+                href="https://www.facebook.com/vortetekstil"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 transition-colors hover:text-[#1A1A1A]"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-200">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row lg:px-8">
-          {/* Social */}
-          <div className="flex items-center gap-4">
-            <a href="https://www.instagram.com/vortetekstil" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Instagram">
-              <Instagram className="h-5 w-5" />
-            </a>
-            <a href="https://www.facebook.com/vortetekstil" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#1A1A1A] transition-colors" aria-label="Facebook">
-              <Facebook className="h-5 w-5" />
-            </a>
-          </div>
-
+      <div className="border-t border-gray-100">
+        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-3 px-4 py-6 md:flex-row lg:px-8">
           {/* Legal Links */}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400">
-            <Link href="/gizlilik-politikasi" className="hover:text-gray-600">Gizlilik Politikası</Link>
-            <Link href="/kvkk" className="hover:text-gray-600">KVKK Aydınlatma Metni</Link>
-            <Link href="/mesafeli-satis" className="hover:text-gray-600">Mesafeli Satış Sözleşmesi</Link>
-            <Link href="/kullanim-kosullari" className="hover:text-gray-600">Kullanım Koşulları</Link>
+          <div className="flex flex-wrap items-center gap-4">
+            {[
+              { label: "Gizlilik", href: "/gizlilik-politikasi" },
+              { label: "KVKK", href: "/kvkk" },
+              { label: "Mesafeli Satış", href: "/mesafeli-satis" },
+              { label: "Koşullar", href: "/kullanim-kosullari" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-[10px] uppercase tracking-[0.1em] text-gray-300 transition-colors hover:text-gray-500"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           {/* Copyright */}
-          <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Vorte Tekstil - Tüm Hakları Saklıdır.
+          <p className="text-[10px] tracking-[0.1em] text-gray-300">
+            © {new Date().getFullYear()} VORTE TEKSTİL
           </p>
         </div>
       </div>
 
       {/* ETBIS */}
-      <div className="border-t border-gray-200">
+      <div className="border-t border-gray-100">
         <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 py-4 lg:px-8">
-          <div id="ETBIS">
-            <div id="5383876846473146">
-              <a
-                href="https://etbis.ticaret.gov.tr/tr/Anasayfa/SiteAraSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  style={{ width: 100, height: 120 }}
-                  alt="ETBIS - E-Ticaret Bilgi Sistemi"
-                  src="/etbis-badge.png"
-                />
-              </a>
-            </div>
-          </div>
+          <a
+            href="https://etbis.ticaret.gov.tr/tr/Anasayfa/SiteAraSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              style={{ width: 80, height: 96 }}
+              alt="ETBIS - E-Ticaret Bilgi Sistemi"
+              src="/etbis-badge.png"
+              className="opacity-50 transition-opacity hover:opacity-80"
+            />
+          </a>
         </div>
       </div>
     </footer>

@@ -1,17 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Truck, ShieldCheck, CreditCard, Headphones, BookOpen, Calendar, Tag } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { ArrowRight } from "lucide-react";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import type { SlideData } from "@/components/home/HeroSlider";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import type { BannerData } from "@/components/home/PromoBanner";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { HomepageClient } from "@/components/home/HomepageClient";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
 
-export const revalidate = 60; // ISR: 60 saniye cache, LCP iyileştirmesi
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Vorte Tekstil | Kaliteli İç Giyim - Erkek Boxer & Kadın Külot",
@@ -28,14 +28,10 @@ export default async function HomePage() {
     const dbSliders = await db.slider.findMany({
       where: {
         active: true,
-        OR: [
-          { startDate: null },
-          { startDate: { lte: now } },
-        ],
+        OR: [{ startDate: null }, { startDate: { lte: now } }],
       },
       orderBy: { sortOrder: "asc" },
     });
-    // Filter by endDate in JS (Prisma OR nesting can be complex)
     sliderData = dbSliders
       .filter((s) => !s.endDate || new Date(s.endDate) >= now)
       .map((s) => ({
@@ -110,10 +106,7 @@ export default async function HomePage() {
     const dbBanners = await db.banner.findMany({
       where: {
         active: true,
-        OR: [
-          { startDate: null },
-          { startDate: { lte: now } },
-        ],
+        OR: [{ startDate: null }, { startDate: { lte: now } }],
       },
       orderBy: { sortOrder: "asc" },
     });
@@ -147,106 +140,138 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Hero Slider */}
+      {/* ── HERO ── */}
       <HeroSlider />
+
+      {/* ── MARQUEE STRIP ── */}
+      <div className="overflow-hidden border-b border-gray-100 bg-white py-3">
+        <div className="animate-marquee flex whitespace-nowrap">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="flex items-center gap-12 px-6">
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
+                Ücretsiz Kargo — 500₺ Üzeri Siparişlerde
+              </span>
+              <span className="text-[10px] text-gray-300">◆</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
+                3D Secure Güvenli Ödeme
+              </span>
+              <span className="text-[10px] text-gray-300">◆</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
+                14 Gün İçinde Kolay İade
+              </span>
+              <span className="text-[10px] text-gray-300">◆</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
+                %95 Taranmış Penye Pamuk
+              </span>
+              <span className="text-[10px] text-gray-300">◆</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
+                9 Taksit İmkanı
+              </span>
+              <span className="text-[10px] text-gray-300">◆</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Homepage Top Banners */}
       {bannersByPosition["homepage-top"] && (
         <PromoBanner banners={bannersByPosition["homepage-top"]} />
       )}
 
-      {/* Trust Bar */}
-      <section className="border-b border-gray-200 bg-[#FAFAFA]">
-        <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-4 px-4 py-6 md:grid-cols-4 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Truck className="h-6 w-6 text-[#7AC143] flex-shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-[#1A1A1A]">Hızlı Kargo</p>
-              <p className="text-xs text-gray-500">1-3 iş günü teslimat</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-6 w-6 text-[#7AC143] flex-shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-[#1A1A1A]">Güvenli Ödeme</p>
-              <p className="text-xs text-gray-500">3D Secure ile</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <CreditCard className="h-6 w-6 text-[#7AC143] flex-shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-[#1A1A1A]">Taksit İmkanı</p>
-              <p className="text-xs text-gray-500">9 taksit seçeneği</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Headphones className="h-6 w-6 text-[#7AC143] flex-shrink-0" />
-            <div>
-              <p className="text-xs font-semibold text-[#1A1A1A]">Müşteri Desteği</p>
-              <p className="text-xs text-gray-500">7/24 destek hattı</p>
-            </div>
-          </div>
+      {/* ── BRAND STATEMENT ── */}
+      <section className="bg-white py-20 md:py-28">
+        <div className="mx-auto max-w-3xl px-4 text-center">
+          <p
+            className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
+            style={{ letterSpacing: "0.35em" }}
+          >
+            Doğadan Teninize
+          </p>
+          <div className="divider-line mt-5 mb-6" />
+          <h2
+            className="text-2xl font-light text-[#1A1A1A] md:text-3xl lg:text-4xl"
+            style={{ letterSpacing: "0.08em", lineHeight: 1.4 }}
+          >
+            35 yıllık deneyim, %95 taranmış penye pamuk.
+            <br className="hidden md:block" />
+            {" "}Konfor ve kalitenin buluştuğu nokta.
+          </h2>
         </div>
       </section>
 
-      {/* Category Grid - 2 column */}
-      <section className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
-        <h2 className="mb-8 text-center text-2xl font-bold tracking-wide text-[#1A1A1A]">
-          KATEGORİLER
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Erkek */}
-          <Link
-            href="/erkek-ic-giyim"
-            className="group relative flex h-[400px] items-end overflow-hidden bg-gray-100"
-          >
-            <Image
-              src="/images/category-erkek.png"
-              alt="Erkek İç Giyim"
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A]/70 to-transparent z-10 group-hover:from-[#1A1A1A]/80 transition-all" />
-            <div className="relative z-20 p-8">
-              <h3 className="text-3xl font-bold text-white">
-                Erkek İç Giyim
-              </h3>
-              <p className="mt-2 text-sm text-gray-300">
-                Premium boxer koleksiyonu
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#7AC143] group-hover:gap-3 transition-all">
-                Keşfet <ArrowRight className="h-4 w-4" />
-              </span>
-            </div>
-          </Link>
+      {/* ── CATEGORY: ERKEK — Full Bleed ── */}
+      <section className="relative">
+        <Link
+          href="/erkek-ic-giyim"
+          className="group relative block h-[70vh] min-h-[500px] overflow-hidden md:h-[85vh]"
+        >
+          <Image
+            src="/images/category-erkek.png"
+            alt="Erkek İç Giyim Koleksiyonu"
+            fill
+            className="object-cover img-cover-zoom"
+            sizes="100vw"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24">
+            <p
+              className="mb-3 text-[10px] font-light uppercase text-white/70 md:text-[11px]"
+              style={{ letterSpacing: "0.35em" }}
+            >
+              Koleksiyon
+            </p>
+            <h2
+              className="text-3xl font-light uppercase text-white md:text-5xl lg:text-6xl"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              Erkek
+            </h2>
+            <span
+              className="mt-6 inline-flex items-center gap-2 border border-white/60 px-8 py-3 text-[10px] font-light uppercase text-white transition-all duration-500 group-hover:bg-white group-hover:text-[#1A1A1A] md:text-[11px]"
+              style={{ letterSpacing: "0.25em" }}
+            >
+              Keşfet <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </Link>
+      </section>
 
-          {/* Kadın */}
-          <Link
-            href="/kadin-ic-giyim"
-            className="group relative flex h-[400px] items-end overflow-hidden bg-gray-100"
-          >
-            <Image
-              src="/images/category-kadin.png"
-              alt="Kadın İç Giyim"
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A]/70 to-transparent z-10 group-hover:from-[#1A1A1A]/80 transition-all" />
-            <div className="relative z-20 p-8">
-              <h3 className="text-3xl font-bold text-white">
-                Kadın İç Giyim
-              </h3>
-              <p className="mt-2 text-sm text-gray-300">
-                Konforlu külot koleksiyonu
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#7AC143] group-hover:gap-3 transition-all">
-                Keşfet <ArrowRight className="h-4 w-4" />
-              </span>
-            </div>
-          </Link>
-        </div>
+      {/* ── CATEGORY: KADIN — Full Bleed ── */}
+      <section className="relative">
+        <Link
+          href="/kadin-ic-giyim"
+          className="group relative block h-[70vh] min-h-[500px] overflow-hidden md:h-[85vh]"
+        >
+          <Image
+            src="/images/category-kadin.png"
+            alt="Kadın İç Giyim Koleksiyonu"
+            fill
+            className="object-cover img-cover-zoom"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24">
+            <p
+              className="mb-3 text-[10px] font-light uppercase text-white/70 md:text-[11px]"
+              style={{ letterSpacing: "0.35em" }}
+            >
+              Koleksiyon
+            </p>
+            <h2
+              className="text-3xl font-light uppercase text-white md:text-5xl lg:text-6xl"
+              style={{ letterSpacing: "0.15em" }}
+            >
+              Kadın
+            </h2>
+            <span
+              className="mt-6 inline-flex items-center gap-2 border border-white/60 px-8 py-3 text-[10px] font-light uppercase text-white transition-all duration-500 group-hover:bg-white group-hover:text-[#1A1A1A] md:text-[11px]"
+              style={{ letterSpacing: "0.25em" }}
+            >
+              Keşfet <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </Link>
       </section>
 
       {/* Homepage Mid Banners */}
@@ -254,24 +279,40 @@ export default async function HomePage() {
         <PromoBanner banners={bannersByPosition["homepage-mid"]} />
       )}
 
-      {/* Featured Products */}
+      {/* ── FEATURED PRODUCTS ── */}
       {products.length > 0 && (
-        <section className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
-          <h2 className="mb-8 text-center text-2xl font-bold tracking-wide text-[#1A1A1A]">
-            ÖNE ÇIKAN ÜRÜNLER
-          </h2>
-          <ProductGrid products={products} />
-          <div className="mt-8 flex justify-center gap-4">
-            <Link href="/erkek-ic-giyim">
-              <Button variant="outline" size="lg">
-                Erkek Koleksiyonu <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/kadin-ic-giyim">
-              <Button variant="outline" size="lg">
-                Kadın Koleksiyonu <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+        <section className="bg-white py-20 md:py-28">
+          <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
+            <div className="mb-12 text-center">
+              <p
+                className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
+                style={{ letterSpacing: "0.35em" }}
+              >
+                Seçtiklerimiz
+              </p>
+              <div className="divider-line mt-4 mb-5" />
+              <h2
+                className="text-xl font-light uppercase text-[#1A1A1A] md:text-2xl"
+                style={{ letterSpacing: "0.15em" }}
+              >
+                Öne Çıkan Ürünler
+              </h2>
+            </div>
+            <ProductGrid products={products} />
+            <div className="mt-12 flex justify-center gap-4">
+              <Link
+                href="/erkek-ic-giyim"
+                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
+              >
+                Erkek Koleksiyonu
+              </Link>
+              <Link
+                href="/kadin-ic-giyim"
+                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
+              >
+                Kadın Koleksiyonu
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -281,116 +322,118 @@ export default async function HomePage() {
         <PromoBanner banners={bannersByPosition["homepage-bottom"]} />
       )}
 
-      {/* Latest Blog Posts */}
+      {/* ── BLOG — Editorial Style ── */}
       {blogPosts.length > 0 && (
-        <section className="border-t border-gray-100 bg-white">
-          <div className="mx-auto max-w-[1440px] px-4 py-16 lg:px-8">
-            <div className="mb-10 text-center">
-              <h2 className="text-2xl font-bold tracking-wide text-[#1A1A1A]">
-                BLOG
-              </h2>
-              <p className="mt-2 text-sm text-gray-500">
-                İç giyim trendleri, bakım önerileri ve haberler
+        <section className="border-t border-gray-100 bg-[#FAFAFA] py-20 md:py-28">
+          <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
+            <div className="mb-12 text-center">
+              <p
+                className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
+                style={{ letterSpacing: "0.35em" }}
+              >
+                Editöryal
               </p>
+              <div className="divider-line mt-4 mb-5" />
+              <h2
+                className="text-xl font-light uppercase text-[#1A1A1A] md:text-2xl"
+                style={{ letterSpacing: "0.15em" }}
+              >
+                Blog
+              </h2>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-8 md:grid-cols-3">
               {blogPosts.map((post) => (
                 <Link
                   key={post.id}
                   href={`/blog/${post.slug}`}
-                  className="group overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md"
+                  className="group"
                 >
-                  {post.coverImage ? (
-                    <div className="h-48 overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <div className="aspect-[4/3] overflow-hidden bg-gray-100">
+                    {post.coverImage ? (
                       <img
                         src={post.coverImage}
                         alt={post.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                    </div>
-                  ) : (
-                    <div className="flex h-48 items-center justify-center bg-gray-50">
-                      <BookOpen className="h-10 w-10 text-gray-200" />
-                    </div>
-                  )}
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#7AC143] transition-colors line-clamp-2">
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <span className="text-4xl font-light text-gray-200">V</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-5">
+                    {post.publishedAt && (
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                        {new Date(post.publishedAt).toLocaleDateString("tr-TR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                    <h3 className="mt-2 text-sm font-medium text-[#1A1A1A] transition-colors group-hover:text-gray-500 line-clamp-2">
                       {post.title}
                     </h3>
                     {post.excerpt && (
-                      <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                      <p className="mt-2 text-xs leading-relaxed text-gray-400 line-clamp-2">
                         {post.excerpt}
                       </p>
-                    )}
-                    <div className="mt-4 flex items-center gap-3 text-xs text-gray-400">
-                      {post.publishedAt && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(post.publishedAt).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </span>
-                      )}
-                    </div>
-                    {post.tags && (
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {post.tags.split(",").slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-0.5 rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500"
-                          >
-                            <Tag className="h-2.5 w-2.5" /> {tag.trim()}
-                          </span>
-                        ))}
-                      </div>
                     )}
                   </div>
                 </Link>
               ))}
             </div>
-            <div className="mt-8 flex justify-center">
-              <Link href="/blog">
-                <Button variant="outline" size="lg">
-                  Tüm Yazıları Gör <ArrowRight className="h-4 w-4" />
-                </Button>
+            <div className="mt-12 flex justify-center">
+              <Link
+                href="/blog"
+                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
+              >
+                Tüm Yazılar
               </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* Wholesale CTA */}
-      <section className="bg-[#1A1A1A]">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center gap-6 px-4 py-16 text-center lg:px-8">
-          <h2 className="text-3xl font-bold text-white">
+      {/* ── WHOLESALE CTA ── */}
+      <section className="relative overflow-hidden bg-[#1A1A1A] py-24 md:py-32">
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 text-center">
+          <p
+            className="text-[10px] font-light uppercase text-white/40 md:text-[11px]"
+            style={{ letterSpacing: "0.35em" }}
+          >
+            İş Ortaklığı
+          </p>
+          <div className="mx-auto mt-5 mb-6 h-px w-10 bg-white/20" />
+          <h2
+            className="text-2xl font-light uppercase text-white md:text-3xl lg:text-4xl"
+            style={{ letterSpacing: "0.1em" }}
+          >
             Toptan Satış Bayisi Olun
           </h2>
-          <p className="max-w-lg text-gray-400">
-            Vorte ürünlerini kendi satış noktanızda satmak ister misiniz?
-            Bayilik başvurusu yapın, özel toptan fiyatlardan yararlanın.
+          <p className="mt-5 text-sm font-light leading-relaxed text-white/50">
+            Vorte ürünlerini kendi satış noktanızda sunun.
+            Özel toptan fiyatlar ve bayilik avantajlarından yararlanın.
           </p>
-          <div className="flex gap-4">
-            <Link href="/toptan">
-              <Button variant="primary" size="lg">
-                Başvuru Yap
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+          <div className="mt-10 flex gap-4">
+            <Link
+              href="/toptan"
+              className="border border-white/80 bg-white px-10 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-transparent hover:text-white"
+            >
+              Başvuru Yap
             </Link>
-            <Link href="/bayi-girisi">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-[#7AC143] text-[#7AC143] hover:bg-[#7AC143] hover:text-white"
-              >
-                Bayi Girişi
-              </Button>
+            <Link
+              href="/bayi-girisi"
+              className="border border-white/30 px-10 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-white/70 transition-all duration-300 hover:border-white/60 hover:text-white"
+            >
+              Bayi Girişi
             </Link>
           </div>
         </div>
       </section>
+
+      {/* Scroll reveal activator (client component) */}
+      <HomepageClient />
     </>
   );
 }

@@ -29,23 +29,25 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: #d4d4d4;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: #a3a3a3;
 }
 
+/* ── Search input cleanup ── */
 input[type="search"]::-webkit-search-decoration,
 input[type="search"]::-webkit-search-cancel-button,
 input[type="search"]::-webkit-search-results-button,
@@ -53,7 +55,7 @@ input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
 
-/* Admin form input - reusable class */
+/* ── Admin form inputs ── */
 .form-input {
   display: flex;
   width: 100%;
@@ -83,4 +85,85 @@ input[type="search"]::-webkit-search-results-decoration {
 
 textarea.form-input {
   resize: vertical;
+}
+
+/* ── Marquee animation ── */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ── Scroll reveal ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered reveal children */
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-stagger.visible > *:nth-child(1) { transition-delay: 0ms; opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(2) { transition-delay: 120ms; opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(3) { transition-delay: 240ms; opacity: 1; transform: translateY(0); }
+.reveal-stagger.visible > *:nth-child(4) { transition-delay: 360ms; opacity: 1; transform: translateY(0); }
+
+/* ── Image parallax-like zoom on scroll ── */
+.img-cover-zoom {
+  transition: transform 6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.img-cover-zoom:hover {
+  transform: scale(1.04);
+}
+
+/* ── Section divider line ── */
+.divider-line {
+  width: 40px;
+  height: 1px;
+  background: var(--vorte-black);
+  margin: 0 auto;
+}
+
+/* ── Premium letter spacing utility ── */
+.ls-wide {
+  letter-spacing: 0.2em;
+}
+
+.ls-wider {
+  letter-spacing: 0.3em;
 }
