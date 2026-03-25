@@ -8,6 +8,10 @@ import type { BannerData } from "@/components/home/PromoBanner";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { HomepageClient } from "@/components/home/HomepageClient";
+import { TestimonialsSection } from "@/components/home/TestimonialsSection";
+import { TrustBadges } from "@/components/home/TrustBadges";
+import { RecentlyViewed } from "@/components/home/RecentlyViewed";
+import { CountdownBanner } from "@/components/home/CountdownBanner";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
 
@@ -99,6 +103,33 @@ export default async function HomePage() {
     // DB unavailable during build
   }
 
+  // Fetch testimonials
+  let testimonials: { id: string; name: string; title: string | null; rating: number; comment: string }[] = [];
+  try {
+    testimonials = await db.testimonial.findMany({
+      where: { featured: true, approved: true },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, name: true, title: true, rating: true, comment: true },
+    });
+  } catch {
+    // DB unavailable during build
+  }
+
+  // Fetch active campaign end date for countdown
+  let campaignEndDate: string | null = null;
+  try {
+    const activeCoupon = await db.coupon.findFirst({
+      where: { active: true, expiresAt: { gt: new Date() } },
+      orderBy: { expiresAt: "asc" },
+      select: { expiresAt: true, code: true },
+    });
+    if (activeCoupon?.expiresAt) {
+      campaignEndDate = activeCoupon.expiresAt.toISOString();
+    }
+  } catch {
+    // DB unavailable during build
+  }
+
   // Fetch active banners by position
   const bannersByPosition: Record<string, BannerData[]> = {};
   try {
@@ -172,6 +203,18 @@ export default async function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* ── TRUST BADGES ── */}
+      <TrustBadges />
+
+      {/* ── COUNTDOWN BANNER ── */}
+      {campaignEndDate && (
+        <CountdownBanner
+          endDate={campaignEndDate}
+          title="Hoş Geldin Kampanyası"
+          subtitle="HOSGELDIN koduyla %10 indirim"
+        />
+      )}
 
       {/* Homepage Top Banners */}
       {bannersByPosition["homepage-top"] && (
@@ -317,9 +360,17 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── SON GÖRÜNTÜLENEN ÜRÜNLER ── */}
+      <RecentlyViewed />
+
       {/* Homepage Bottom Banners */}
       {bannersByPosition["homepage-bottom"] && (
         <PromoBanner banners={bannersByPosition["homepage-bottom"]} />
+      )}
+
+      {/* ── TESTIMONIALS ── */}
+      {testimonials.length > 0 && (
+        <TestimonialsSection testimonials={testimonials} />
       )}
 
       {/* ── BLOG — Editorial Style ── */}
