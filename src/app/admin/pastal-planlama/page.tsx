@@ -584,191 +584,208 @@ function PastalPlanlamaInner() {
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#7AC143]/10 flex items-center justify-center">
-              <Scissors className="w-5 h-5 text-[#7AC143]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-[#1A1A1A]">Pastal Planlama</h1>
-              <p className="text-sm text-gray-500">Marker optimizasyonu ve nesting hesaplama</p>
-            </div>
-          </div>
-          <Badge variant="new" className="rounded-full px-3 py-1">Beta</Badge>
+    <div className="space-y-6">
+      {/* ── Page Header ───────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Pastal Planlama
+          </h1>
+          <p className="text-[13px] text-gray-500">
+            Marker optimizasyonu ve nesting hesaplama
+          </p>
         </div>
+        <Badge variant="new" className="rounded-full px-3 py-1">Beta</Badge>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Yuklenen kalip banner */}
-        {loadedPatternId && (
-          <div className="flex items-center gap-3 bg-[#7AC143]/5 border border-[#7AC143]/20 rounded-xl px-5 py-3">
-            <Link2 className="w-4 h-4 text-[#7AC143] flex-shrink-0" />
-            <span className="text-sm text-[#1A1A1A]">
-              Kalip editorunden yuklendi:{" "}
-              <span className="font-semibold">{loadedPatternName}</span>
-            </span>
-            <CheckCircle2 className="w-4 h-4 text-[#7AC143]" />
+      {/* ── Loaded pattern banner ─────────────────────────────── */}
+      {loadedPatternId && (
+        <div className="flex items-center gap-3 rounded-2xl border border-[#7AC143]/20 bg-[#7AC143]/5 px-5 py-3.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7AC143]/10">
+            <Link2 className="h-4 w-4 text-[#7AC143]" />
           </div>
-        )}
+          <span className="text-sm text-gray-700">
+            Kalip editorunden yuklendi:{" "}
+            <span className="font-semibold text-gray-900">{loadedPatternName}</span>
+          </span>
+          <CheckCircle2 className="ml-auto h-5 w-5 text-[#7AC143]" />
+        </div>
+      )}
 
-        {/* ══════════════════════════════════════════════════════
-            BOLUM 1: Siparis / Stand Secimi
-           ══════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* Tab header */}
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setTabMode("stand")}
-              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-                tabMode === "stand"
-                  ? "text-[#7AC143] border-b-2 border-[#7AC143] bg-[#7AC143]/5"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Package className="w-4 h-4 inline mr-2" />
-              Stand Paketi
-            </button>
-            <button
-              onClick={() => setTabMode("order")}
-              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-                tabMode === "order"
-                  ? "text-[#7AC143] border-b-2 border-[#7AC143] bg-[#7AC143]/5"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Layers className="w-4 h-4 inline mr-2" />
-              Uretim Siparisi
-            </button>
-          </div>
+      {/* ══════════════════════════════════════════════════════════
+          BOLUM 1: Siparis / Stand Secimi
+         ══════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        {/* Tab header */}
+        <div className="flex border-b border-gray-100">
+          <button
+            onClick={() => setTabMode("stand")}
+            className={`flex-1 px-6 py-3.5 text-sm font-medium transition-colors ${
+              tabMode === "stand"
+                ? "text-[#7AC143] border-b-2 border-[#7AC143]"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Package className="mb-px inline h-4 w-4 mr-2" />
+            Stand Paketi
+          </button>
+          <button
+            onClick={() => setTabMode("order")}
+            className={`flex-1 px-6 py-3.5 text-sm font-medium transition-colors ${
+              tabMode === "order"
+                ? "text-[#7AC143] border-b-2 border-[#7AC143]"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Layers className="mb-px inline h-4 w-4 mr-2" />
+            Uretim Siparisi
+          </button>
+        </div>
 
-          <div className="p-6">
-            {tabMode === "stand" ? (
-              /* ── Stand Paketi Modu ─────────────────────────────── */
-              <div className="space-y-6">
-                {/* Stand adetleri */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(["A", "B", "C"] as const).map((key) => {
-                    const def = STAND_DEFS[key];
-                    const value = key === "A" ? standA : key === "B" ? standB : standC;
-                    const setter = key === "A" ? setStandA : key === "B" ? setStandB : setStandC;
-                    return (
-                      <div
-                        key={key}
-                        className={`border-2 rounded-xl p-4 transition-colors ${
-                          value > 0 ? "border-[#7AC143] bg-[#7AC143]/5" : "border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-[#1A1A1A]">{def.label}</span>
-                          <Badge variant={value > 0 ? "new" : "outline"} className="text-xs">
-                            {def.total} urun
-                          </Badge>
+        <div className="p-6">
+          {tabMode === "stand" ? (
+            /* ── Stand Paketi Modu ─────────────────────────────── */
+            <div className="space-y-6">
+              {/* Stand adetleri */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(["A", "B", "C"] as const).map((key) => {
+                  const def = STAND_DEFS[key];
+                  const value = key === "A" ? standA : key === "B" ? standB : standC;
+                  const setter = key === "A" ? setStandA : key === "B" ? setStandB : setStandC;
+                  return (
+                    <div
+                      key={key}
+                      className={`rounded-2xl border-2 p-5 transition-all ${
+                        value > 0
+                          ? "border-[#7AC143] bg-[#7AC143]/5 shadow-sm shadow-[#7AC143]/10"
+                          : "border-gray-100 bg-white hover:border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                            value > 0 ? "bg-[#7AC143]/10" : "bg-gray-50"
+                          }`}>
+                            <Package className={`h-4 w-4 ${value > 0 ? "text-[#7AC143]" : "text-gray-400"}`} />
+                          </div>
+                          <span className="font-semibold text-gray-900">{def.label}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-3">{def.desc}</p>
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600">Adet:</label>
-                          <input
-                            type="number"
-                            min={0}
-                            max={99}
-                            value={value}
-                            onChange={(e) => setter(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-[#7AC143] focus:border-[#7AC143] outline-none"
-                          />
-                        </div>
+                        <Badge variant={value > 0 ? "new" : "subtle"} className="text-[11px]">
+                          {def.total} urun
+                        </Badge>
                       </div>
-                    );
-                  })}
-                </div>
+                      <p className="text-[12px] text-gray-500 mb-4 leading-relaxed">{def.desc}</p>
+                      <div className="flex items-center gap-2.5">
+                        <label className="text-sm font-medium text-gray-600">Adet:</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={value}
+                          onChange={(e) => setter(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-20 rounded-xl border border-gray-200 bg-white px-3 py-2 text-center text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* Kumas & kesim parametreleri */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Ruler className="w-3.5 h-3.5 inline mr-1" />
-                      Kumas Eni
-                    </label>
+              {/* Kumas & kesim parametreleri */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                    <Ruler className="mb-px inline h-3.5 w-3.5 mr-1" />
+                    Kumas Eni
+                  </label>
+                  <div className="relative">
                     <select
                       value={fabricWidth}
                       onChange={(e) => setFabricWidth(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {FABRIC_WIDTHS.map((w) => (
                         <option key={w} value={w}>{w} cm</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Scissors className="w-3.5 h-3.5 inline mr-1" />
-                      Kesim Yontemi
-                    </label>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                    <Scissors className="mb-px inline h-3.5 w-3.5 mr-1" />
+                    Kesim Yontemi
+                  </label>
+                  <div className="relative">
                     <select
                       value={cuttingMethod}
                       onChange={(e) => setCuttingMethod(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {CUTTING_METHODS.map((m) => (
                         <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <BarChart3 className="w-3.5 h-3.5 inline mr-1" />
-                      Kumas Gramaji
-                    </label>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                    <BarChart3 className="mb-px inline h-3.5 w-3.5 mr-1" />
+                    Kumas Gramaji
+                  </label>
+                  <div className="relative">
                     <select
                       value={fabricGSM}
                       onChange={(e) => setFabricGSM(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {FABRIC_GSMS.map((g) => (
                         <option key={g} value={g}>{g} gr/m&sup2;</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
-                </div>
-
-                {/* Toplam ve Planla butonu */}
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm text-gray-600">
-                    Toplam:{" "}
-                    <span className="font-bold text-[#1A1A1A]">
-                      {standA * 50 + standB * 100 + standC * 150}
-                    </span>{" "}
-                    urun
-                  </div>
-                  <Button
-                    variant="primary"
-                    onClick={handleStartNesting}
-                    disabled={nestingStatus === "running" || (standA + standB + standC === 0)}
-                  >
-                    <Play className="w-4 h-4" />
-                    Planla
-                  </Button>
                 </div>
               </div>
-            ) : (
-              /* ── Uretim Siparisi Modu ─────────────────────────── */
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Uretim Siparisi Sec
-                  </label>
-                  {loadingOrders ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Siparisler yukleniyor...
-                    </div>
-                  ) : (
+
+              {/* Toplam ve Planla butonu */}
+              <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 px-5 py-3.5">
+                <div className="text-sm text-gray-600">
+                  Toplam:{" "}
+                  <span className="text-lg font-bold text-gray-900">
+                    {standA * 50 + standB * 100 + standC * 150}
+                  </span>{" "}
+                  urun
+                </div>
+                <button
+                  onClick={handleStartNesting}
+                  disabled={nestingStatus === "running" || (standA + standB + standC === 0)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Play className="h-4 w-4" />
+                  Planla
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ── Uretim Siparisi Modu ─────────────────────────── */
+            <div className="space-y-5">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Uretim Siparisi Sec
+                </label>
+                {loadingOrders ? (
+                  <div className="flex items-center gap-2.5 text-sm text-gray-500 py-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#7AC143]" />
+                    Siparisler yukleniyor...
+                  </div>
+                ) : (
+                  <div className="relative">
                     <select
                       value={selectedOrderId}
                       onChange={(e) => setSelectedOrderId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       <option value="">-- Siparis Sec --</option>
                       {orders.map((o) => (
@@ -777,321 +794,403 @@ function PastalPlanlamaInner() {
                         </option>
                       ))}
                     </select>
-                  )}
-                </div>
-
-                {/* Secili siparisin urun kalemleri */}
-                {selectedOrder && (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Urun</th>
-                          <th className="px-4 py-2 text-left font-medium text-gray-600">Renk</th>
-                          <th className="px-4 py-2 text-right font-medium text-gray-600">Adet</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedOrder.items.map((item) => (
-                          <tr key={item.id} className="border-t border-gray-100">
-                            <td className="px-4 py-2">{item.productName}</td>
-                            <td className="px-4 py-2">{item.color}</td>
-                            <td className="px-4 py-2 text-right font-medium">{item.totalQuantity}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
                 )}
+              </div>
 
-                {/* Kumas parametreleri */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kumas Eni</label>
+              {/* Secili siparisin urun kalemleri */}
+              {selectedOrder && (
+                <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="border-b bg-gray-50/80">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">Urun</th>
+                        <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">Renk</th>
+                        <th className="px-4 py-3 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Adet</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.items.map((item) => (
+                        <tr key={item.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-gray-900">{item.productName}</td>
+                          <td className="px-4 py-3 text-gray-600">{item.color}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-gray-900">{item.totalQuantity}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Kumas parametreleri */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kumas Eni</label>
+                  <div className="relative">
                     <select
                       value={fabricWidth}
                       onChange={(e) => setFabricWidth(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {FABRIC_WIDTHS.map((w) => (
                         <option key={w} value={w}>{w} cm</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kesim Yontemi</label>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kesim Yontemi</label>
+                  <div className="relative">
                     <select
                       value={cuttingMethod}
                       onChange={(e) => setCuttingMethod(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {CUTTING_METHODS.map((m) => (
                         <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kumas Gramaji</label>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kumas Gramaji</label>
+                  <div className="relative">
                     <select
                       value={fabricGSM}
                       onChange={(e) => setFabricGSM(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143] outline-none"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:ring-2 focus:ring-[#7AC143]/20 outline-none"
                     >
                       {FABRIC_GSMS.map((g) => (
                         <option key={g} value={g}>{g} gr/m&sup2;</option>
                       ))}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
                 </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    variant="primary"
-                    onClick={handleStartNesting}
-                    disabled={nestingStatus === "running" || !selectedOrderId}
-                  >
-                    <Play className="w-4 h-4" />
-                    Planla
-                  </Button>
-                </div>
               </div>
-            )}
-          </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleStartNesting}
+                  disabled={nestingStatus === "running" || !selectedOrderId}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Play className="h-4 w-4" />
+                  Planla
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Hata mesaji */}
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {errorMsg}
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════
-            BOLUM 2: Nesting Gorsellestirme
-           ══════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1A1A] flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#7AC143]" />
-              Nesting Gorsellestirme
-            </h2>
-            {nestingStatus === "running" && (
-              <Button variant="destructive" size="sm" onClick={handleCancel}>
-                <Square className="w-3 h-3" />
-                Durdur
-              </Button>
-            )}
-          </div>
-
-          <div className="p-6">
-            {nestingStatus === "idle" && (
-              <div className="min-h-[300px] flex items-center justify-center text-gray-400">
-                <div className="text-center">
-                  <Scissors className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Siparis secip planlama baslatin</p>
-                </div>
-              </div>
-            )}
-
-            {nestingStatus === "running" && (
-              <div className="min-h-[300px] flex flex-col items-center justify-center gap-6">
-                {/* Progress bar */}
-                <div className="w-full max-w-lg">
-                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#7AC143] rounded-full transition-all duration-500 animate-pulse"
-                      style={{ width: `${Math.min(progress.efficiency, 98)}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 text-sm">
-                  <span className="text-gray-600">
-                    Verimlilik:{" "}
-                    <span className="font-bold text-[#7AC143]">%{progress.efficiency.toFixed(1)}</span>
-                  </span>
-                  <span className="text-gray-600">
-                    Iterasyon:{" "}
-                    <span className="font-bold text-[#1A1A1A]">{progress.iteration}</span>
-                  </span>
-                  <span className="text-gray-600">
-                    Sure:{" "}
-                    <span className="font-bold text-[#1A1A1A]">{progress.elapsed}sn</span>
-                  </span>
-                </div>
-                <Loader2 className="w-6 h-6 animate-spin text-[#7AC143]" />
-              </div>
-            )}
-
-            {nestingStatus === "error" && (
-              <div className="min-h-[300px] flex items-center justify-center text-red-500">
-                <div className="text-center">
-                  <p className="font-medium mb-2">Nesting Hatasi</p>
-                  <p className="text-sm text-gray-500">{errorMsg}</p>
-                </div>
-              </div>
-            )}
-
-            {nestingStatus === "complete" && svgContent && (
-              <div className="space-y-4">
-                {/* SVG canvas */}
-                <div
-                  className="min-h-[400px] bg-white border border-gray-200 rounded-xl p-4 overflow-auto"
-                  dangerouslySetInnerHTML={{ __html: svgContent }}
-                />
-                {/* Legend */}
-                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-[#3B82F6]" /> On Panel
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-[#22C55E]" /> Arka Panel
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-[#EC4899]" /> Yan Panel
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-[#F97316]" /> Kasik
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-[#8B5CF6]" /> Bel Lastigi
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded bg-gray-200 border border-dashed border-gray-400" /> Fire
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════
-            BOLUM 3: Sonuc + Entegrasyon
-           ══════════════════════════════════════════════════════ */}
-        {nestingStatus === "complete" && (
-          <div className="space-y-6">
-            {/* Marker Plan Tablosu */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="font-semibold text-[#1A1A1A] flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[#7AC143]" />
-                  Marker Plani
-                </h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-medium">Beden Kombinasyonu</th>
-                      <th className="px-4 py-3 text-right font-medium">Marker Uzunlugu</th>
-                      <th className="px-4 py-3 text-right font-medium">Verimlilik</th>
-                      <th className="px-4 py-3 text-right font-medium">Kat Sayisi</th>
-                      <th className="px-4 py-3 text-right font-medium">Tekrar</th>
-                      <th className="px-4 py-3 text-right font-medium">Kumas (m&sup2;)</th>
-                      <th className="px-4 py-3 text-right font-medium">Kumas (kg)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {markerPlans.map((plan, idx) => (
-                      <tr key={idx} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <Badge variant="outline" className="text-xs">{plan.sizeCombo}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">{plan.markerLength.toFixed(1)} cm</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={plan.efficiency >= 80 ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
-                            %{plan.efficiency.toFixed(1)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">{plan.layCount}</td>
-                        <td className="px-4 py-3 text-right">{plan.markerRepeats}</td>
-                        <td className="px-4 py-3 text-right">{plan.totalFabricM2.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-medium">{plan.totalFabricKg.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50 font-medium">
-                    <tr className="border-t border-gray-200">
-                      <td className="px-4 py-3" colSpan={5}>Toplam</td>
-                      <td className="px-4 py-3 text-right">{totalFabricM2.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right">{totalFabricKg.toFixed(2)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-
-            {/* Ozet Kartlar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="text-xs text-gray-500 mb-1">Toplam Kumas</div>
-                <div className="text-2xl font-bold text-[#1A1A1A]">{totalFabricKg.toFixed(2)} kg</div>
-                <div className="text-xs text-gray-400 mt-1">{totalFabricM2.toFixed(2)} m&sup2;</div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="text-xs text-gray-500 mb-1">Verimlilik</div>
-                <div className="text-2xl font-bold text-[#7AC143]">%{avgEfficiency.toFixed(1)}</div>
-                <div className="text-xs text-gray-400 mt-1">Marker verimliligi</div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="text-xs text-gray-500 mb-1">Fire</div>
-                <div className="text-2xl font-bold text-amber-600">%{wastePercent.toFixed(1)}</div>
-                <div className="text-xs text-gray-400 mt-1">Kullanilmayan alan</div>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="text-xs text-gray-500 mb-1">Serim</div>
-                <div className="text-2xl font-bold text-[#1A1A1A]">
-                  {totalLays} kat x {totalRepeats}
-                </div>
-                <div className="text-xs text-gray-400 mt-1">Toplam serim</div>
-              </div>
-            </div>
-
-            {/* BOM Karsilastirma */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <h3 className="font-semibold text-[#1A1A1A] mb-4">BOM Karsilastirma</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-xs text-gray-500 mb-1">Eski BOM Tahmini</div>
-                  <div className="text-xl font-bold text-gray-600">{oldBomEstimate.toFixed(2)} kg</div>
-                </div>
-                <div className="text-center p-4 bg-[#7AC143]/5 rounded-lg border border-[#7AC143]/20">
-                  <div className="text-xs text-gray-500 mb-1">Yeni Pastal Hesabi</div>
-                  <div className="text-xl font-bold text-[#7AC143]">{totalFabricKg.toFixed(2)} kg</div>
-                </div>
-                <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="text-xs text-gray-500 mb-1">Tasarruf</div>
-                  <div className="text-xl font-bold text-emerald-600">
-                    {savings > 0 ? `${savings.toFixed(2)} kg` : "—"}
-                  </div>
-                  {savingsPercent > 0 && (
-                    <div className="text-xs text-emerald-500 mt-1">%{savingsPercent.toFixed(1)} tasarruf</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Aksiyon Butonlari */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="primary" onClick={handleSave} loading={saving}>
-                <Package className="w-4 h-4" />
-                Sonucu Kaydet
-              </Button>
-              <Button variant="outline" onClick={handleDownloadSVG}>
-                <Download className="w-4 h-4" />
-                SVG Indir
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => (window.location.href = "/admin/tedarikciler?tab=quotes")}
-              >
-                <Send className="w-4 h-4" />
-                Tedarikçiye Teklif Gonder
-                <ArrowRight className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Hata mesaji */}
+      {errorMsg && (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-sm text-red-700">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-red-100">
+            <Square className="h-4 w-4 text-red-500" />
+          </div>
+          {errorMsg}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          BOLUM 2: Nesting Gorsellestirme
+         ══════════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
+              <Layers className="h-5 w-5 text-[#7AC143]" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Nesting Gorsellestirme</h2>
+              <p className="text-[12px] text-gray-500">Parca yerlesimleri ve kumas kullanimi</p>
+            </div>
+          </div>
+          {nestingStatus === "running" && (
+            <button
+              onClick={handleCancel}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50"
+            >
+              <Square className="h-3.5 w-3.5" />
+              Durdur
+            </button>
+          )}
+        </div>
+
+        <div className="p-6">
+          {/* Idle state */}
+          {nestingStatus === "idle" && (
+            <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50">
+                <Scissors className="h-8 w-8 text-gray-300" />
+              </div>
+              <p className="mt-4 text-sm font-medium text-gray-400">Siparis secip planlama baslatin</p>
+              <p className="mt-1 text-[12px] text-gray-300">Yukaridaki formdan parametreleri ayarlayin</p>
+            </div>
+          )}
+
+          {/* Running state */}
+          {nestingStatus === "running" && (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-6">
+              {/* Progress bar */}
+              <div className="w-full max-w-lg space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-gray-700">Nesting hesaplaniyor...</span>
+                  <span className="font-bold text-[#7AC143]">%{progress.efficiency.toFixed(1)}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-[#7AC143] transition-all duration-500"
+                    style={{ width: `${Math.min(progress.efficiency, 98)}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 text-center">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Verimlilik</div>
+                  <div className="text-lg font-bold text-[#7AC143]">%{progress.efficiency.toFixed(1)}</div>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 text-center">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Iterasyon</div>
+                  <div className="text-lg font-bold text-gray-900">{progress.iteration}</div>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 text-center">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Sure</div>
+                  <div className="text-lg font-bold text-gray-900">{progress.elapsed}sn</div>
+                </div>
+              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-[#7AC143]" />
+            </div>
+          )}
+
+          {/* Error state */}
+          {nestingStatus === "error" && (
+            <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
+                <Square className="h-8 w-8 text-red-400" />
+              </div>
+              <p className="mt-4 text-sm font-semibold text-red-600">Nesting Hatasi</p>
+              <p className="mt-1 text-[13px] text-gray-500">{errorMsg}</p>
+            </div>
+          )}
+
+          {/* Complete state with SVG */}
+          {nestingStatus === "complete" && svgContent && (
+            <div className="space-y-5">
+              {/* SVG canvas */}
+              <div
+                className="min-h-[400px] overflow-auto rounded-2xl border border-gray-100 bg-white p-4"
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+              />
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-gray-100 bg-gray-50/60 px-5 py-3">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mr-1">Parcalar:</span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded bg-[#3B82F6]" /> On Panel
+                </span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded bg-[#22C55E]" /> Arka Panel
+                </span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded bg-[#EC4899]" /> Yan Panel
+                </span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded bg-[#F97316]" /> Kasik
+                </span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded bg-[#8B5CF6]" /> Bel Lastigi
+                </span>
+                <span className="flex items-center gap-1.5 text-[12px] text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded border border-dashed border-gray-400 bg-gray-200" /> Fire
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          BOLUM 3: Sonuc + Entegrasyon
+         ══════════════════════════════════════════════════════════ */}
+      {nestingStatus === "complete" && (
+        <div className="space-y-6">
+          {/* ── Ozet Kartlar ────────────────────────────────────── */}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+                  <Package className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+              <div className="text-[12px] font-medium uppercase tracking-wider text-gray-500">Toplam Kumas</div>
+              <div className="mt-1 text-2xl font-bold text-gray-900">{totalFabricKg.toFixed(2)} <span className="text-sm font-medium text-gray-500">kg</span></div>
+              <div className="mt-0.5 text-[12px] text-gray-400">{totalFabricM2.toFixed(2)} m&sup2;</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
+                  <BarChart3 className="h-5 w-5 text-[#7AC143]" />
+                </div>
+              </div>
+              <div className="text-[12px] font-medium uppercase tracking-wider text-gray-500">Verimlilik</div>
+              <div className="mt-1 text-2xl font-bold text-[#7AC143]">%{avgEfficiency.toFixed(1)}</div>
+              <div className="mt-0.5 text-[12px] text-gray-400">Marker verimliligi</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+                  <Scissors className="h-5 w-5 text-amber-600" />
+                </div>
+              </div>
+              <div className="text-[12px] font-medium uppercase tracking-wider text-gray-500">Fire</div>
+              <div className="mt-1 text-2xl font-bold text-amber-600">%{wastePercent.toFixed(1)}</div>
+              <div className="mt-0.5 text-[12px] text-gray-400">Kullanilmayan alan</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50">
+                  <Layers className="h-5 w-5 text-purple-600" />
+                </div>
+              </div>
+              <div className="text-[12px] font-medium uppercase tracking-wider text-gray-500">Serim</div>
+              <div className="mt-1 text-2xl font-bold text-gray-900">
+                {totalLays} <span className="text-sm font-medium text-gray-500">kat</span> <span className="text-gray-300 mx-0.5">x</span> {totalRepeats}
+              </div>
+              <div className="mt-0.5 text-[12px] text-gray-400">Toplam serim</div>
+            </div>
+          </div>
+
+          {/* ── Marker Plan Tablosu ─────────────────────────────── */}
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
+                <BarChart3 className="h-5 w-5 text-[#7AC143]" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Marker Plani</h2>
+                <p className="text-[12px] text-gray-500">Beden kombinasyonu bazinda detaylar</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-gray-50/80">
+                  <tr>
+                    <th className="px-5 py-3.5 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">Beden Kombinasyonu</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Marker Uzunlugu</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Verimlilik</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kat Sayisi</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tekrar</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kumas (m&sup2;)</th>
+                    <th className="px-5 py-3.5 text-right text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kumas (kg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {markerPlans.map((plan, idx) => (
+                    <tr key={idx} className="border-t border-gray-50 transition-colors hover:bg-gray-50/50">
+                      <td className="px-5 py-3.5">
+                        <Badge variant="subtle" className="text-[11px] font-medium">{plan.sizeCombo}</Badge>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-gray-700">{plan.markerLength.toFixed(1)} cm</td>
+                      <td className="px-5 py-3.5 text-right">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${
+                          plan.efficiency >= 80
+                            ? "bg-green-50 text-green-700"
+                            : "bg-amber-50 text-amber-700"
+                        }`}>
+                          %{plan.efficiency.toFixed(1)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-gray-700">{plan.layCount}</td>
+                      <td className="px-5 py-3.5 text-right text-gray-700">{plan.markerRepeats}</td>
+                      <td className="px-5 py-3.5 text-right text-gray-700">{plan.totalFabricM2.toFixed(2)}</td>
+                      <td className="px-5 py-3.5 text-right font-semibold text-gray-900">{plan.totalFabricKg.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-200 bg-gray-50/80">
+                    <td className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500" colSpan={5}>Toplam</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-gray-900">{totalFabricM2.toFixed(2)}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-gray-900">{totalFabricKg.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* ── BOM Karsilastirma ───────────────────────────────── */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
+                <Ruler className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">BOM Karsilastirma</h3>
+                <p className="text-[12px] text-gray-500">Eski tahmin ile yeni hesaplamayi karsilastirin</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-5 text-center">
+                <div className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Eski BOM Tahmini</div>
+                <div className="text-2xl font-bold text-gray-500">{oldBomEstimate.toFixed(2)} <span className="text-sm font-medium">kg</span></div>
+                <div className="mt-1 text-[12px] text-gray-400">{totalProducts} urun x 0.035 kg</div>
+              </div>
+              <div className="rounded-2xl border border-[#7AC143]/20 bg-[#7AC143]/5 p-5 text-center">
+                <div className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Yeni Pastal Hesabi</div>
+                <div className="text-2xl font-bold text-[#7AC143]">{totalFabricKg.toFixed(2)} <span className="text-sm font-medium">kg</span></div>
+                <div className="mt-1 text-[12px] text-gray-400">Nesting optimizasyonu ile</div>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+                <div className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Tasarruf</div>
+                <div className="text-2xl font-bold text-emerald-600">
+                  {savings > 0 ? `${savings.toFixed(2)} kg` : "\u2014"}
+                </div>
+                {savingsPercent > 0 && (
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[12px] font-semibold text-emerald-700">
+                    %{savingsPercent.toFixed(1)} tasarruf
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Aksiyon Butonlari ───────────────────────────────── */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Package className="h-4 w-4" />
+              )}
+              Sonucu Kaydet
+            </button>
+            <button
+              onClick={handleDownloadSVG}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              SVG Indir
+            </button>
+            <button
+              onClick={() => (window.location.href = "/admin/tedarikciler?tab=quotes")}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <Send className="h-4 w-4" />
+              Tedarikçiye Teklif Gonder
+              <ArrowRight className="h-3 w-3 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

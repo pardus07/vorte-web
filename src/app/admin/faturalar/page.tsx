@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Clock,
   Send,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -122,43 +123,67 @@ export default function AdminInvoicesPage() {
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Faturalar</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Faturalar</h1>
+          <p className="mt-1 text-[13px] text-gray-500">
             {total} fatura · Toplam {formatPrice(totalAmount)}
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <FileText className="mx-auto h-6 w-6 text-gray-400" />
-          <p className="mt-2 text-2xl font-bold text-gray-900">{totalAll}</p>
-          <p className="text-sm text-gray-500">Toplam Fatura</p>
+      <div className="grid gap-4 sm:grid-cols-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
+              <FileText className="h-5 w-5 text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{totalAll}</p>
+              <p className="text-[12px] text-gray-500">Toplam</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <CheckCircle className="mx-auto h-6 w-6 text-green-500" />
-          <p className="mt-2 text-2xl font-bold text-green-600">{statusStats.CREATED?.count || 0}</p>
-          <p className="text-sm text-gray-500">Oluşturuldu</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{statusStats.CREATED?.count || 0}</p>
+              <p className="text-[12px] text-gray-500">Oluşturuldu</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <Send className="mx-auto h-6 w-6 text-blue-500" />
-          <p className="mt-2 text-2xl font-bold text-blue-600">{statusStats.SENT?.count || 0}</p>
-          <p className="text-sm text-gray-500">Gönderildi</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+              <Send className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{statusStats.SENT?.count || 0}</p>
+              <p className="text-[12px] text-gray-500">Gönderildi</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <AlertTriangle className="mx-auto h-6 w-6 text-red-500" />
-          <p className="mt-2 text-2xl font-bold text-red-600">{statusStats.ERROR?.count || 0}</p>
-          <p className="text-sm text-gray-500">Hata</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-emerald-600">{formatPrice(totalAmount)}</p>
+              <p className="text-[12px] text-gray-500">Toplam Tutar</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Status Tabs */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const count = opt.value ? statusStats[opt.value]?.count || 0 : totalAll;
@@ -166,16 +191,18 @@ export default function AdminInvoicesPage() {
             <button
               key={opt.value}
               onClick={() => { setStatus(opt.value); setPage(1); }}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm transition-all ${
                 status === opt.value
-                  ? "border-[#7AC143] bg-[#7AC143]/10 font-medium text-[#7AC143]"
+                  ? "border-[#7AC143] bg-[#7AC143]/10 font-medium text-[#7AC143] shadow-sm"
                   : "border-gray-200 text-gray-600 hover:bg-gray-50"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
               {opt.label}
               {count > 0 && (
-                <span className="ml-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
+                <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  status === opt.value ? "bg-[#7AC143]/20 text-[#7AC143]" : "bg-gray-100 text-gray-600"
+                }`}>
                   {count}
                 </span>
               )}
@@ -185,16 +212,16 @@ export default function AdminInvoicesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-col gap-3 lg:flex-row">
         <form onSubmit={handleSearch} className="flex flex-1 gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Fatura no, sipariş no, müşteri adı..."
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
             />
           </div>
           <Button type="submit" size="sm">Ara</Button>
@@ -205,12 +232,12 @@ export default function AdminInvoicesPage() {
           )}
         </form>
         <div className="flex gap-2">
-          <select value={invoiceType} onChange={(e) => { setInvoiceType(e.target.value); setPage(1); }} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none">
+          <select value={invoiceType} onChange={(e) => { setInvoiceType(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none">
             <option value="">Tüm Tipler</option>
             <option value="EFATURA">E-Fatura</option>
             <option value="EARSIV">E-Arşiv</option>
           </select>
-          <select value={dateRange} onChange={(e) => { setDateRange(e.target.value); setPage(1); }} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none">
+          <select value={dateRange} onChange={(e) => { setDateRange(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none">
             {DATE_RANGE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -219,74 +246,79 @@ export default function AdminInvoicesPage() {
       </div>
 
       {dateRange === "custom" && (
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-gray-400" />
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none" />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="rounded-xl border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none" />
           <span className="text-sm text-gray-400">—</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="rounded-xl border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none" />
           <Button size="sm" variant="outline" onClick={() => { setPage(1); fetchInvoices(); }}>Uygula</Button>
         </div>
       )}
 
       {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#7AC143]" />
           </div>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b bg-gray-50">
+            <thead className="border-b bg-gray-50/80">
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-700">Fatura No</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Sipariş</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Müşteri</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Tip</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Tutar</th>
-                <th className="px-4 py-3 font-medium text-gray-700">KDV</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Durum</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Tarih</th>
-                <th className="px-4 py-3 font-medium text-gray-700">İşlem</th>
+                <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Fatura No</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Sipariş</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Müşteri</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tip</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tutar</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">KDV</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Durum</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tarih</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">İşlem</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-50">
               {invoices.map((inv) => {
                 const statusInfo = INVOICE_STATUS_MAP[inv.status] || { label: inv.status, variant: "outline" as const };
                 return (
-                  <tr key={inv.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-sm">{inv.invoiceNo || "—"}</td>
-                    <td className="px-4 py-3">
+                  <tr key={inv.id} className="transition-colors hover:bg-gray-50/50">
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-[12px] text-gray-700">
+                        {inv.invoiceNo || "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
                       <Link href={`/admin/siparisler/${inv.orderId}`} className="font-medium text-[#7AC143] hover:underline">
                         #{inv.order.orderNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <p className="font-medium text-gray-900">
                         {inv.order.dealer?.companyName || inv.order.user?.name || "—"}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[12px] text-gray-500">
                         {inv.order.dealer?.dealerCode || inv.order.user?.email || ""}
                       </p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <Badge variant={inv.invoiceType === "EFATURA" ? "new" : "outline"} className="text-[10px]">
                         {inv.invoiceType === "EFATURA" ? "E-Fatura" : inv.invoiceType === "EARSIV" ? "E-Arşiv" : "—"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 font-medium">{formatPrice(inv.totalAmount || inv.order.totalAmount)}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">
+                    <td className="px-4 py-3.5 font-semibold text-gray-900">{formatPrice(inv.totalAmount || inv.order.totalAmount)}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-gray-500">
                       {inv.taxAmount ? formatPrice(inv.taxAmount) : "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3.5 text-[13px] text-gray-500">
                       {new Date(inv.issuedAt || inv.createdAt).toLocaleDateString("tr-TR")}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       {inv.pdfUrl && (
-                        <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600" title="PDF İndir">
-                          <Download className="h-4 w-4" />
+                        <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900" title="PDF İndir">
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
                         </a>
                       )}
                     </td>
@@ -294,9 +326,14 @@ export default function AdminInvoicesPage() {
                 );
               })}
               {invoices.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">
-                  {search || status || invoiceType ? "Eşleşen fatura bulunamadı" : "Henüz fatura yok"}
-                </td></tr>
+                <tr>
+                  <td colSpan={9} className="px-4 py-16 text-center">
+                    <FileText className="mx-auto h-10 w-10 text-gray-300" />
+                    <p className="mt-2 text-sm text-gray-400">
+                      {search || status || invoiceType ? "Eşleşen fatura bulunamadı" : "Henüz fatura yok"}
+                    </p>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -305,10 +342,10 @@ export default function AdminInvoicesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-gray-500">Sayfa {page} / {totalPages} · Toplam {total} fatura</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] text-gray-500">Sayfa {page} / {totalPages} · Toplam {total} fatura</p>
           <div className="flex items-center gap-1">
-            <button onClick={() => setPage(page - 1)} disabled={page <= 1} className="rounded-lg border p-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">
+            <button onClick={() => setPage(page - 1)} disabled={page <= 1} className="rounded-lg border border-gray-200 p-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40">
               <ChevronLeft className="h-4 w-4" />
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -318,12 +355,12 @@ export default function AdminInvoicesPage() {
               else if (page >= totalPages - 2) pn = totalPages - 4 + i;
               else pn = page - 2 + i;
               return (
-                <button key={pn} onClick={() => setPage(pn)} className={`rounded-lg border px-3 py-1.5 text-sm ${page === pn ? "border-[#7AC143] bg-[#7AC143]/10 font-medium text-[#7AC143]" : "text-gray-600 hover:bg-gray-50"}`}>
+                <button key={pn} onClick={() => setPage(pn)} className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${page === pn ? "border-[#7AC143] bg-[#7AC143]/10 font-medium text-[#7AC143]" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
                   {pn}
                 </button>
               );
             })}
-            <button onClick={() => setPage(page + 1)} disabled={page >= totalPages} className="rounded-lg border p-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">
+            <button onClick={() => setPage(page + 1)} disabled={page >= totalPages} className="rounded-lg border border-gray-200 p-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

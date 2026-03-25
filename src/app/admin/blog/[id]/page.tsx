@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { ArrowLeft, Save, Eye, Globe, Calendar, User, Image, Tag, FileText, Search } from "lucide-react";
 
 interface BlogData {
   id: string;
@@ -27,6 +27,9 @@ const slugify = (text: string) =>
     .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
+const inputClass =
+  "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
 
 export default function BlogDuzenle() {
   const { id } = useParams();
@@ -83,7 +86,7 @@ export default function BlogDuzenle() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.slug || !form.content) {
-      setError("Başlık, slug ve içerik zorunludur.");
+      setError("Baslik, slug ve icerik zorunludur.");
       return;
     }
 
@@ -115,191 +118,340 @@ export default function BlogDuzenle() {
       router.push("/admin/blog");
     } else {
       const data = await res.json();
-      setError(data.error || "Hata oluştu");
+      setError(data.error || "Hata olustu");
     }
     setSaving(false);
   };
 
-  if (loading) return <div className="py-20 text-center text-gray-400">Yükleniyor...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200 border-t-[#7AC143]" />
+      </div>
+    );
+  }
+
+  const seoTitleDisplay = form.seoTitle || form.title || "Sayfa Basligi";
+  const seoDescDisplay = form.seoDescription || form.excerpt || "Sayfa aciklamasi buraya gelecek...";
+  const seoSlugDisplay = form.slug || "sayfa-slug";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/admin/blog" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
-            <ArrowLeft className="h-5 w-5" />
+          <Link
+            href="/admin/blog"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isNew ? "Yeni Blog Yazısı" : "Blog Yazısı Düzenle"}
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              {isNew ? "Yeni Blog Yazisi" : "Blog Yazisi Duzenle"}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {isNew ? "Yeni bir blog yazisi olusturun" : "Mevcut yaziyi duzenleyin"}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {!isNew && form.slug && (
-            <a href={`/blog/${form.slug}?preview=1`} target="_blank" className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-              <Eye className="h-4 w-4" /> Önizle
+            <a
+              href={`/blog/${form.slug}?preview=1`}
+              target="_blank"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 inline-flex items-center gap-2 transition-colors"
+            >
+              <Eye className="h-4 w-4" /> Onizle
             </a>
           )}
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 rounded-lg bg-[#7AC143] px-6 py-2 text-sm font-medium text-white hover:bg-[#6aad38] disabled:opacity-50"
+            className="rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#333] disabled:opacity-50 inline-flex items-center gap-2 transition-colors"
           >
-            <Save className="h-4 w-4" /> {saving ? "Kaydediliyor..." : "Kaydet"}
+            <Save className="h-4 w-4" />
+            {saving ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </div>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {/* Error */}
+      {error && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
+      {/* 2-Column Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main Content */}
+        {/* ─── Main Content Column ─── */}
         <div className="space-y-6 lg:col-span-2">
-          <div className="rounded-lg border bg-white p-6 space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Başlık *</label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                className="form-input w-full"
-                placeholder="Blog yazısı başlığı"
-              />
+
+          {/* Content Card */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-gray-400" />
+              <span className="text-[13px] font-medium uppercase tracking-wider text-gray-500">
+                Icerik
+              </span>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Slug *</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">/blog/</span>
+
+            <div className="space-y-5">
+              {/* Title */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Baslik <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={form.slug}
-                  onChange={(e) => { setForm({ ...form, slug: e.target.value }); setAutoSlug(false); }}
-                  className="form-input flex-1 font-mono text-sm"
-                  placeholder="yazi-slug"
+                  value={form.title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className={inputClass}
+                  placeholder="Blog yazisi basligi"
+                />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Slug <span className="text-red-400">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 text-sm text-gray-400">/blog/</span>
+                  <input
+                    type="text"
+                    value={form.slug}
+                    onChange={(e) => { setForm({ ...form, slug: e.target.value }); setAutoSlug(false); }}
+                    className={`${inputClass} flex-1 font-mono`}
+                    placeholder="yazi-slug"
+                  />
+                </div>
+                {autoSlug && form.title && (
+                  <p className="mt-1.5 text-xs text-[#7AC143]">
+                    Slug basliktan otomatik olusturuluyor
+                  </p>
+                )}
+              </div>
+
+              {/* Excerpt */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Kisa Ozet
+                </label>
+                <textarea
+                  value={form.excerpt}
+                  onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+                  className={inputClass}
+                  rows={3}
+                  placeholder="Yazinin kisa ozeti (liste sayfasinda gorunur)"
+                />
+              </div>
+
+              {/* Content (HTML) */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Icerik (HTML) <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={form.content}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                  className={`${inputClass} font-mono leading-relaxed`}
+                  rows={20}
+                  placeholder={"<h2>Alt Baslik</h2>\n<p>Paragraf icerigi...</p>"}
                 />
               </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Kısa Özet</label>
-              <textarea
-                value={form.excerpt}
-                onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                className="form-input w-full"
-                rows={3}
-                placeholder="Yazının kısa özeti (liste sayfasında görünür)"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">İçerik * (HTML)</label>
-              <textarea
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="form-input w-full font-mono text-sm"
-                rows={20}
-                placeholder="<h2>Alt Başlık</h2>&#10;<p>Paragraf içeriği...</p>"
-              />
-            </div>
           </div>
 
-          {/* SEO */}
-          <div className="rounded-lg border bg-white p-6 space-y-4">
-            <h3 className="text-sm font-medium text-gray-500">SEO Ayarları</h3>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">SEO Başlığı</label>
-              <input
-                type="text"
-                value={form.seoTitle}
-                onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
-                className="form-input w-full"
-                placeholder="Boş bırakılırsa yazı başlığı kullanılır"
-              />
+          {/* SEO Card */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Search className="h-4 w-4 text-gray-400" />
+              <span className="text-[13px] font-medium uppercase tracking-wider text-gray-500">
+                SEO Ayarlari
+              </span>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">SEO Açıklaması</label>
-              <textarea
-                value={form.seoDescription}
-                onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
-                className="form-input w-full"
-                rows={3}
-                placeholder="Yazı açıklaması (max 160 karakter)"
-              />
+
+            {/* Google Preview */}
+            <div className="mb-5 rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+              <p className="mb-1 text-xs text-gray-400">Google Onizleme</p>
+              <p className="truncate text-base font-medium text-blue-700">{seoTitleDisplay}</p>
+              <p className="truncate text-sm text-green-700">
+                vorte.com.tr/blog/{seoSlugDisplay}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{seoDescDisplay}</p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  SEO Basligi
+                </label>
+                <input
+                  type="text"
+                  value={form.seoTitle}
+                  onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
+                  className={inputClass}
+                  placeholder="Bos birakilirsa yazi basligi kullanilir"
+                />
+                <p className="mt-1 text-right text-xs text-gray-400">
+                  {(form.seoTitle || form.title).length}/60
+                </p>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  SEO Aciklamasi
+                </label>
+                <textarea
+                  value={form.seoDescription}
+                  onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
+                  className={inputClass}
+                  rows={3}
+                  placeholder="Yazi aciklamasi (max 160 karakter)"
+                />
+                <p className="mt-1 text-right text-xs text-gray-400">
+                  {form.seoDescription.length}/160
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* ─── Sidebar Column ─── */}
         <div className="space-y-6">
-          <div className="rounded-lg border bg-white p-6 space-y-4">
-            <h3 className="text-sm font-medium text-gray-500">Yayın Ayarları</h3>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={form.published}
-                onChange={(e) => {
-                  const published = e.target.checked;
-                  setForm((f) => ({
-                    ...f,
-                    published,
-                    // Yayınla işaretlendiğinde tarih boşsa bugünü ata
-                    publishedAt: published && !f.publishedAt
-                      ? new Date().toISOString().split("T")[0]
-                      : f.publishedAt,
-                  }));
-                }}
-                className="h-4 w-4 rounded border-gray-300 text-[#7AC143]"
-              />
-              <span className="text-sm text-gray-700">Yayınla</span>
-            </label>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Yayın Tarihi</label>
-              <input
-                type="date"
-                value={form.publishedAt}
-                onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
-                className="form-input w-full"
-              />
+
+          {/* Publish Settings Card */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-gray-400" />
+              <span className="text-[13px] font-medium uppercase tracking-wider text-gray-500">
+                Yayin Ayarlari
+              </span>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Yazar</label>
-              <input
-                type="text"
-                value={form.authorName}
-                onChange={(e) => setForm({ ...form, authorName: e.target.value })}
-                className="form-input w-full"
-              />
+
+            <div className="space-y-4">
+              {/* Publish toggle */}
+              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-3 transition-colors hover:bg-gray-50">
+                <div className="flex items-center gap-2.5">
+                  <div className={`h-2.5 w-2.5 rounded-full ${form.published ? "bg-[#7AC143]" : "bg-gray-300"}`} />
+                  <span className="text-sm font-medium text-gray-700">
+                    {form.published ? "Yayinda" : "Taslak"}
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={form.published}
+                  onChange={(e) => {
+                    const published = e.target.checked;
+                    setForm((f) => ({
+                      ...f,
+                      published,
+                      publishedAt: published && !f.publishedAt
+                        ? new Date().toISOString().split("T")[0]
+                        : f.publishedAt,
+                    }));
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-[#7AC143] accent-[#7AC143]"
+                />
+              </label>
+
+              {/* Publish Date */}
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                  Yayin Tarihi
+                </label>
+                <input
+                  type="date"
+                  value={form.publishedAt}
+                  onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Author */}
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <User className="h-3.5 w-3.5 text-gray-400" />
+                  Yazar
+                </label>
+                <input
+                  type="text"
+                  value={form.authorName}
+                  onChange={(e) => setForm({ ...form, authorName: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="rounded-lg border bg-white p-6 space-y-4">
-            <h3 className="text-sm font-medium text-gray-500">Medya</h3>
+          {/* Media Card */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Image className="h-4 w-4 text-gray-400" />
+              <span className="text-[13px] font-medium uppercase tracking-wider text-gray-500">
+                Medya
+              </span>
+            </div>
+
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Kapak Görseli URL</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Kapak Gorseli URL
+              </label>
               <input
                 type="text"
                 value={form.coverImage}
                 onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
-                className="form-input w-full text-sm"
+                className={inputClass}
                 placeholder="/images/blog/kapak.jpg"
               />
-              <p className="mt-1 text-xs text-gray-400">Önerilen boyut: 1200x630px</p>
+              <p className="mt-1.5 text-xs text-gray-400">Onerilen boyut: 1200x630px</p>
             </div>
+
+            {/* Cover Image Preview */}
+            {form.coverImage && (
+              <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
+                <div className="aspect-[1200/630] w-full bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.coverImage}
+                    alt="Kapak onizleme"
+                    className="h-full w-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="rounded-lg border bg-white p-6 space-y-4">
-            <h3 className="text-sm font-medium text-gray-500">Etiketler</h3>
+          {/* Tags Card */}
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-2">
+              <Tag className="h-4 w-4 text-gray-400" />
+              <span className="text-[13px] font-medium uppercase tracking-wider text-gray-500">
+                Etiketler
+              </span>
+            </div>
+
             <div>
               <input
                 type="text"
                 value={form.tags}
                 onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                className="form-input w-full text-sm"
+                className={inputClass}
                 placeholder="etiket1, etiket2, etiket3"
               />
-              <p className="mt-1 text-xs text-gray-400">Virgülle ayırarak yazın</p>
+              <p className="mt-1.5 text-xs text-gray-400">Virgulle ayirarak yazin</p>
             </div>
+
             {form.tags && (
-              <div className="flex flex-wrap gap-1">
-                {form.tags.split(",").map((tag, i) => (
-                  <span key={i} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {form.tags.split(",").filter((t) => t.trim()).map((tag, i) => (
+                  <span
+                    key={i}
+                    className="rounded-lg bg-gray-100 px-2.5 py-1 text-xs text-gray-600"
+                  >
                     {tag.trim()}
                   </span>
                 ))}

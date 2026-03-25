@@ -23,6 +23,12 @@ interface VariantRow {
   price: string;
 }
 
+const inputClass =
+  "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
+
+const variantInputClass =
+  "rounded-lg border border-gray-200 px-2.5 py-2 text-sm focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
+
 export default function NewProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -135,16 +141,20 @@ export default function NewProductPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/admin/urunler" className="rounded-lg p-2 hover:bg-gray-100">
+        <Link
+          href="/admin/urunler"
+          className="rounded-xl p-2 transition-colors hover:bg-gray-100"
+        >
           <ArrowLeft className="h-5 w-5 text-gray-600" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Yeni Ürün</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Yeni Ürün</h1>
       </div>
 
       {/* Tabs */}
-      <div className="mt-6 flex gap-1 border-b">
+      <div className="flex gap-1 border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -161,18 +171,21 @@ export default function NewProductPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+            {error}
+          </div>
         )}
 
         {/* Tab: Basic Info */}
         {activeTab === "basic" && (
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900">Temel Bilgiler</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              {/* Product Name */}
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Ürün Adı *
                 </label>
                 <input
@@ -180,48 +193,57 @@ export default function NewProductPage() {
                   required
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                  className="form-input w-full"
+                  className={inputClass}
                   placeholder="Erkek Boxer Premium"
                 />
                 {form.name && (
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1.5 text-xs text-gray-400">
                     Slug: <span className="font-mono">{generatedSlug}</span>
                   </p>
                 )}
               </div>
 
+              {/* Description */}
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Açıklama
                 </label>
                 <textarea
                   rows={16}
                   value={form.description}
                   onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  className="form-input w-full font-mono text-xs leading-relaxed"
+                  className={`${inputClass} font-mono text-xs leading-relaxed`}
                   placeholder="Ürün açıklaması — düz metin formatında yazın"
                 />
               </div>
 
+              {/* Gender */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Cinsiyet *</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Cinsiyet *
+                </label>
                 <select
                   value={form.gender}
-                  onChange={(e) => setForm((p) => ({ ...p, gender: e.target.value as "ERKEK" | "KADIN" }))}
-                  className="form-input w-full"
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, gender: e.target.value as "ERKEK" | "KADIN" }))
+                  }
+                  className={inputClass}
                 >
                   <option value="ERKEK">Erkek</option>
                   <option value="KADIN">Kadın</option>
                 </select>
               </div>
 
+              {/* Category */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Kategori *</label>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Kategori *
+                </label>
                 <select
                   required
                   value={form.categoryId}
                   onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}
-                  className="form-input w-full"
+                  className={inputClass}
                 >
                   <option value="">Seçin...</option>
                   {categories.map((cat) => (
@@ -232,8 +254,9 @@ export default function NewProductPage() {
                 </select>
               </div>
 
+              {/* Sale Price */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Satış Fiyatı (₺) *
                 </label>
                 <input
@@ -243,12 +266,13 @@ export default function NewProductPage() {
                   min="0"
                   value={form.basePrice}
                   onChange={(e) => setForm((p) => ({ ...p, basePrice: e.target.value }))}
-                  className="form-input w-full"
+                  className={inputClass}
                 />
               </div>
 
+              {/* Cost Price */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Maliyet Fiyatı (₺)
                 </label>
                 <input
@@ -257,13 +281,14 @@ export default function NewProductPage() {
                   min="0"
                   value={form.costPrice}
                   onChange={(e) => setForm((p) => ({ ...p, costPrice: e.target.value }))}
-                  className="form-input w-full"
+                  className={inputClass}
                   placeholder="İsteğe bağlı"
                 />
               </div>
 
+              {/* Weight */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Ağırlık (g)
                 </label>
                 <input
@@ -272,12 +297,13 @@ export default function NewProductPage() {
                   min="0"
                   value={form.weight}
                   onChange={(e) => setForm((p) => ({ ...p, weight: e.target.value }))}
-                  className="form-input w-full"
+                  className={inputClass}
                   placeholder="Gram cinsinden"
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-6">
+              {/* Featured */}
+              <div className="flex items-center gap-2.5 pt-6">
                 <input
                   type="checkbox"
                   id="featured"
@@ -296,8 +322,8 @@ export default function NewProductPage() {
         {/* Tab: SEO & Images */}
         {activeTab === "seo" && (
           <>
-            {/* Images */}
-            <div className="rounded-lg border bg-white p-6">
+            {/* Images Card */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">Ürün Görselleri</h2>
               <p className="mt-1 text-xs text-gray-500">
                 Görsellerin URL adreslerini ekleyin. İlk görsel ana görsel olarak kullanılır.
@@ -309,7 +335,7 @@ export default function NewProductPage() {
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://example.com/image.jpg"
-                  className="form-input flex-1"
+                  className={`${inputClass} flex-1`}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -317,17 +343,24 @@ export default function NewProductPage() {
                     }
                   }}
                 />
-                <Button type="button" variant="outline" size="sm" onClick={addImage}>
-                  <Plus className="mr-1 h-4 w-4" />
+                <button
+                  type="button"
+                  onClick={addImage}
+                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+                >
+                  <Plus className="mr-1.5 h-4 w-4" />
                   Ekle
-                </Button>
+                </button>
               </div>
 
               {form.images.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {form.images.map((url, i) => (
-                    <div key={i} className="group relative rounded-lg border p-2">
-                      <div className="relative h-24 w-full overflow-hidden rounded bg-gray-100">
+                    <div
+                      key={i}
+                      className="group relative rounded-xl border border-gray-100 bg-white p-2 shadow-sm"
+                    >
+                      <div className="relative h-24 w-full overflow-hidden rounded-lg bg-gray-50">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={url}
@@ -335,7 +368,7 @@ export default function NewProductPage() {
                           className="h-full w-full object-contain"
                         />
                         {i === 0 && (
-                          <span className="absolute left-1 top-1 rounded bg-[#7AC143] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          <span className="absolute left-1.5 top-1.5 rounded-md bg-[#7AC143] px-1.5 py-0.5 text-[10px] font-bold text-white">
                             ANA
                           </span>
                         )}
@@ -343,7 +376,7 @@ export default function NewProductPage() {
                       <button
                         type="button"
                         onClick={() => removeImage(i)}
-                        className="absolute -right-2 -top-2 hidden rounded-full bg-red-500 p-1 text-white group-hover:block"
+                        className="absolute -right-2 -top-2 hidden rounded-full bg-red-500 p-1 text-white shadow-sm group-hover:block"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -353,23 +386,24 @@ export default function NewProductPage() {
               )}
 
               {form.images.length === 0 && (
-                <div className="mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 py-8 text-gray-400">
+                <div className="mt-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 py-10 text-gray-400">
                   <ImageIcon className="mb-2 h-8 w-8" />
                   <p className="text-sm">Henüz görsel eklenmemiş</p>
                 </div>
               )}
             </div>
 
-            {/* SEO */}
-            <div className="rounded-lg border bg-white p-6">
+            {/* SEO Card */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">SEO Bilgileri</h2>
               <p className="mt-1 text-xs text-gray-500">
                 Boş bırakılırsa ürün adı ve açıklaması kullanılır.
               </p>
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-5 space-y-5">
+                {/* SEO Title */}
                 <div>
-                  <div className="mb-1 flex items-center justify-between">
+                  <div className="mb-1.5 flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-700">SEO Başlığı</label>
                     <span
                       className={`text-xs ${
@@ -383,14 +417,15 @@ export default function NewProductPage() {
                     type="text"
                     value={form.seoTitle}
                     onChange={(e) => setForm((p) => ({ ...p, seoTitle: e.target.value }))}
-                    className="form-input w-full"
+                    className={inputClass}
                     placeholder={form.name || "Ürün adı"}
                     maxLength={70}
                   />
                 </div>
 
+                {/* SEO Description */}
                 <div>
-                  <div className="mb-1 flex items-center justify-between">
+                  <div className="mb-1.5 flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-700">SEO Açıklaması</label>
                     <span
                       className={`text-xs ${
@@ -403,34 +438,41 @@ export default function NewProductPage() {
                   <textarea
                     rows={3}
                     value={form.seoDescription}
-                    onChange={(e) => setForm((p) => ({ ...p, seoDescription: e.target.value }))}
-                    className="form-input w-full"
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, seoDescription: e.target.value }))
+                    }
+                    className={inputClass}
                     placeholder={form.description || "Ürün açıklaması"}
                     maxLength={170}
                   />
                 </div>
 
+                {/* Google Category */}
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Google Ürün Kategorisi
                   </label>
                   <input
                     type="text"
                     value={form.googleCategory}
-                    onChange={(e) => setForm((p) => ({ ...p, googleCategory: e.target.value }))}
-                    className="form-input w-full"
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, googleCategory: e.target.value }))
+                    }
+                    className={inputClass}
                     placeholder="Giyim ve Aksesuarlar > İç Giyim"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1.5 text-xs text-gray-400">
                     Google Merchant Center için ürün kategorisi
                   </p>
                 </div>
 
                 {/* SEO Preview */}
                 {(form.seoTitle || form.name) && (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase text-gray-400">Google Önizleme</p>
-                    <div className="mt-2">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+                    <p className="text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Google Önizleme
+                    </p>
+                    <div className="mt-3">
                       <p className="text-lg text-blue-700 hover:underline">
                         {form.seoTitle || form.name} - Vorte Tekstil
                       </p>
@@ -438,7 +480,9 @@ export default function NewProductPage() {
                         www.vorte.com.tr/urun/{generatedSlug || "..."}
                       </p>
                       <p className="mt-0.5 text-sm text-gray-600">
-                        {form.seoDescription || form.description || "Ürün açıklaması burada görünecek..."}
+                        {form.seoDescription ||
+                          form.description ||
+                          "Ürün açıklaması burada görünecek..."}
                       </p>
                     </div>
                   </div>
@@ -450,91 +494,111 @@ export default function NewProductPage() {
 
         {/* Tab: Variants */}
         {activeTab === "variants" && (
-          <div className="rounded-lg border bg-white p-6">
-            <div className="flex items-center justify-between">
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="text-lg font-semibold text-gray-900">Varyantlar</h2>
-              <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                <Plus className="mr-1 h-4 w-4" />
+              <button
+                type="button"
+                onClick={addVariant}
+                className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
                 Varyant Ekle
-              </Button>
+              </button>
             </div>
 
-            <div className="mt-4 overflow-x-auto">
+            <div className="mt-4 overflow-x-auto px-6">
               <table className="w-full text-left text-sm">
-                <thead className="border-b bg-gray-50">
+                <thead className="bg-gray-50/80">
                   <tr>
-                    <th className="px-3 py-2 font-medium text-gray-700">Renk</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">Hex</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">Beden</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">SKU *</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">GTIN</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">Stok</th>
-                    <th className="px-3 py-2 font-medium text-gray-700">Fiyat (₺)</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Renk
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Hex
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Beden
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      SKU *
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      GTIN
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Stok
+                    </th>
+                    <th className="px-3 py-3 text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                      Fiyat (₺)
+                    </th>
+                    <th className="px-3 py-3"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-100">
                   {variants.map((v, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2">
+                    <tr key={i} className="transition-colors hover:bg-gray-50/50">
+                      <td className="px-3 py-3">
                         <input
                           type="text"
                           required
                           placeholder="Siyah"
                           value={v.color}
                           onChange={(e) => updateVariant(i, "color", e.target.value)}
-                          className="w-20 rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={`w-20 ${variantInputClass}`}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <input
                           type="color"
                           value={v.colorHex}
                           onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
-                          className="h-8 w-10 cursor-pointer rounded border"
+                          className="h-9 w-11 cursor-pointer rounded-lg border border-gray-200 bg-white p-0.5"
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <select
                           value={v.size}
                           onChange={(e) => updateVariant(i, "size", e.target.value)}
-                          className="rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={variantInputClass}
                         >
                           {["S", "M", "L", "XL", "XXL"].map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
                           ))}
                         </select>
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <input
                           type="text"
                           required
                           placeholder="VRT-BXR-001"
                           value={v.sku}
                           onChange={(e) => updateVariant(i, "sku", e.target.value)}
-                          className="w-28 rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={`w-28 ${variantInputClass}`}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <input
                           type="text"
                           placeholder="8680..."
                           value={v.gtinBarcode}
                           onChange={(e) => updateVariant(i, "gtinBarcode", e.target.value)}
-                          className="w-32 rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={`w-32 ${variantInputClass}`}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <input
                           type="number"
                           required
                           min="0"
                           value={v.stock}
                           onChange={(e) => updateVariant(i, "stock", e.target.value)}
-                          className="w-16 rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={`w-16 ${variantInputClass}`}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         <input
                           type="number"
                           step="0.01"
@@ -542,15 +606,15 @@ export default function NewProductPage() {
                           placeholder="Taban"
                           value={v.price}
                           onChange={(e) => updateVariant(i, "price", e.target.value)}
-                          className="w-20 rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-[#7AC143] focus:outline-none"
+                          className={`w-20 ${variantInputClass}`}
                         />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-3">
                         {variants.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeVariant(i)}
-                            className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -562,7 +626,7 @@ export default function NewProductPage() {
               </table>
             </div>
 
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="px-6 py-4 text-xs text-gray-400">
               Fiyat boş bırakılırsa taban fiyat (satış fiyatı) kullanılır.
             </p>
           </div>
@@ -570,12 +634,21 @@ export default function NewProductPage() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button type="submit" loading={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50"
+          >
             <Save className="mr-2 h-4 w-4" />
-            Ürünü Kaydet
-          </Button>
+            {loading ? "Kaydediliyor..." : "Ürünü Kaydet"}
+          </button>
           <Link href="/admin/urunler">
-            <Button type="button" variant="outline">İptal</Button>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              İptal
+            </button>
           </Link>
         </div>
       </form>

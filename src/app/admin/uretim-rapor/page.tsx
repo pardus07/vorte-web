@@ -228,9 +228,13 @@ export default function UretimRaporPage() {
 
   if (loading) {
     return (
-      <div className="py-32 text-center text-gray-400">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-        <p className="mt-3 text-sm">Rapor verileri yukleniyor...</p>
+      <div className="flex items-center justify-center py-32">
+        <div className="rounded-2xl border border-gray-100 bg-white px-10 py-10 shadow-sm text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400" />
+          <p className="mt-3 text-[13px] text-gray-500">
+            Rapor verileri yukleniyor...
+          </p>
+        </div>
       </div>
     );
   }
@@ -238,13 +242,13 @@ export default function UretimRaporPage() {
   /* ---- Render ---- */
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
           Uretim Raporlari
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-[13px] text-gray-500">
           Uretim sureci KPI&apos;lari ve ozet gorunumu
         </p>
       </div>
@@ -252,51 +256,59 @@ export default function UretimRaporPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {/* Active Orders */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500">Aktif Siparisler</span>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+            </div>
+            <span className="text-[13px] text-gray-500">Aktif Siparisler</span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
+          <p className="mt-3 text-3xl font-bold text-gray-900">
             {activeOrders.length}
           </p>
         </div>
 
         {/* Total Quantity */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+              <Package className="h-5 w-5 text-emerald-600" />
+            </div>
+            <span className="text-[13px] text-gray-500">
               Toplam Uretim Adedi
             </span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
+          <p className="mt-3 text-3xl font-bold text-gray-900">
             {totalQuantity.toLocaleString("tr-TR")}
           </p>
         </div>
 
         {/* Average Delivery */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            <span className="text-[13px] text-gray-500">
               Ort. Teslim Suresi
             </span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
+          <p className="mt-3 text-3xl font-bold text-gray-900">
             {avgDeliveryDays > 0 ? `${avgDeliveryDays} gun` : "-"}
           </p>
         </div>
 
         {/* Quality Pass Rate */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50">
+              <CheckCircle2 className="h-5 w-5 text-purple-600" />
+            </div>
+            <span className="text-[13px] text-gray-500">
               Kalite Gecis Orani
             </span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
+          <p className="mt-3 text-3xl font-bold text-gray-900">
             {totalChecks > 0 ? `%${passRate}` : "-"}
           </p>
         </div>
@@ -305,15 +317,15 @@ export default function UretimRaporPage() {
       {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Stage Distribution */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-5 text-sm font-semibold text-gray-900">
             Asama Dagilimi
           </h2>
           {stageEntries.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {stageEntries.map(([stage, count]) => (
                 <div key={stage}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
                     <span className="text-gray-600">
                       {STAGE_LABELS[stage] || stage}
                     </span>
@@ -321,9 +333,9 @@ export default function UretimRaporPage() {
                       {count}
                     </span>
                   </div>
-                  <div className="h-4 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className={`h-4 rounded-full ${STAGE_COLORS[stage] || "bg-gray-400"}`}
+                      className={`h-3 rounded-full ${STAGE_COLORS[stage] || "bg-gray-400"}`}
                       style={{
                         width: `${(count / maxStageCount) * 100}%`,
                       }}
@@ -333,22 +345,22 @@ export default function UretimRaporPage() {
               ))}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-8 text-center text-[13px] text-gray-400">
               Henuz veri yok
             </p>
           )}
         </div>
 
         {/* Priority Breakdown */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-5 text-sm font-semibold text-gray-900">
             Oncelik Dagilimi
           </h2>
           {priorityEntries.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {priorityEntries.map(([priority, count]) => (
                 <div key={priority}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
+                  <div className="mb-1.5 flex items-center justify-between text-xs">
                     <span className="text-gray-600">
                       {PRIORITY_LABELS[priority] || priority}
                     </span>
@@ -356,9 +368,9 @@ export default function UretimRaporPage() {
                       {count}
                     </span>
                   </div>
-                  <div className="h-4 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className={`h-4 rounded-full ${PRIORITY_COLORS[priority] || "bg-gray-400"}`}
+                      className={`h-3 rounded-full ${PRIORITY_COLORS[priority] || "bg-gray-400"}`}
                       style={{
                         width: `${(count / maxPriorityCount) * 100}%`,
                       }}
@@ -368,33 +380,33 @@ export default function UretimRaporPage() {
               ))}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-8 text-center text-[13px] text-gray-400">
               Henuz veri yok
             </p>
           )}
         </div>
       </div>
 
-      {/* Bottom Row */}
+      {/* Bottom Row — 3-column */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Quality Checks */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900">
             <TrendingUp className="h-4 w-4 text-gray-400" />
             Son Kalite Kontrolleri
           </h2>
           {recentChecks.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {recentChecks.map((check) => (
                 <div
                   key={check.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2"
+                  className="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3"
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-800">
                       {check.productionOrder.orderNumber}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="mt-0.5 text-xs text-gray-400">
                       {check.inspectedQuantity} adet kontrol &middot;{" "}
                       {formatDate(check.createdAt)}
                     </p>
@@ -408,15 +420,15 @@ export default function UretimRaporPage() {
               ))}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-8 text-center text-[13px] text-gray-400">
               Kalite kontrolu yok
             </p>
           )}
         </div>
 
         {/* Low Stock Alerts */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             Dusuk Stok Uyarilari
             {materialAlerts > 0 && (
@@ -426,11 +438,11 @@ export default function UretimRaporPage() {
             )}
           </h2>
           {lowStockMaterials.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {lowStockMaterials.map((m) => (
                 <div
                   key={m.id}
-                  className="rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2"
+                  className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3"
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-800">
@@ -447,15 +459,15 @@ export default function UretimRaporPage() {
               ))}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-8 text-center text-[13px] text-gray-400">
               Stok seviyesi normal
             </p>
           )}
         </div>
 
         {/* Overdue Orders */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900">
             <AlertTriangle className="h-4 w-4 text-red-500" />
             Geciken Siparisler
             {overdueOrders.length > 0 && (
@@ -465,7 +477,7 @@ export default function UretimRaporPage() {
             )}
           </h2>
           {overdueOrders.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {overdueOrders.slice(0, 8).map((o) => {
                 const target = o.estimatedDelivery || o.targetDate;
                 const daysLate = target
@@ -479,7 +491,7 @@ export default function UretimRaporPage() {
                 return (
                   <div
                     key={o.id}
-                    className="rounded-lg border border-red-200 bg-red-50/50 px-3 py-2"
+                    className="rounded-xl border border-red-200 bg-red-50/50 px-4 py-3"
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-800">
@@ -498,7 +510,7 @@ export default function UretimRaporPage() {
               })}
             </div>
           ) : (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-8 text-center text-[13px] text-gray-400">
               Geciken siparis yok
             </p>
           )}

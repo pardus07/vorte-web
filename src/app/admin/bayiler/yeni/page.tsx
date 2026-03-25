@@ -58,137 +58,173 @@ export default function AdminNewDealerPage() {
   const update = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const inputClass =
+    "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
+
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/bayiler" className="rounded-lg p-2 hover:bg-gray-100">
+        <Link
+          href="/admin/bayiler"
+          className="rounded-xl border border-gray-200 p-2 hover:bg-gray-50"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Yeni Bayi</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          Yeni Bayi
+        </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-lg font-bold text-gray-900">Firma Bilgileri</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-semibold text-gray-900">
+            Firma Bilgileri
+          </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Firma Adı *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Firma Adı *
+              </label>
               <input
                 required
                 value={form.companyName}
                 onChange={(e) => update("companyName", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Vergi No *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Vergi No *
+              </label>
               <input
                 required
                 value={form.taxNumber}
                 onChange={(e) => update("taxNumber", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Vergi Dairesi *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Vergi Dairesi *
+              </label>
               <input
                 required
                 value={form.taxOffice}
                 onChange={(e) => update("taxOffice", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Şifre *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Şifre *
+              </label>
               <input
                 required
                 type="password"
                 value={form.password}
                 onChange={(e) => update("password", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
                 placeholder="Bayi giriş şifresi"
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-lg font-bold text-gray-900">İletişim Bilgileri</h2>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-semibold text-gray-900">
+            İletişim Bilgileri
+          </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Yetkili Adı *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Yetkili Adı *
+              </label>
               <input
                 required
                 value={form.contactName}
                 onChange={(e) => update("contactName", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Telefon *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Telefon *
+              </label>
               <input
                 required
                 value={form.phone}
                 onChange={(e) => update("phone", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">E-posta *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                E-posta *
+              </label>
               <input
                 required
                 type="email"
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-lg font-bold text-gray-900">Adres</h2>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-semibold text-gray-900">Adres</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Şehir *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Şehir *
+              </label>
               <input
                 required
                 value={form.city}
                 onChange={(e) => update("city", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">İlçe *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                İlçe *
+              </label>
               <input
                 required
                 value={form.district}
                 onChange={(e) => update("district", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Adres *</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Adres *
+              </label>
               <textarea
                 required
                 rows={3}
                 value={form.address}
                 onChange={(e) => update("address", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-lg font-bold text-gray-900">Ticari Koşullar</h2>
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-semibold text-gray-900">
+            Ticari Koşullar
+          </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Seviye</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Seviye
+              </label>
               <select
                 value={form.dealerTier}
                 onChange={(e) => update("dealerTier", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
               >
                 <option value="standard">Standard</option>
                 <option value="silver">Silver</option>
@@ -197,43 +233,51 @@ export default function AdminNewDealerPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">İskonto Oranı (%)</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                İskonto Oranı (%)
+              </label>
               <input
                 type="number"
                 value={form.discountRate}
                 onChange={(e) => update("discountRate", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
                 placeholder="Örn: 15"
                 step="0.5"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Cari Limit (₺)</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Cari Limit (₺)
+              </label>
               <input
                 type="number"
                 value={form.creditLimit}
                 onChange={(e) => update("creditLimit", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
                 placeholder="Örn: 50000"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Vade Günü</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Vade Günü
+              </label>
               <input
                 type="number"
                 value={form.paymentTermDays}
                 onChange={(e) => update("paymentTermDays", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
                 placeholder="0 = Peşin"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Admin Notları</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Admin Notları
+              </label>
               <textarea
                 rows={2}
                 value={form.notes}
                 onChange={(e) => update("notes", e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+                className={inputClass}
                 placeholder="İç notlar (bayiye gösterilmez)"
               />
             </div>
@@ -241,19 +285,28 @@ export default function AdminNewDealerPage() {
         </div>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700">
             {error}
           </div>
         )}
 
         <div className="flex justify-end gap-3">
           <Link href="/admin/bayiler">
-            <Button variant="outline" type="button">İptal</Button>
+            <button
+              type="button"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            >
+              İptal
+            </button>
           </Link>
-          <Button type="submit" loading={saving}>
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#333] disabled:opacity-50"
+          >
             <Save className="mr-2 h-4 w-4" />
-            Bayi Oluştur
-          </Button>
+            {saving ? "Kaydediliyor..." : "Bayi Oluştur"}
+          </button>
         </div>
       </form>
     </div>

@@ -53,36 +53,37 @@ export default async function AdminOrderDetailPage({
   const subtotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/admin/siparisler" className="rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/admin/siparisler" className="rounded-xl border border-gray-200 p-2.5 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             Sipariş #{order.orderNumber}
           </h1>
-          <p className="text-sm text-gray-500">
-            {new Date(order.createdAt).toLocaleString("tr-TR")} ·{" "}
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+            <span>{new Date(order.createdAt).toLocaleString("tr-TR")}</span>
+            <span className="text-gray-300">|</span>
             <Badge variant={order.type === "WHOLESALE" ? "new" : "outline"}>
               {order.type === "WHOLESALE" ? "Toptan" : "Perakende"}
             </Badge>
             {order.isProduction && (
-              <Badge variant="warning" className="ml-1">ÜRETİM</Badge>
+              <Badge variant="warning">ÜRETİM</Badge>
             )}
-          </p>
+          </div>
         </div>
-        <Badge variant={statusInfo.variant} className="text-sm px-3 py-1">
+        <Badge variant={statusInfo.variant} className="text-sm px-4 py-1.5">
           {statusInfo.label}
         </Badge>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-bold text-gray-900">Ürünler ({order.items.length})</h2>
             <div className="divide-y">
               {order.items.map((item) => {
@@ -180,7 +181,7 @@ export default async function AdminOrderDetailPage({
           />
 
           {/* Timeline */}
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-bold text-gray-900">Sipariş Zaman Çizelgesi</h2>
             <div className="relative space-y-4">
               {/* Creation entry */}
@@ -241,7 +242,7 @@ export default async function AdminOrderDetailPage({
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Customer Info */}
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h3 className="mb-3 font-bold text-gray-900">
               {order.type === "WHOLESALE" ? "Bayi Bilgileri" : "Müşteri Bilgileri"}
             </h3>
@@ -266,7 +267,7 @@ export default async function AdminOrderDetailPage({
           </div>
 
           {/* Delivery Address */}
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h3 className="mb-3 font-bold text-gray-900">Teslimat Adresi</h3>
             <div className="text-sm text-gray-600">
               <p className="font-medium text-gray-900">{address.fullName}</p>
@@ -279,7 +280,7 @@ export default async function AdminOrderDetailPage({
 
           {/* Payment */}
           {order.payment && (
-            <div className="rounded-lg border bg-white p-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h3 className="mb-3 font-bold text-gray-900">Ödeme Bilgileri</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
@@ -319,7 +320,7 @@ export default async function AdminOrderDetailPage({
 
           {/* Shipping */}
           {order.cargoTrackingNo && (
-            <div className="rounded-lg border bg-white p-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h3 className="mb-3 font-bold text-gray-900">Kargo Bilgileri</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
@@ -336,7 +337,7 @@ export default async function AdminOrderDetailPage({
 
           {/* Invoice */}
           {order.invoice && (
-            <div className="rounded-lg border bg-white p-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h3 className="mb-3 font-bold text-gray-900">Fatura</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
@@ -366,7 +367,7 @@ export default async function AdminOrderDetailPage({
 
           {/* Customer Notes */}
           {order.notes && (
-            <div className="rounded-lg border bg-white p-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <h3 className="mb-3 font-bold text-gray-900">Müşteri Notu</h3>
               <p className="text-sm text-gray-600">{order.notes}</p>
             </div>

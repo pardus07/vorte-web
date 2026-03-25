@@ -63,6 +63,9 @@ const emptyForm = {
   notes: "",
 };
 
+const inputClassName =
+  "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
+
 export default function MalzemeStokPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [total, setTotal] = useState(0);
@@ -202,18 +205,19 @@ export default function MalzemeStokPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">Malzeme Stok</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Malzeme Stok
+          </h1>
           {lowStockCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
-              <AlertTriangle className="h-4 w-4" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-100">
+              <AlertTriangle className="h-3.5 w-3.5" />
               {lowStockCount} düşük stok
             </span>
           )}
         </div>
         <button
           onClick={openNewModal}
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
-          style={{ backgroundColor: "#7AC143" }}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333]"
         >
           <Plus className="h-4 w-4" />
           Yeni Malzeme
@@ -222,9 +226,9 @@ export default function MalzemeStokPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-50 p-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
               <Layers className="h-5 w-5 text-blue-600" />
             </div>
             <div>
@@ -233,9 +237,9 @@ export default function MalzemeStokPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-red-50 p-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
               <TrendingDown className="h-5 w-5 text-red-600" />
             </div>
             <div>
@@ -244,9 +248,9 @@ export default function MalzemeStokPage() {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-50 p-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
               <DollarSign className="h-5 w-5 text-green-600" />
             </div>
             <div>
@@ -271,13 +275,13 @@ export default function MalzemeStokPage() {
             placeholder="Malzeme ara..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="form-input w-full pl-10"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="form-input"
+          className="w-auto rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
         >
           <option value="all">Tüm Türler</option>
           {TYPE_OPTIONS.map(([value, label]) => (
@@ -289,131 +293,151 @@ export default function MalzemeStokPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              <th className="px-4 py-3">Malzeme Adı</th>
-              <th className="px-4 py-3">Tür</th>
-              <th className="px-4 py-3">Miktar</th>
-              <th className="px-4 py-3">Birim</th>
-              <th className="px-4 py-3">Min. Miktar</th>
-              <th className="px-4 py-3">Birim Fiyat</th>
-              <th className="px-4 py-3">Tedarikçi</th>
-              <th className="px-4 py-3">Son Stok Tarihi</th>
-              <th className="px-4 py-3">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center">
-                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">Yükleniyor...</p>
-                </td>
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50/80">
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Malzeme Adı
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Tür
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Miktar
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Birim
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Min. Miktar
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Birim Fiyat
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Tedarikçi
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  Son Stok Tarihi
+                </th>
+                <th className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wider text-gray-500">
+                  İşlemler
+                </th>
               </tr>
-            ) : materials.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center">
-                  <Package className="mx-auto h-8 w-8 text-gray-300" />
-                  <p className="mt-2 text-sm text-gray-500">
-                    Malzeme bulunamadı.
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              materials.map((m) => {
-                const isLow = m.quantity <= m.minQuantity;
-                return (
-                  <tr
-                    key={m.id}
-                    className={`transition-colors hover:bg-gray-50 ${
-                      isLow ? "bg-red-50/50" : ""
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {m.name}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        {TYPE_LABELS[m.type] || m.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 ${getQuantityStyle(m.quantity, m.minQuantity)}`}
-                      >
-                        {m.quantity.toLocaleString("tr-TR")}
-                        {isLow && (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{m.unit}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {m.minQuantity.toLocaleString("tr-TR")}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {m.unitPrice.toLocaleString("tr-TR", {
-                        style: "currency",
-                        currency: "TRY",
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {m.supplier?.name || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {formatDate(m.lastRestocked)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEditModal(m)}
-                          className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
-                          title="Düzenle"
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-12 text-center">
+                    <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-500">Yükleniyor...</p>
+                  </td>
+                </tr>
+              ) : materials.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-12 text-center">
+                    <Package className="mx-auto h-8 w-8 text-gray-300" />
+                    <p className="mt-2 text-sm text-gray-500">
+                      Malzeme bulunamadı.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                materials.map((m) => {
+                  const isLow = m.quantity <= m.minQuantity;
+                  return (
+                    <tr
+                      key={m.id}
+                      className={`transition-colors hover:bg-gray-50 ${
+                        isLow ? "bg-red-50/50" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {m.name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                          {TYPE_LABELS[m.type] || m.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 ${getQuantityStyle(m.quantity, m.minQuantity)}`}
                         >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id)}
-                          disabled={deleting === m.id}
-                          className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 disabled:opacity-50"
-                          title="Sil"
-                        >
-                          {deleting === m.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
+                          {m.quantity.toLocaleString("tr-TR")}
+                          {isLow && (
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
                           )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{m.unit}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {m.minQuantity.toLocaleString("tr-TR")}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {m.unitPrice.toLocaleString("tr-TR", {
+                          style: "currency",
+                          currency: "TRY",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {m.supplier?.name || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {formatDate(m.lastRestocked)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditModal(m)}
+                            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600"
+                            title="Düzenle"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(m.id)}
+                            disabled={deleting === m.id}
+                            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 disabled:opacity-50"
+                            title="Sil"
+                          >
+                            {deleting === m.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">
                 {editingId ? "Malzeme Düzenle" : "Yeni Malzeme"}
               </h2>
               <button
                 onClick={closeModal}
-                className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
                 {error}
               </div>
             )}
@@ -421,7 +445,7 @@ export default function MalzemeStokPage() {
             <div className="space-y-4">
               {/* Name */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Malzeme Adı *
                 </label>
                 <input
@@ -430,7 +454,7 @@ export default function MalzemeStokPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
-                  className="form-input w-full"
+                  className={inputClassName}
                   placeholder="Örn: Pamuklu Kumaş"
                 />
               </div>
@@ -438,7 +462,7 @@ export default function MalzemeStokPage() {
               {/* Type + Unit */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Tür
                   </label>
                   <select
@@ -446,7 +470,7 @@ export default function MalzemeStokPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, type: e.target.value }))
                     }
-                    className="form-input w-full"
+                    className={inputClassName}
                   >
                     {TYPE_OPTIONS.map(([value, label]) => (
                       <option key={value} value={value}>
@@ -456,7 +480,7 @@ export default function MalzemeStokPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Birim
                   </label>
                   <select
@@ -464,7 +488,7 @@ export default function MalzemeStokPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, unit: e.target.value }))
                     }
-                    className="form-input w-full"
+                    className={inputClassName}
                   >
                     {UNIT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -478,7 +502,7 @@ export default function MalzemeStokPage() {
               {/* Quantity + Min Quantity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Miktar
                   </label>
                   <input
@@ -491,11 +515,11 @@ export default function MalzemeStokPage() {
                         quantity: parseFloat(e.target.value) || 0,
                       }))
                     }
-                    className="form-input w-full"
+                    className={inputClassName}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     Min. Miktar
                   </label>
                   <input
@@ -508,14 +532,14 @@ export default function MalzemeStokPage() {
                         minQuantity: parseFloat(e.target.value) || 0,
                       }))
                     }
-                    className="form-input w-full"
+                    className={inputClassName}
                   />
                 </div>
               </div>
 
               {/* Unit Price */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Birim Fiyat (TRY)
                 </label>
                 <input
@@ -529,13 +553,13 @@ export default function MalzemeStokPage() {
                       unitPrice: parseFloat(e.target.value) || 0,
                     }))
                   }
-                  className="form-input w-full"
+                  className={inputClassName}
                 />
               </div>
 
               {/* Supplier ID */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Tedarikçi ID
                 </label>
                 <input
@@ -544,14 +568,14 @@ export default function MalzemeStokPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, supplierId: e.target.value }))
                   }
-                  className="form-input w-full"
+                  className={inputClassName}
                   placeholder="Opsiyonel"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Notlar
                 </label>
                 <textarea
@@ -559,7 +583,7 @@ export default function MalzemeStokPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, notes: e.target.value }))
                   }
-                  className="form-input w-full"
+                  className={inputClassName}
                   rows={3}
                   placeholder="Opsiyonel notlar..."
                 />
@@ -570,15 +594,14 @@ export default function MalzemeStokPage() {
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 onClick={closeModal}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
               >
                 İptal
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-                style={{ backgroundColor: "#7AC143" }}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingId ? "Güncelle" : "Kaydet"}

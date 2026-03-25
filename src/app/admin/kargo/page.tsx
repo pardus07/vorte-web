@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   ExternalLink,
   Mail,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -51,23 +53,8 @@ export default function AdminShippingPage() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     const statusParam = statusFilter || "PROCESSING,SHIPPED,DELIVERED";
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
-
-    // Filter by shipping-related statuses
-    if (statusFilter) {
-      params.set("status", statusFilter);
-    } else {
-      // Show all shipping-relevant orders (need separate calls or custom handling)
-      // For now, we'll fetch without status filter and filter client-side
-    }
-
-    if (search) params.set("search", search);
 
     try {
-      // Use the main orders API with status filter
       const statuses = statusParam.split(",");
       const allOrders: ShippingOrder[] = [];
 
@@ -83,7 +70,6 @@ export default function AdminShippingPage() {
         if (data.orders) allOrders.push(...data.orders);
       }
 
-      // Sort by updatedAt desc
       allOrders.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
       setOrders(allOrders);
@@ -139,81 +125,122 @@ export default function AdminShippingPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Kargo Yönetimi</h1>
-      <p className="mt-1 text-sm text-gray-500">Kargoya verilmiş ve bekleyen siparişler</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Kargo Yönetimi</h1>
+        <p className="mt-1 text-[13px] text-gray-500">Kargoya verilmiş ve bekleyen siparişler</p>
+      </div>
 
       {/* Messages */}
-      {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
-      {success && <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</div>}
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
+          <CheckCircle className="h-4 w-4 shrink-0" />
+          {success}
+        </div>
+      )}
 
       {/* Stats Cards */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <button
           onClick={() => setStatusFilter("PROCESSING")}
-          className={`rounded-lg border bg-white p-4 text-center transition-colors hover:border-orange-300 ${statusFilter === "PROCESSING" ? "border-orange-400 ring-1 ring-orange-200" : ""}`}
+          className={`group rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${
+            statusFilter === "PROCESSING" ? "border-orange-300 ring-2 ring-orange-100" : "border-gray-100"
+          }`}
         >
-          <Package className="mx-auto h-6 w-6 text-orange-500" />
-          <p className="mt-2 text-2xl font-bold text-orange-600">{processingCount}</p>
-          <p className="text-sm text-gray-500">Hazırlanıyor</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 transition-colors group-hover:bg-orange-100">
+              <Package className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-orange-600">{processingCount}</p>
+              <p className="text-[12px] text-gray-500">Hazırlanıyor</p>
+            </div>
+          </div>
         </button>
         <button
           onClick={() => setStatusFilter("SHIPPED")}
-          className={`rounded-lg border bg-white p-4 text-center transition-colors hover:border-blue-300 ${statusFilter === "SHIPPED" ? "border-blue-400 ring-1 ring-blue-200" : ""}`}
+          className={`group rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${
+            statusFilter === "SHIPPED" ? "border-blue-300 ring-2 ring-blue-100" : "border-gray-100"
+          }`}
         >
-          <Truck className="mx-auto h-6 w-6 text-blue-500" />
-          <p className="mt-2 text-2xl font-bold text-blue-600">{shippedCount}</p>
-          <p className="text-sm text-gray-500">Kargoda</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 transition-colors group-hover:bg-blue-100">
+              <Truck className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{shippedCount}</p>
+              <p className="text-[12px] text-gray-500">Kargoda</p>
+            </div>
+          </div>
         </button>
         <button
           onClick={() => setStatusFilter("DELIVERED")}
-          className={`rounded-lg border bg-white p-4 text-center transition-colors hover:border-green-300 ${statusFilter === "DELIVERED" ? "border-green-400 ring-1 ring-green-200" : ""}`}
+          className={`group rounded-2xl border bg-white p-5 text-left shadow-sm transition-all hover:shadow-md ${
+            statusFilter === "DELIVERED" ? "border-green-300 ring-2 ring-green-100" : "border-gray-100"
+          }`}
         >
-          <CheckCircle className="mx-auto h-6 w-6 text-green-500" />
-          <p className="mt-2 text-2xl font-bold text-green-600">{deliveredCount}</p>
-          <p className="text-sm text-gray-500">Teslim Edildi</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 transition-colors group-hover:bg-green-100">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{deliveredCount}</p>
+              <p className="text-[12px] text-gray-500">Teslim Edildi</p>
+            </div>
+          </div>
         </button>
       </div>
 
       {/* Warning: Stuck orders */}
       {stuckOrders.length > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <div className="flex items-center gap-2 text-amber-700">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-medium">{stuckOrders.length} sipariş 5+ gündür teslim edilmedi</span>
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50/50 p-5">
+          <div className="flex items-center gap-2.5 text-amber-800">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+              <Clock className="h-4 w-4 text-amber-700" />
+            </div>
+            <span className="font-semibold">{stuckOrders.length} sipariş 5+ gündür teslim edilmedi</span>
           </div>
-          <div className="mt-2 space-y-1">
+          <div className="mt-3 space-y-1.5 pl-10">
             {stuckOrders.slice(0, 5).map((order) => (
               <Link
                 key={order.id}
                 href={`/admin/siparisler/${order.id}`}
-                className="block text-sm text-amber-600 hover:underline"
+                className="flex items-center gap-2 text-sm text-amber-700 transition-colors hover:text-amber-900"
               >
-                #{order.orderNumber} — {order.cargoProvider} ({order.cargoTrackingNo})
+                <ArrowRight className="h-3.5 w-3.5" />
+                <span className="font-medium">#{order.orderNumber}</span>
+                <span className="text-amber-600">— {order.cargoProvider} ({order.cargoTrackingNo})</span>
               </Link>
             ))}
             {stuckOrders.length > 5 && (
-              <p className="text-xs text-amber-500">ve {stuckOrders.length - 5} daha...</p>
+              <p className="text-[12px] text-amber-500">ve {stuckOrders.length - 5} daha...</p>
             )}
           </div>
         </div>
       )}
 
       {/* Search & Filter */}
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <form onSubmit={handleSearch} className="flex flex-1 gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Sipariş no, müşteri adı, takip no..."
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
             />
           </div>
           <Button type="submit" size="sm">
-            <Search className="mr-1 h-3.5 w-3.5" />
+            <Search className="mr-1.5 h-3.5 w-3.5" />
             Ara
           </Button>
         </form>
@@ -222,7 +249,7 @@ export default function AdminShippingPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
           >
             {STATUS_FILTER_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -243,55 +270,57 @@ export default function AdminShippingPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#7AC143]" />
           </div>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b bg-gray-50">
+            <thead className="border-b bg-gray-50/80">
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-700">Sipariş</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Müşteri</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Tutar</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Kargo Firması</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Takip No</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Durum</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Tarih</th>
-                <th className="px-4 py-3 font-medium text-gray-700">İşlem</th>
+                <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Sipariş</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Müşteri</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tutar</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Kargo Firması</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Takip No</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Durum</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">Tarih</th>
+                <th className="px-4 py-3.5 text-[12px] font-semibold uppercase tracking-wider text-gray-500">İşlem</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-50">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
+                <tr key={order.id} className="transition-colors hover:bg-gray-50/50">
+                  <td className="px-5 py-3.5">
                     <Link href={`/admin/siparisler/${order.id}`} className="font-medium text-[#7AC143] hover:underline">
                       #{order.orderNumber}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <p className="font-medium text-gray-900">
                       {order.dealer?.companyName || order.user?.name || "Misafir"}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[12px] text-gray-500">
                       {order.user?.phone || ""}
                     </p>
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
+                  <td className="px-4 py-3.5 font-semibold text-gray-900">
                     {formatPrice(order.totalAmount)}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {order.cargoProvider || "—"}
+                  <td className="px-4 py-3.5 text-[13px] text-gray-600">
+                    {order.cargoProvider || <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     {order.cargoTrackingNo ? (
-                      <span className="font-mono text-sm text-gray-600">{order.cargoTrackingNo}</span>
+                      <span className="inline-flex items-center rounded-lg bg-gray-100 px-2 py-0.5 font-mono text-[12px] text-gray-700">
+                        {order.cargoTrackingNo}
+                      </span>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-300">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <Badge
                       variant={
                         order.status === "DELIVERED" ? "success" :
@@ -302,10 +331,10 @@ export default function AdminShippingPage() {
                        order.status === "SHIPPED" ? "Kargoda" : "Teslim Edildi"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
+                  <td className="px-4 py-3.5 text-[13px] text-gray-500">
                     {new Date(order.updatedAt).toLocaleDateString("tr-TR")}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-1">
                       {order.status === "PROCESSING" && !order.cargoTrackingNo && (
                         <Button
@@ -313,13 +342,13 @@ export default function AdminShippingPage() {
                           variant="outline"
                           onClick={() => handleCreateShipment(order.id)}
                         >
-                          <Truck className="mr-1 h-3.5 w-3.5" />
+                          <Truck className="mr-1.5 h-3.5 w-3.5" />
                           Kargola
                         </Button>
                       )}
                       {order.cargoTrackingNo && (
                         <button
-                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
                           title="Takip Sayfası"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -327,7 +356,7 @@ export default function AdminShippingPage() {
                       )}
                       {order.user?.email && (
                         <button
-                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-purple-50 hover:text-purple-600"
                           title="Müşteriye E-posta"
                         >
                           <Mail className="h-4 w-4" />
@@ -339,8 +368,11 @@ export default function AdminShippingPage() {
               ))}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
-                    {search || statusFilter ? "Eşleşen kargo bulunamadı" : "Henüz kargo yok"}
+                  <td colSpan={8} className="px-4 py-16 text-center">
+                    <Truck className="mx-auto h-10 w-10 text-gray-300" />
+                    <p className="mt-2 text-sm text-gray-400">
+                      {search || statusFilter ? "Eşleşen kargo bulunamadı" : "Henüz kargo yok"}
+                    </p>
                   </td>
                 </tr>
               )}

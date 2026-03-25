@@ -1,7 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Save, X, Download } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  ArrowUp,
+  ArrowDown,
+  Save,
+  X,
+  Download,
+  CheckCircle,
+  XCircle,
+  Image,
+  Layers,
+  Monitor,
+  Smartphone,
+  GripVertical,
+  CalendarDays,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -45,7 +64,9 @@ const emptySlider: Omit<SliderData, "id"> = {
 export default function AdminSliderPage() {
   const [sliders, setSliders] = useState<SliderData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<SliderData | (Omit<SliderData, "id"> & { id?: string }) | null>(null);
+  const [editing, setEditing] = useState<
+    SliderData | (Omit<SliderData, "id"> & { id?: string }) | null
+  >(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -56,7 +77,8 @@ export default function AdminSliderPage() {
       title: "Kaliteli İç Giyim,",
       subtitle: "Yeni Sezon 2026",
       highlight: "Uygun Fiyat",
-      description: "Vorte Tekstil - Erkek boxer ve kadın iç giyim koleksiyonu. Premium kumaş kalitesi ile konfor ve şıklık bir arada.",
+      description:
+        "Vorte Tekstil - Erkek boxer ve kadın iç giyim koleksiyonu. Premium kumaş kalitesi ile konfor ve şıklık bir arada.",
       buttonText: "Erkek Koleksiyonu",
       buttonLink: "/erkek-ic-giyim",
       secondaryButtonText: "Kadın Koleksiyonu",
@@ -70,7 +92,8 @@ export default function AdminSliderPage() {
       title: "Zarif Tasarım,",
       subtitle: "Kadın Koleksiyonu",
       highlight: "Üstün Konfor",
-      description: "Premium modal kumaş ile üretilen kadın iç giyim koleksiyonumuz. Günlük konfor ve şıklığı bir arada sunuyor.",
+      description:
+        "Premium modal kumaş ile üretilen kadın iç giyim koleksiyonumuz. Günlük konfor ve şıklığı bir arada sunuyor.",
       buttonText: "Kadın Koleksiyonu",
       buttonLink: "/kadin-ic-giyim",
       secondaryButtonText: "Erkek Koleksiyonu",
@@ -84,7 +107,8 @@ export default function AdminSliderPage() {
       title: "Bayilik Fırsatı,",
       subtitle: "Toptan Satış",
       highlight: "%45'e Varan İndirim",
-      description: "Perakende satış noktaları için özel toptan fiyatlardan yararlanın.",
+      description:
+        "Perakende satış noktaları için özel toptan fiyatlardan yararlanın.",
       buttonText: "Toptan Satış",
       buttonLink: "/toptan",
       secondaryButtonText: "Bayi Girişi",
@@ -144,7 +168,9 @@ export default function AdminSliderPage() {
 
     try {
       const isNew = !("id" in editing) || !editing.id;
-      const url = isNew ? "/api/admin/sliders" : `/api/admin/sliders/${editing.id}`;
+      const url = isNew
+        ? "/api/admin/sliders"
+        : `/api/admin/sliders/${editing.id}`;
       const method = isNew ? "POST" : "PUT";
 
       const res = await fetch(url, {
@@ -173,7 +199,9 @@ export default function AdminSliderPage() {
     if (!confirm("Bu slider'ı silmek istediğinize emin misiniz?")) return;
 
     try {
-      const res = await fetch(`/api/admin/sliders/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/sliders/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         setSuccess("Slider silindi");
         setTimeout(() => setSuccess(""), 3000);
@@ -226,6 +254,9 @@ export default function AdminSliderPage() {
     }
   };
 
+  const activeCount = sliders.filter((s) => s.active).length;
+  const passiveCount = sliders.filter((s) => !s.active).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -235,14 +266,40 @@ export default function AdminSliderPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Slider Yönetimi</h1>
-          <p className="mt-1 text-sm text-gray-500">Ana sayfa slider görselleri</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Slider Yönetimi
+            </h1>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                <Layers className="h-3 w-3" />
+                {sliders.length} Toplam
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {activeCount} Aktif
+              </span>
+              {passiveCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                  {passiveCount} Pasif
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="mt-1 text-[13px] text-gray-500">
+            Ana sayfa slider görselleri ve sıralamasını yönetin
+          </p>
         </div>
-        <Button onClick={() => setEditing({ ...emptySlider, sortOrder: sliders.length })}>
+        <Button
+          onClick={() =>
+            setEditing({ ...emptySlider, sortOrder: sliders.length })
+          }
+        >
           <Plus className="mr-2 h-4 w-4" />
           Yeni Slider
         </Button>
@@ -250,227 +307,382 @@ export default function AdminSliderPage() {
 
       {/* Messages */}
       {error && (
-        <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        <div className="flex items-center gap-2.5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
+          <span>{error}</span>
+          <button
+            onClick={() => setError("")}
+            className="ml-auto rounded-lg p-0.5 hover:bg-red-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
       {success && (
-        <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</div>
+        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <CheckCircle className="h-4 w-4 flex-shrink-0 text-emerald-500" />
+          <span>{success}</span>
+          <button
+            onClick={() => setSuccess("")}
+            className="ml-auto rounded-lg p-0.5 hover:bg-emerald-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
 
       {/* Edit Modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-20">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">
-                {"id" in editing && editing.id ? "Slider Düzenle" : "Yeni Slider"}
-              </h2>
-              <button onClick={() => setEditing(null)} className="rounded p-1 hover:bg-gray-100">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 pt-16">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-bold tracking-tight text-gray-900">
+                  {"id" in editing && editing.id
+                    ? "Slider Düzenle"
+                    : "Yeni Slider"}
+                </h2>
+                <p className="mt-0.5 text-[13px] text-gray-500">
+                  Slider içerik ve görsellerini yapılandırın
+                </p>
+              </div>
+              <button
+                onClick={() => setEditing(null)}
+                className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="mt-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Üst Başlık
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.subtitle || ""}
-                    onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="Yeni Sezon 2026"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Başlık
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.title || ""}
-                    onChange={(e) => setEditing({ ...editing, title: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="Kaliteli İç Giyim,"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Vurgulanan Metin
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.highlight || ""}
-                    onChange={(e) => setEditing({ ...editing, highlight: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="Uygun Fiyat"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Alt Metin</label>
-                  <input
-                    type="text"
-                    value={editing.altText || ""}
-                    onChange={(e) => setEditing({ ...editing, altText: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="SEO alt text"
-                  />
-                </div>
-              </div>
-
+            {/* Modal Body */}
+            <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-5">
+              {/* Section: İçerik */}
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Açıklama</label>
-                <textarea
-                  rows={2}
-                  value={editing.description || ""}
-                  onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                  className="form-input w-full"
-                  placeholder="Kısa açıklama metni"
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Desktop Görsel URL *
-                  </label>
-                  <input
-                    type="url"
-                    value={editing.imageDesktop}
-                    onChange={(e) => setEditing({ ...editing, imageDesktop: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="/images/hero-1.png"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-400">Önerilen: 1920x800px</p>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Mobil Görsel URL *
-                  </label>
-                  <input
-                    type="url"
-                    value={editing.imageMobile}
-                    onChange={(e) => setEditing({ ...editing, imageMobile: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="/images/hero-mobile-1.png"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-400">Önerilen: 768x600px</p>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Birincil Buton Metni
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.buttonText || ""}
-                    onChange={(e) => setEditing({ ...editing, buttonText: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="Erkek Koleksiyonu"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Birincil Buton Linki
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.buttonLink || ""}
-                    onChange={(e) => setEditing({ ...editing, buttonLink: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="/erkek-ic-giyim"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    İkincil Buton Metni
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.secondaryButtonText || ""}
-                    onChange={(e) => setEditing({ ...editing, secondaryButtonText: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="Kadın Koleksiyonu"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    İkincil Buton Linki
-                  </label>
-                  <input
-                    type="text"
-                    value={editing.secondaryButtonLink || ""}
-                    onChange={(e) => setEditing({ ...editing, secondaryButtonLink: e.target.value })}
-                    className="form-input w-full"
-                    placeholder="/kadin-ic-giyim"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Başlangıç Tarihi
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={editing.startDate ? editing.startDate.substring(0, 16) : ""}
-                    onChange={(e) => setEditing({ ...editing, startDate: e.target.value || null })}
-                    className="form-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Bitiş Tarihi
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={editing.endDate ? editing.endDate.substring(0, 16) : ""}
-                    onChange={(e) => setEditing({ ...editing, endDate: e.target.value || null })}
-                    className="form-input w-full"
-                  />
-                </div>
-                <div className="flex items-end gap-4 pb-1">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={editing.active}
-                      onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
-                      className="h-4 w-4 accent-[#7AC143]"
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <Layers className="h-4 w-4 text-gray-400" />
+                  İçerik
+                </h3>
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Üst Başlık
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.subtitle || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, subtitle: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="Yeni Sezon 2026"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Başlık
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.title || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, title: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="Kaliteli İç Giyim,"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Vurgulanan Metin
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.highlight || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, highlight: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="Uygun Fiyat"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Alt Metin (SEO)
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.altText || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, altText: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="SEO alt text"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Açıklama
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editing.description || ""}
+                      onChange={(e) =>
+                        setEditing({ ...editing, description: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors resize-none"
+                      placeholder="Kısa açıklama metni"
                     />
-                    <span className="text-sm text-gray-700">Aktif</span>
-                  </label>
+                  </div>
                 </div>
               </div>
 
-              {/* Preview */}
+              {/* Section: Görseller */}
+              <div className="border-t border-gray-100 pt-5 mt-5">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <Image className="h-4 w-4 text-gray-400" />
+                  Görseller
+                </h3>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                      <Monitor className="h-3.5 w-3.5 text-gray-400" />
+                      Desktop Görsel URL
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editing.imageDesktop}
+                      onChange={(e) =>
+                        setEditing({ ...editing, imageDesktop: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                      placeholder="/images/hero-1.png"
+                      required
+                    />
+                    <p className="mt-1.5 text-xs text-gray-400">
+                      Önerilen: 1920x800px
+                    </p>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                      <Smartphone className="h-3.5 w-3.5 text-gray-400" />
+                      Mobil Görsel URL
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editing.imageMobile}
+                      onChange={(e) =>
+                        setEditing({ ...editing, imageMobile: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                      placeholder="/images/hero-mobile-1.png"
+                      required
+                    />
+                    <p className="mt-1.5 text-xs text-gray-400">
+                      Önerilen: 768x600px
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Butonlar */}
+              <div className="border-t border-gray-100 pt-5 mt-5">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <GripVertical className="h-4 w-4 text-gray-400" />
+                  Butonlar
+                </h3>
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Birincil Buton Metni
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.buttonText || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, buttonText: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="Erkek Koleksiyonu"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Birincil Buton Linki
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.buttonLink || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, buttonLink: e.target.value })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="/erkek-ic-giyim"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        İkincil Buton Metni
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.secondaryButtonText || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            secondaryButtonText: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="Kadın Koleksiyonu"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                        İkincil Buton Linki
+                      </label>
+                      <input
+                        type="text"
+                        value={editing.secondaryButtonLink || ""}
+                        onChange={(e) =>
+                          setEditing({
+                            ...editing,
+                            secondaryButtonLink: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                        placeholder="/kadin-ic-giyim"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Zamanlama */}
+              <div className="border-t border-gray-100 pt-5 mt-5">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <CalendarDays className="h-4 w-4 text-gray-400" />
+                  Zamanlama
+                </h3>
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Başlangıç Tarihi
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={
+                        editing.startDate
+                          ? editing.startDate.substring(0, 16)
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          startDate: e.target.value || null,
+                        })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Bitiş Tarihi
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={
+                        editing.endDate
+                          ? editing.endDate.substring(0, 16)
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          endDate: e.target.value || null,
+                        })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-[#7AC143] focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    <label className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-sm cursor-pointer hover:border-[#7AC143]/40 transition-colors w-full">
+                      <input
+                        type="checkbox"
+                        checked={editing.active}
+                        onChange={(e) =>
+                          setEditing({ ...editing, active: e.target.checked })
+                        }
+                        className="h-4 w-4 rounded accent-[#7AC143]"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Aktif
+                      </span>
+                      <span
+                        className={`ml-auto h-2 w-2 rounded-full ${editing.active ? "bg-emerald-500" : "bg-gray-300"}`}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop Preview */}
               {editing.imageDesktop && (
-                <div>
-                  <p className="mb-2 text-xs font-medium text-gray-500 uppercase">Desktop Önizleme</p>
-                  <div className="relative h-32 overflow-hidden rounded-lg bg-gray-900">
+                <div className="border-t border-gray-100 pt-5 mt-5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-3">
+                    <Monitor className="h-4 w-4 text-gray-400" />
+                    Desktop Önizleme
+                  </h3>
+                  <div className="relative h-36 overflow-hidden rounded-xl bg-gray-900">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={editing.imageDesktop}
                       alt="Önizleme"
-                      className="h-full w-full object-cover opacity-60"
+                      className="h-full w-full object-cover opacity-50"
                     />
-                    <div className="absolute inset-0 flex items-center px-6">
-                      <div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 flex items-center px-8">
+                      <div className="space-y-1">
                         {editing.subtitle && (
-                          <span className="text-xs font-semibold text-[#7AC143] uppercase">
+                          <span className="block text-[10px] font-bold uppercase tracking-widest text-[#7AC143]">
                             {editing.subtitle}
                           </span>
                         )}
                         {editing.title && (
-                          <h3 className="text-lg font-bold text-white">{editing.title}</h3>
+                          <h3 className="text-xl font-bold leading-tight text-white">
+                            {editing.title}
+                          </h3>
                         )}
                         {editing.highlight && (
-                          <span className="text-lg font-bold text-[#7AC143]">{editing.highlight}</span>
+                          <span className="block text-xl font-bold text-[#7AC143]">
+                            {editing.highlight}
+                          </span>
+                        )}
+                        {editing.description && (
+                          <p className="max-w-xs text-[11px] leading-relaxed text-white/70 line-clamp-2">
+                            {editing.description}
+                          </p>
+                        )}
+                        {editing.buttonText && (
+                          <div className="flex gap-2 pt-1">
+                            <span className="inline-block rounded bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-gray-900">
+                              {editing.buttonText}
+                            </span>
+                            {editing.secondaryButtonText && (
+                              <span className="inline-block rounded border border-white/40 px-2.5 py-1 text-[10px] font-semibold text-white/80">
+                                {editing.secondaryButtonText}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -479,12 +691,13 @@ export default function AdminSliderPage() {
               )}
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setEditing(null)}>
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
                 İptal
               </Button>
-              <Button onClick={handleSave} loading={saving}>
-                <Save className="mr-2 h-4 w-4" />
+              <Button size="sm" onClick={handleSave} loading={saving}>
+                <Save className="mr-1.5 h-4 w-4" />
                 Kaydet
               </Button>
             </div>
@@ -493,70 +706,125 @@ export default function AdminSliderPage() {
       )}
 
       {/* Slider List */}
-      <div className="mt-6 space-y-3">
-        {sliders.length === 0 ? (
-          <div className="rounded-lg border bg-white py-12 text-center">
-            <p className="text-gray-400">Henüz slider eklenmemiş</p>
-            <p className="mt-2 text-sm text-gray-400">
-              Anasayfadaki mevcut slider görselleri veritabanına aktarılmamış.
-            </p>
+      {sliders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white p-12">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50">
+            <Image className="h-8 w-8 text-gray-300" />
+          </div>
+          <h3 className="mt-4 text-base font-semibold text-gray-900">
+            Henüz slider eklenmemiş
+          </h3>
+          <p className="mt-1.5 max-w-sm text-center text-[13px] text-gray-500">
+            Anasayfadaki mevcut slider görselleri veritabanına aktarılmamış.
+            Mevcut slider verilerini hızlıca içe aktarabilirsiniz.
+          </p>
+          <div className="mt-6 flex gap-3">
             <Button
               onClick={handleImportFallbacks}
               loading={importing}
-              className="mt-4"
               variant="outline"
             >
               <Download className="mr-2 h-4 w-4" />
               Mevcut Sliderları İçe Aktar
             </Button>
+            <Button
+              onClick={() =>
+                setEditing({ ...emptySlider, sortOrder: sliders.length })
+              }
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Slider Ekle
+            </Button>
           </div>
-        ) : (
-          sliders.map((slider, index) => (
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sliders.map((slider, index) => (
             <div
               key={slider.id}
-              className="flex items-center gap-4 rounded-lg border bg-white p-4"
+              className={`group flex items-center gap-0 rounded-2xl border bg-white shadow-sm overflow-hidden hover:shadow-md transition-all ${
+                slider.active
+                  ? "border-gray-100"
+                  : "border-gray-100 opacity-60"
+              }`}
             >
               {/* Thumbnail */}
-              <div className="h-20 w-36 flex-shrink-0 overflow-hidden rounded bg-gray-100">
+              <div className="relative h-28 w-48 flex-shrink-0 bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slider.imageDesktop}
                   alt={slider.altText || slider.title || "Slider"}
                   className="h-full w-full object-cover"
                 />
+                {/* Sort Order Badge */}
+                <span className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[11px] font-bold text-white">
+                  {slider.sortOrder + 1}
+                </span>
+                {/* Active indicator dot */}
+                <span
+                  className={`absolute right-2 top-2 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                    slider.active ? "bg-emerald-500" : "bg-gray-400"
+                  }`}
+                />
               </div>
 
               {/* Info */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-gray-900 truncate">
+                  <h3 className="font-semibold text-gray-900 truncate">
                     {slider.title || slider.subtitle || `Slider #${index + 1}`}
                   </h3>
                   {slider.active ? (
-                    <Badge variant="success">Aktif</Badge>
+                    <Badge variant="success" className="text-[10px]">
+                      Aktif
+                    </Badge>
                   ) : (
-                    <Badge variant="outline">Pasif</Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      Pasif
+                    </Badge>
                   )}
                 </div>
-                <p className="mt-0.5 text-sm text-gray-500 truncate">
+                {slider.highlight && (
+                  <p className="mt-0.5 text-sm font-medium text-[#7AC143]">
+                    {slider.highlight}
+                  </p>
+                )}
+                <p className="mt-1 text-[13px] text-gray-500 truncate max-w-md">
                   {slider.description || "Açıklama yok"}
                 </p>
-                {slider.startDate && (
-                  <p className="text-xs text-gray-400">
-                    {new Date(slider.startDate).toLocaleDateString("tr-TR")} -{" "}
-                    {slider.endDate
-                      ? new Date(slider.endDate).toLocaleDateString("tr-TR")
-                      : "Süresiz"}
-                  </p>
+                {(slider.startDate || slider.endDate) && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                    <CalendarDays className="h-3 w-3" />
+                    <span>
+                      {slider.startDate
+                        ? new Date(slider.startDate).toLocaleDateString(
+                            "tr-TR",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )
+                        : "Başlangıç yok"}
+                      {" - "}
+                      {slider.endDate
+                        ? new Date(slider.endDate).toLocaleDateString("tr-TR", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "Süresiz"}
+                    </span>
+                  </div>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 px-4 opacity-70 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => moveSlider(index, "up")}
                   disabled={index === 0}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-100 disabled:opacity-30"
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   title="Yukarı"
                 >
                   <ArrowUp className="h-4 w-4" />
@@ -564,14 +832,17 @@ export default function AdminSliderPage() {
                 <button
                   onClick={() => moveSlider(index, "down")}
                   disabled={index === sliders.length - 1}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-100 disabled:opacity-30"
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   title="Aşağı"
                 >
                   <ArrowDown className="h-4 w-4" />
                 </button>
+
+                <div className="mx-1.5 h-5 w-px bg-gray-200" />
+
                 <button
                   onClick={() => setEditing(slider)}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
                   title="Düzenle"
                 >
                   <Edit className="h-4 w-4" />
@@ -581,32 +852,74 @@ export default function AdminSliderPage() {
                     await fetch(`/api/admin/sliders/${slider.id}`, {
                       method: "PUT",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ ...slider, active: !slider.active }),
+                      body: JSON.stringify({
+                        ...slider,
+                        active: !slider.active,
+                      }),
                     });
                     fetchSliders();
                   }}
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-100"
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
                   title={slider.active ? "Pasif Yap" : "Aktif Yap"}
                 >
-                  {slider.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {slider.active ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
                 <button
                   onClick={() => handleDelete(slider.id)}
-                  className="rounded p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                   title="Sil"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Info */}
-      <div className="mt-6 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
-        <strong>İpucu:</strong> Slider görselleri için önerilen boyutlar:
-        Desktop: 1920×800px, Mobil: 768×600px. Format: JPG, PNG veya WebP, maks 5MB.
+      {/* Import fallbacks button (when sliders exist but user wants to reimport) */}
+      {sliders.length > 0 && sliders.length < 3 && (
+        <div className="flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-8">
+          <div className="text-center">
+            <Download className="mx-auto h-6 w-6 text-gray-300" />
+            <p className="mt-2 text-sm font-medium text-gray-500">
+              Varsayılan slider verilerini içe aktarın
+            </p>
+            <Button
+              onClick={handleImportFallbacks}
+              loading={importing}
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              İçe Aktar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Info Tip */}
+      <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+        <div className="flex gap-3">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-blue-100">
+            <Image className="h-4 w-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-blue-900">
+              Görsel Boyut Rehberi
+            </p>
+            <p className="mt-0.5 text-[13px] leading-relaxed text-blue-700">
+              Desktop: 1920x800px, Mobil: 768x600px. Desteklenen formatlar: JPG,
+              PNG veya WebP. Maksimum dosya boyutu: 5MB. Optimum performans için
+              WebP formatı önerilir.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

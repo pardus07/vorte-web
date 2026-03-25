@@ -88,12 +88,12 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   const hasFilters = search || categoryId || status || stockStatus;
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ürünler</h1>
-          <p className="mt-1 text-sm text-gray-500">{total} ürün</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Ürünler</h1>
+          <p className="mt-1 text-[13px] text-gray-500">{total} ürün kayıtlı</p>
         </div>
         <Link href="/admin/urunler/yeni">
           <Button>
@@ -104,7 +104,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Search & Filters */}
-      <div className="mt-6 rounded-lg border bg-white p-4">
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <form className="flex flex-wrap items-end gap-3">
           {/* Search */}
           <div className="min-w-[200px] flex-1">
@@ -186,9 +186,9 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       </div>
 
       {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-gray-50">
+          <thead className="border-b bg-gray-50/80">
             <tr>
               <th className="px-4 py-3 font-medium text-gray-700">Ürün</th>
               <th className="px-4 py-3 font-medium text-gray-700">Kategori</th>
@@ -292,7 +292,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">
             Sayfa {page} / {totalPages} · Toplam {total} ürün
           </p>

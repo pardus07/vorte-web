@@ -49,6 +49,8 @@ interface Supplier {
   type: SupplierType;
   isActive: boolean;
   notes: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  materials: any;
   createdAt: string;
 }
 
@@ -1081,7 +1083,7 @@ export default function AdminSuppliersPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tedarikci adi, yetkili, e-posta, telefon..."
-                  className="form-input w-full pl-10"
+                  className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                 />
               </div>
               <Button type="submit" variant="primary" size="sm">
@@ -1108,7 +1110,7 @@ export default function AdminSuppliersPage() {
                 setActiveFilter(e.target.value);
                 setPage(1);
               }}
-              className="form-input"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
             >
               <option value="">Tum Durum</option>
               <option value="true">Aktif</option>
@@ -1335,7 +1337,7 @@ export default function AdminSuppliersPage() {
               <select
                 value={discoverRegion}
                 onChange={(e) => setDiscoverRegion(e.target.value)}
-                className="form-input w-full"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
               >
                 {REGIONS.map((r) => (
                   <option key={r} value={r}>
@@ -1353,7 +1355,7 @@ export default function AdminSuppliersPage() {
                 value={discoverExtra}
                 onChange={(e) => setDiscoverExtra(e.target.value)}
                 placeholder="orn: organik pamuk, %100 cotton..."
-                className="form-input w-full"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
               />
             </div>
             <Button
@@ -1669,7 +1671,7 @@ export default function AdminSuppliersPage() {
               <select
                 value={compareCategory}
                 onChange={(e) => setCompareCategory(e.target.value)}
-                className="form-input"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
               >
                 <option value="">Tum Kategoriler</option>
                 {[
@@ -1932,7 +1934,7 @@ export default function AdminSuppliersPage() {
               <Button variant="primary" size="sm" onClick={() => { setDetailSupplier(null); openEditModal(detailSupplier); }}>
                 <Pencil className="h-3.5 w-3.5 mr-1" /> Düzenle
               </Button>
-              <Button variant="danger" size="sm" onClick={() => { setDetailSupplier(null); handleDelete(detailSupplier); }}>
+              <Button variant="destructive" size="sm" onClick={() => { setDetailSupplier(null); handleDelete(detailSupplier); }}>
                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Sil
               </Button>
             </div>
@@ -1970,7 +1972,7 @@ export default function AdminSuppliersPage() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Tedarikci firma adi"
-                    className="form-input w-full"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   />
                 </div>
 
@@ -1987,7 +1989,7 @@ export default function AdminSuppliersPage() {
                         type: e.target.value as SupplierType,
                       })
                     }
-                    className="form-input w-full"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   >
                     {(Object.keys(TYPE_LABELS) as SupplierType[]).map((key) => (
                       <option key={key} value={key}>
@@ -2009,7 +2011,7 @@ export default function AdminSuppliersPage() {
                       setForm({ ...form, contactName: e.target.value })
                     }
                     placeholder="Ad Soyad"
-                    className="form-input w-full"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   />
                 </div>
 
@@ -2026,7 +2028,7 @@ export default function AdminSuppliersPage() {
                         setForm({ ...form, email: e.target.value })
                       }
                       placeholder="ornek@firma.com"
-                      className="form-input w-full"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                     />
                   </div>
                   <div>
@@ -2040,7 +2042,7 @@ export default function AdminSuppliersPage() {
                         setForm({ ...form, phone: e.target.value })
                       }
                       placeholder="0XXX XXX XX XX"
-                      className="form-input w-full"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                     />
                   </div>
                 </div>
@@ -2057,7 +2059,7 @@ export default function AdminSuppliersPage() {
                       setForm({ ...form, address: e.target.value })
                     }
                     placeholder="Firma adresi"
-                    className="form-input w-full"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   />
                 </div>
 
@@ -2073,7 +2075,7 @@ export default function AdminSuppliersPage() {
                     }
                     rows={3}
                     placeholder="Ek notlar..."
-                    className="form-input w-full resize-none"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 resize-none"
                   />
                 </div>
 
@@ -2189,7 +2191,7 @@ export default function AdminSuppliersPage() {
                               onChange={(e) =>
                                 setStandCounts({ ...standCounts, [stand]: Math.max(0, Number(e.target.value)) })
                               }
-                              className="form-input w-full text-center text-lg font-bold"
+                              className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 text-center text-lg font-bold"
                               placeholder="0"
                             />
                             <div className="text-xs text-gray-400 mt-1">adet</div>
@@ -2349,7 +2351,7 @@ export default function AdminSuppliersPage() {
                       onChange={(e) =>
                         setQuoteForm({ ...quoteForm, supplierId: e.target.value })
                       }
-                      className="form-input w-full"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                     >
                       <option value="">Tedarikci secin...</option>
                       {suppliers
@@ -2372,7 +2374,7 @@ export default function AdminSuppliersPage() {
                       onChange={(e) =>
                         setQuoteForm({ ...quoteForm, category: e.target.value })
                       }
-                      className="form-input w-full"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                     >
                       <option value="">Kategori secin...</option>
                       {DISCOVER_CATEGORIES.map((cat) => (
@@ -2395,7 +2397,7 @@ export default function AdminSuppliersPage() {
                       }
                       rows={3}
                       placeholder="Urun adi, ozellikleri, renk, gramaj vb..."
-                      className="form-input w-full resize-none"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 resize-none"
                     />
                   </div>
 
@@ -2411,7 +2413,7 @@ export default function AdminSuppliersPage() {
                         setQuoteForm({ ...quoteForm, quantity: e.target.value })
                       }
                       placeholder="orn: 5000"
-                      className="form-input w-full"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                       min={1}
                     />
                   </div>
@@ -2523,7 +2525,7 @@ export default function AdminSuppliersPage() {
                       status: e.target.value as QuoteStatus,
                     })
                   }
-                  className="form-input w-full"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                 >
                   {(Object.keys(QUOTE_STATUS_LABELS) as QuoteStatus[]).map(
                     (key) => (
@@ -2550,7 +2552,7 @@ export default function AdminSuppliersPage() {
                     })
                   }
                   placeholder="orn: 12.50"
-                  className="form-input w-full"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   step="0.01"
                   min={0}
                 />
@@ -2571,7 +2573,7 @@ export default function AdminSuppliersPage() {
                     })
                   }
                   placeholder="orn: 14"
-                  className="form-input w-full"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20"
                   min={1}
                 />
               </div>
@@ -2591,7 +2593,7 @@ export default function AdminSuppliersPage() {
                   }
                   rows={3}
                   placeholder="Ek notlar..."
-                  className="form-input w-full resize-none"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20 resize-none"
                 />
               </div>
             </div>

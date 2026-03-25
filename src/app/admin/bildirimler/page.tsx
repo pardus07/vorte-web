@@ -4,7 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { CheckCheck, ExternalLink, Loader2 } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  CheckCheck,
+  ChevronRight,
+  CreditCard,
+  Package,
+  ShieldAlert,
+  ShoppingCart,
+  Store,
+  UserPlus,
+} from "lucide-react";
 
 interface Notification {
   id: string;
@@ -16,13 +27,53 @@ interface Notification {
   createdAt: string;
 }
 
-const TYPE_MAP: Record<string, { label: string; color: string }> = {
-  NEW_ORDER: { label: "Sipariş", color: "bg-blue-500" },
-  DEALER_ORDER: { label: "Bayi Sipariş", color: "bg-purple-500" },
-  PAYMENT_SUCCESS: { label: "Ödeme", color: "bg-green-500" },
-  PAYMENT_FAILED: { label: "Ödeme Hatası", color: "bg-red-500" },
-  STOCK_ALERT: { label: "Stok Uyarısı", color: "bg-orange-500" },
-  NEW_DEALER: { label: "Yeni Bayi", color: "bg-teal-500" },
+const TYPE_MAP: Record<
+  string,
+  { label: string; icon: typeof Package; bgColor: string; iconColor: string }
+> = {
+  NEW_ORDER: {
+    label: "Siparis",
+    icon: ShoppingCart,
+    bgColor: "bg-blue-50",
+    iconColor: "text-blue-600",
+  },
+  DEALER_ORDER: {
+    label: "Bayi Siparis",
+    icon: Store,
+    bgColor: "bg-purple-50",
+    iconColor: "text-purple-600",
+  },
+  PAYMENT_SUCCESS: {
+    label: "Odeme",
+    icon: CreditCard,
+    bgColor: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+  },
+  PAYMENT_FAILED: {
+    label: "Odeme Hatasi",
+    icon: ShieldAlert,
+    bgColor: "bg-red-50",
+    iconColor: "text-red-600",
+  },
+  STOCK_ALERT: {
+    label: "Stok Uyarisi",
+    icon: Package,
+    bgColor: "bg-amber-50",
+    iconColor: "text-amber-600",
+  },
+  NEW_DEALER: {
+    label: "Yeni Bayi",
+    icon: UserPlus,
+    bgColor: "bg-teal-50",
+    iconColor: "text-teal-600",
+  },
+};
+
+const DEFAULT_TYPE = {
+  label: "Bildirim",
+  icon: Bell,
+  bgColor: "bg-gray-50",
+  iconColor: "text-gray-600",
 };
 
 function getNotificationLink(n: Notification): string | null {
@@ -39,6 +90,25 @@ function getNotificationLink(n: Notification): string | null {
     default:
       return null;
   }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "Az once";
+  if (diffMin < 60) return `${diffMin} dk once`;
+  if (diffHour < 24) return `${diffHour} saat once`;
+  if (diffDay < 7) return `${diffDay} gun once`;
+  return new Date(dateStr).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export default function AdminNotificationsPage() {
@@ -101,65 +171,124 @@ export default function AdminNotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
+  /* ---- Loading State ---- */
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex items-center justify-center py-32">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#7AC143]" />
       </div>
     );
   }
 
+  /* ---- Main Render ---- */
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bildirimler</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {unreadCount} okunmamış bildirim
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Bildirimler
+          </h1>
+          <p className="mt-1 text-[13px] text-gray-500">
+            {unreadCount > 0
+              ? `${unreadCount} okunmamis bildirim bulunuyor`
+              : "Tum bildirimler okundu"}
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={handleMarkAllRead} loading={markingAll}>
-            <CheckCheck className="mr-1 h-4 w-4" />
-            Tümünü Okundu İşaretle
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllRead}
+            loading={markingAll}
+          >
+            <CheckCheck className="mr-1.5 h-4 w-4" />
+            Tumunu Okundu Isaretle
           </Button>
         )}
       </div>
 
-      <div className="mt-6 space-y-3">
-        {notifications.map((n) => {
-          const typeInfo = TYPE_MAP[n.type] || { label: n.type, color: "bg-gray-400" };
-          const link = getNotificationLink(n);
-          return (
-            <div
-              key={n.id}
-              onClick={() => handleClick(n)}
-              className={`flex items-start gap-4 rounded-lg border bg-white p-4 transition-colors ${
-                !n.isRead ? "border-l-4 border-l-[#7AC143]" : ""
-              } ${link ? "cursor-pointer hover:bg-gray-50" : ""}`}
-            >
-              <div className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${typeInfo.color}`} />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900">{n.title}</p>
-                  <Badge variant="outline" className="text-[10px]">{typeInfo.label}</Badge>
-                  {!n.isRead && <Badge variant="new" className="text-[10px]">Yeni</Badge>}
+      {/* Notification List */}
+      {notifications.length === 0 ? (
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-20 shadow-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50">
+            <BellOff className="h-7 w-7 text-gray-300" />
+          </div>
+          <p className="mt-4 text-sm font-medium text-gray-400">
+            Henuz bildirim yok
+          </p>
+          <p className="mt-1 text-[13px] text-gray-300">
+            Yeni bildirimler burada gorunecek
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {notifications.map((n) => {
+            const typeInfo = TYPE_MAP[n.type] || DEFAULT_TYPE;
+            const Icon = typeInfo.icon;
+            const link = getNotificationLink(n);
+
+            return (
+              <div
+                key={n.id}
+                onClick={() => handleClick(n)}
+                className={`group relative flex items-start gap-4 rounded-2xl border bg-white p-5 shadow-sm transition-all hover:shadow-md ${
+                  !n.isRead
+                    ? "border-l-4 border-l-[#7AC143] border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-[#7AC143]/5"
+                    : "border-gray-100"
+                } ${link ? "cursor-pointer" : ""}`}
+              >
+                {/* Type Icon */}
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${typeInfo.bgColor}`}
+                >
+                  <Icon className={`h-5 w-5 ${typeInfo.iconColor}`} />
                 </div>
-                <p className="mt-1 text-sm text-gray-500">{n.message}</p>
-                <p className="mt-2 text-xs text-gray-400">
-                  {new Date(n.createdAt).toLocaleString("tr-TR")}
-                </p>
+
+                {/* Content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={`text-sm leading-tight ${
+                        !n.isRead
+                          ? "font-semibold text-gray-900"
+                          : "font-medium text-gray-700"
+                      }`}
+                    >
+                      {n.title}
+                    </p>
+                    <Badge variant="subtle" className="text-[10px] shrink-0">
+                      {typeInfo.label}
+                    </Badge>
+                    {!n.isRead && (
+                      <span className="flex items-center gap-1 shrink-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#7AC143]" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#7AC143]">
+                          Yeni
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[13px] leading-relaxed text-gray-500 line-clamp-2">
+                    {n.message}
+                  </p>
+                  <p className="mt-2 text-[12px] text-gray-400">
+                    {formatRelativeTime(n.createdAt)}
+                  </p>
+                </div>
+
+                {/* Arrow indicator for clickable items */}
+                {link && (
+                  <div className="flex h-10 w-8 shrink-0 items-center justify-center">
+                    <ChevronRight className="h-4 w-4 text-gray-300 transition-colors group-hover:text-gray-500" />
+                  </div>
+                )}
               </div>
-              {link && (
-                <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
-              )}
-            </div>
-          );
-        })}
-        {notifications.length === 0 && (
-          <div className="py-12 text-center text-gray-400">Henüz bildirim yok</div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

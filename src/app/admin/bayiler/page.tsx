@@ -115,15 +115,15 @@ export default function AdminDealersPage() {
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bayiler</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Bayiler</h1>
+          <p className="mt-1 text-[13px] text-gray-500">
             {totalAll} bayi
             {pendingCount > 0 && (
-              <span className="ml-2 text-amber-600 font-medium">· {pendingCount} onay bekliyor</span>
+              <span className="ml-2 font-medium text-amber-600">· {pendingCount} onay bekliyor</span>
             )}
           </p>
         </div>
@@ -135,31 +135,55 @@ export default function AdminDealersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <Building2 className="mx-auto h-6 w-6 text-gray-400" />
-          <p className="mt-2 text-2xl font-bold text-gray-900">{totalAll}</p>
-          <p className="text-sm text-gray-500">Toplam Bayi</p>
+      <div className="grid gap-4 sm:grid-cols-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
+              <Building2 className="h-5 w-5 text-gray-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{totalAll}</p>
+              <p className="text-[12px] text-gray-500">Toplam Bayi</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <CheckCircle className="mx-auto h-6 w-6 text-green-500" />
-          <p className="mt-2 text-2xl font-bold text-green-600">{statusCounts["ACTIVE"] || 0}</p>
-          <p className="text-sm text-gray-500">Aktif</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{statusCounts["ACTIVE"] || 0}</p>
+              <p className="text-[12px] text-gray-500">Aktif</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <Clock className="mx-auto h-6 w-6 text-amber-500" />
-          <p className="mt-2 text-2xl font-bold text-amber-600">{pendingCount}</p>
-          <p className="text-sm text-gray-500">Onay Bekliyor</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
+              <p className="text-[12px] text-gray-500">Onay Bekliyor</p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-center">
-          <Ban className="mx-auto h-6 w-6 text-red-500" />
-          <p className="mt-2 text-2xl font-bold text-red-600">{statusCounts["SUSPENDED"] || 0}</p>
-          <p className="text-sm text-gray-500">Askıda</p>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
+              <Ban className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-red-600">{statusCounts["SUSPENDED"] || 0}</p>
+              <p className="text-[12px] text-gray-500">Askıda</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Status Tabs */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const count = opt.value ? statusCounts[opt.value] || 0 : totalAll;
@@ -186,7 +210,7 @@ export default function AdminDealersPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-col gap-3 lg:flex-row">
         <form onSubmit={handleSearch} className="flex flex-1 gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -233,7 +257,7 @@ export default function AdminDealersPage() {
 
       {/* Pending Applications Alert */}
       {pendingCount > 0 && !status && (
-        <div className="mt-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <Clock className="h-5 w-5 text-amber-600 shrink-0" />
           <p className="text-sm text-amber-800">
             <span className="font-medium">{pendingCount} yeni bayi başvurusu</span> onayınızı bekliyor.
@@ -248,14 +272,14 @@ export default function AdminDealersPage() {
       )}
 
       {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#7AC143]" />
           </div>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b bg-gray-50">
+            <thead className="border-b bg-gray-50/80">
               <tr>
                 <th className="px-4 py-3 font-medium text-gray-700">Firma</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Bayi Kodu</th>
@@ -345,7 +369,7 @@ export default function AdminDealersPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">Sayfa {page} / {totalPages} · Toplam {total} bayi</p>
           <div className="flex items-center gap-1">
             <button onClick={() => setPage(page - 1)} disabled={page <= 1} className="rounded-lg border p-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">

@@ -80,6 +80,12 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
+/* ---------------------------------------------------------- */
+/* Design-system input class (replaces all form-input usages) */
+/* ---------------------------------------------------------- */
+const inputClass =
+  "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-sm transition-all focus:border-[#7AC143]/30 focus:outline-none focus:ring-2 focus:ring-[#7AC143]/20";
+
 function CharCounter({ value, max }: { value: string; max: number }) {
   const len = value.length;
   return (
@@ -124,17 +130,19 @@ export function SettingsForm({ initialData }: { initialData: SiteSettings }) {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ayarlar</h1>
-          <p className="mt-1 text-sm text-gray-500">Mağaza genel ayarları ve entegrasyonlar</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Ayarlar</h1>
+          <p className="mt-1 text-[13px] text-gray-500">
+            Magaza genel ayarlari ve entegrasyonlar
+          </p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#7AC143] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6AAF35] disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {saving ? "Kaydediliyor..." : "Kaydet"}
@@ -144,7 +152,7 @@ export function SettingsForm({ initialData }: { initialData: SiteSettings }) {
       {/* Toast */}
       {toast && (
         <div
-          className={`mt-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
+          className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${
             toast.type === "success"
               ? "border-green-200 bg-green-50 text-green-700"
               : "border-red-200 bg-red-50 text-red-700"
@@ -160,7 +168,7 @@ export function SettingsForm({ initialData }: { initialData: SiteSettings }) {
       )}
 
       {/* Tabs */}
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b">
+      <div className="flex gap-1 overflow-x-auto border-b border-gray-200">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -181,7 +189,7 @@ export function SettingsForm({ initialData }: { initialData: SiteSettings }) {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6">
+      <div>
         {activeTab === "genel" && <GenelTab data={data} update={update} />}
         {activeTab === "seo" && <SeoTab data={data} update={update} />}
         {activeTab === "entegrasyon" && <EntegrasyonTab data={data} update={update} />}
@@ -207,45 +215,45 @@ function GenelTab({
   return (
     <div className="space-y-6">
       {/* Site Bilgileri */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Site Bilgileri</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Site Bilgileri</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Site Adı" required>
+          <FormField label="Site Adi" required>
             <input
               value={data.siteName}
               onChange={(e) => update("siteName", e.target.value)}
-              className="form-input"
+              className={inputClass}
             />
           </FormField>
           <FormField label="Site URL">
             <input
               value={data.siteUrl}
               onChange={(e) => update("siteUrl", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="https://www.vorte.com.tr"
             />
           </FormField>
-          <FormField label="Site Açıklaması" className="md:col-span-2">
+          <FormField label="Site Aciklamasi" className="md:col-span-2">
             <textarea
               value={data.siteDescription || ""}
               onChange={(e) => update("siteDescription", e.target.value)}
-              className="form-input min-h-[80px] resize-y"
+              className={`${inputClass} min-h-[80px] resize-y`}
               rows={3}
             />
           </FormField>
         </div>
       </div>
 
-      {/* İletişim Bilgileri */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">İletişim Bilgileri</h2>
+      {/* Iletisim Bilgileri */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Iletisim Bilgileri</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <FormField label="E-posta">
             <input
               type="email"
               value={data.contactEmail || ""}
               onChange={(e) => update("contactEmail", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="info@vorte.com.tr"
             />
           </FormField>
@@ -253,7 +261,7 @@ function GenelTab({
             <input
               value={data.contactPhone || ""}
               onChange={(e) => update("contactPhone", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="+90 5XX XXX XXXX"
             />
           </FormField>
@@ -261,7 +269,7 @@ function GenelTab({
             <textarea
               value={data.contactAddress || ""}
               onChange={(e) => update("contactAddress", e.target.value)}
-              className="form-input min-h-[60px] resize-y"
+              className={`${inputClass} min-h-[60px] resize-y`}
               rows={2}
             />
           </FormField>
@@ -269,30 +277,30 @@ function GenelTab({
       </div>
 
       {/* Logo & Favicon */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Logo & Favicon</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Logo & Favicon</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Logo URL" hint="Önerilen: 256x80px, PNG/SVG">
+          <FormField label="Logo URL" hint="Onerilen: 256x80px, PNG/SVG">
             <input
               value={data.logoUrl || ""}
               onChange={(e) => update("logoUrl", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="/logo.png"
             />
           </FormField>
-          <FormField label="Logo (Koyu Tema)" hint="Önerilen: 256x80px, PNG/SVG">
+          <FormField label="Logo (Koyu Tema)" hint="Onerilen: 256x80px, PNG/SVG">
             <input
               value={data.logoDarkUrl || ""}
               onChange={(e) => update("logoDarkUrl", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="/logo-dark.png"
             />
           </FormField>
-          <FormField label="Favicon URL" hint="Önerilen: 32x32px ve 180x180px, ICO/PNG">
+          <FormField label="Favicon URL" hint="Onerilen: 32x32px ve 180x180px, ICO/PNG">
             <input
               value={data.faviconUrl || ""}
               onChange={(e) => update("faviconUrl", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="/favicon.ico"
             />
           </FormField>
@@ -300,7 +308,7 @@ function GenelTab({
             <input
               value={data.ogImageUrl || ""}
               onChange={(e) => update("ogImageUrl", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="/og-image.jpg"
             />
           </FormField>
@@ -308,10 +316,10 @@ function GenelTab({
       </div>
 
       {/* Kargo */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Kargo Ayarları</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Kargo Ayarlari</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Ücretsiz Kargo Limiti (₺)">
+          <FormField label="Ucretsiz Kargo Limiti (TL)">
             <input
               type="number"
               step="0.01"
@@ -319,11 +327,11 @@ function GenelTab({
               onChange={(e) =>
                 update("freeShippingThreshold", e.target.value ? Number(e.target.value) : null)
               }
-              className="form-input"
+              className={inputClass}
               placeholder="200"
             />
           </FormField>
-          <FormField label="Standart Kargo Ücreti (₺)">
+          <FormField label="Standart Kargo Ucreti (TL)">
             <input
               type="number"
               step="0.01"
@@ -331,7 +339,7 @@ function GenelTab({
               onChange={(e) =>
                 update("defaultShippingCost", e.target.value ? Number(e.target.value) : null)
               }
-              className="form-input"
+              className={inputClass}
               placeholder="39.90"
             />
           </FormField>
@@ -353,8 +361,8 @@ function SeoTab({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Ana Sayfa SEO</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Ana Sayfa SEO</h2>
         <div className="space-y-4">
           <FormField
             label="Meta Title"
@@ -363,8 +371,8 @@ function SeoTab({
             <input
               value={data.metaTitle || ""}
               onChange={(e) => update("metaTitle", e.target.value)}
-              className="form-input"
-              placeholder="Vorte Tekstil | Kaliteli İç Giyim"
+              className={inputClass}
+              placeholder="Vorte Tekstil | Kaliteli Ic Giyim"
               maxLength={70}
             />
           </FormField>
@@ -376,70 +384,70 @@ function SeoTab({
             <textarea
               value={data.metaDescription || ""}
               onChange={(e) => update("metaDescription", e.target.value)}
-              className="form-input min-h-[80px] resize-y"
+              className={`${inputClass} min-h-[80px] resize-y`}
               rows={3}
               maxLength={170}
-              placeholder="Vorte Tekstil - Erkek boxer ve kadın iç giyim ürünleri..."
+              placeholder="Vorte Tekstil - Erkek boxer ve kadin ic giyim urunleri..."
             />
           </FormField>
 
-          <FormField label="Meta Keywords" hint="Virgülle ayırarak yazın">
+          <FormField label="Meta Keywords" hint="Virgulle ayirarak yazin">
             <input
               value={data.metaKeywords || ""}
               onChange={(e) => update("metaKeywords", e.target.value)}
-              className="form-input"
-              placeholder="iç giyim, erkek boxer, kadın külot, toptan"
+              className={inputClass}
+              placeholder="ic giyim, erkek boxer, kadin kulot, toptan"
             />
           </FormField>
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Arama Motoru Doğrulama</h2>
-        <FormField label="Google Search Console Doğrulama Kodu">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Arama Motoru Dogrulama</h2>
+        <FormField label="Google Search Console Dogrulama Kodu">
           <input
             value={data.googleVerificationCode || ""}
             onChange={(e) => update("googleVerificationCode", e.target.value)}
-            className="form-input"
+            className={inputClass}
             placeholder="google-site-verification=XXXXX"
           />
         </FormField>
       </div>
 
       {/* SEO Preview */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Google Arama Önizleme</h2>
-        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Google Arama Onizleme</h2>
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
           <p className="text-lg text-blue-700 hover:underline">
-            {data.metaTitle || "Vorte Tekstil | Kaliteli İç Giyim - Toptan ve Perakende"}
+            {data.metaTitle || "Vorte Tekstil | Kaliteli Ic Giyim - Toptan ve Perakende"}
           </p>
           <p className="text-sm text-green-700">{data.siteUrl}</p>
           <p className="mt-1 text-sm text-gray-600">
             {data.metaDescription ||
-              "Vorte Tekstil - Erkek boxer ve kadın iç giyim ürünleri. Toptan ve perakende satış."}
+              "Vorte Tekstil - Erkek boxer ve kadin ic giyim urunleri. Toptan ve perakende satis."}
           </p>
         </div>
       </div>
 
       {/* Useful Links */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">SEO Araçları</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">SEO Araclari</h2>
         <div className="flex flex-wrap gap-3">
           <a
             href="/sitemap.xml"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
-            📄 sitemap.xml
+            sitemap.xml
           </a>
           <a
             href="/robots.txt"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
-            🤖 robots.txt
+            robots.txt
           </a>
         </div>
       </div>
@@ -459,56 +467,56 @@ function EntegrasyonTab({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Google Analytics</h2>
-        <FormField label="Ölçüm ID" hint="G-XXXXXXXXXX formatında">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Google Analytics</h2>
+        <FormField label="Olcum ID" hint="G-XXXXXXXXXX formatinda">
           <input
             value={data.googleAnalyticsId || ""}
             onChange={(e) => update("googleAnalyticsId", e.target.value)}
-            className="form-input"
+            className={inputClass}
             placeholder="G-XXXXXXXXXX"
           />
         </FormField>
       </div>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Google Ads</h2>
-        <FormField label="Dönüşüm Kodu" hint="<head> ve <body> kodlarını buraya yapıştırın">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Google Ads</h2>
+        <FormField label="Donusum Kodu" hint="<head> ve <body> kodlarini buraya yapistirin">
           <textarea
             value={data.googleAdsCode || ""}
             onChange={(e) => update("googleAdsCode", e.target.value)}
-            className="form-input min-h-[120px] resize-y font-mono text-xs"
+            className={`${inputClass} min-h-[120px] resize-y font-mono text-xs`}
             rows={5}
             placeholder="<!-- Google Ads kodu -->"
           />
         </FormField>
       </div>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Google Merchant Center</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Google Merchant Center</h2>
         <FormField label="Merchant Center ID">
           <input
             value={data.googleMerchantId || ""}
             onChange={(e) => update("googleMerchantId", e.target.value)}
-            className="form-input"
+            className={inputClass}
             placeholder="123456789"
           />
         </FormField>
       </div>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Facebook Pixel</h2>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Facebook Pixel</h2>
         <FormField label="Pixel ID">
           <input
             value={data.facebookPixelId || ""}
             onChange={(e) => update("facebookPixelId", e.target.value)}
-            className="form-input"
+            className={inputClass}
             placeholder="123456789012345"
           />
         </FormField>
       </div>
 
-      {/* Sistem Entegrasyonları — Açılır/Kapanır Kartlar */}
+      {/* Sistem Entegrasyonlari -- Acilir/Kapanir Kartlar */}
       <IntegrationCards data={data} update={update} />
     </div>
   );
@@ -536,13 +544,13 @@ function SecretField({
           type={visible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="form-input pr-10"
+          className={`${inputClass} pr-10`}
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={() => setVisible(!visible)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 transition-colors hover:text-gray-600"
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -564,7 +572,7 @@ function IntegrationCards({
     {
       key: "iyzico",
       name: "iyzico",
-      desc: "Ödeme altyapısı (3D Secure)",
+      desc: "Odeme altyapisi (3D Secure)",
       connected: !!(data.iyzicoApiKey && data.iyzicoSecretKey),
     },
     {
@@ -576,28 +584,28 @@ function IntegrationCards({
     {
       key: "dia",
       name: "DIA CRM",
-      desc: "E-Fatura / E-Arşiv",
+      desc: "E-Fatura / E-Arsiv",
       connected: !!(data.diaCrmUsername && data.diaCrmPassword),
     },
     {
       key: "resend",
       name: "Resend",
-      desc: "E-posta gönderimi",
+      desc: "E-posta gonderimi",
       connected: !!data.resendApiKey,
     },
   ];
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="mb-4 text-lg font-bold text-gray-900">Sistem Entegrasyonları</h2>
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h2 className="mb-4 text-base font-semibold text-gray-900">Sistem Entegrasyonlari</h2>
       <div className="space-y-3">
         {integrations.map((item) => (
-          <div key={item.key} className="rounded-lg border">
-            {/* Card Header — tıklanabilir */}
+          <div key={item.key} className="rounded-xl border border-gray-200">
+            {/* Card Header -- tiklanabilir */}
             <button
               type="button"
               onClick={() => setExpanded(expanded === item.key ? null : item.key)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors hover:bg-gray-50/60"
             >
               <div>
                 <p className="font-medium text-gray-900">{item.name}</p>
@@ -611,7 +619,7 @@ function IntegrationCards({
                       : "bg-orange-100 text-orange-700"
                   }`}
                 >
-                  {item.connected ? "Bağlı" : "Yapılandırılacak"}
+                  {item.connected ? "Bagli" : "Yapilandirilacak"}
                 </span>
                 <ChevronDown
                   className={`h-4 w-4 text-gray-400 transition-transform ${
@@ -621,9 +629,9 @@ function IntegrationCards({
               </div>
             </button>
 
-            {/* Card Body — genişletildiğinde görünür */}
+            {/* Card Body -- genisletildiginde gorunur */}
             {expanded === item.key && (
-              <div className="border-t px-4 py-4 space-y-4">
+              <div className="space-y-4 border-t px-5 py-5">
                 {item.key === "iyzico" && (
                   <>
                     <SecretField
@@ -641,7 +649,7 @@ function IntegrationCards({
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-700">Sandbox Modu</p>
-                        <p className="text-xs text-gray-500">Test ortamı için açık bırakın</p>
+                        <p className="text-xs text-gray-500">Test ortami icin acik birakin</p>
                       </div>
                       <label className="relative inline-flex cursor-pointer items-center">
                         <input
@@ -664,11 +672,11 @@ function IntegrationCards({
                       onChange={(v) => update("geliverApiKey", v)}
                       placeholder="glvr_..."
                     />
-                    <FormField label="API Base URL" hint="Varsayılan: https://api.geliver.io">
+                    <FormField label="API Base URL" hint="Varsayilan: https://api.geliver.io">
                       <input
                         value={data.geliverApiBaseUrl || ""}
                         onChange={(e) => update("geliverApiBaseUrl", e.target.value)}
-                        className="form-input"
+                        className={inputClass}
                         placeholder="https://api.geliver.io"
                       />
                     </FormField>
@@ -677,26 +685,26 @@ function IntegrationCards({
 
                 {item.key === "dia" && (
                   <>
-                    <FormField label="Kullanıcı Adı">
+                    <FormField label="Kullanici Adi">
                       <input
                         value={data.diaCrmUsername || ""}
                         onChange={(e) => update("diaCrmUsername", e.target.value)}
-                        className="form-input"
-                        placeholder="DIA kullanıcı adı"
+                        className={inputClass}
+                        placeholder="DIA kullanici adi"
                       />
                     </FormField>
                     <SecretField
-                      label="Şifre"
+                      label="Sifre"
                       value={data.diaCrmPassword || ""}
                       onChange={(v) => update("diaCrmPassword", v)}
-                      placeholder="DIA şifresi"
+                      placeholder="DIA sifresi"
                     />
-                    <FormField label="Şirket Kodu">
+                    <FormField label="Sirket Kodu">
                       <input
                         value={data.diaCrmCompanyCode || ""}
                         onChange={(e) => update("diaCrmCompanyCode", e.target.value)}
-                        className="form-input"
-                        placeholder="Şirket kodu"
+                        className={inputClass}
+                        placeholder="Sirket kodu"
                       />
                     </FormField>
                   </>
@@ -710,12 +718,12 @@ function IntegrationCards({
                       onChange={(v) => update("resendApiKey", v)}
                       placeholder="re_..."
                     />
-                    <FormField label="Gönderen E-posta" hint="Domain doğrulaması gerekir">
+                    <FormField label="Gonderen E-posta" hint="Domain dogrulamasi gerekir">
                       <input
                         type="email"
                         value={data.resendFromEmail || ""}
                         onChange={(e) => update("resendFromEmail", e.target.value)}
-                        className="form-input"
+                        className={inputClass}
                         placeholder="noreply@vorte.com.tr"
                       />
                     </FormField>
@@ -731,7 +739,7 @@ function IntegrationCards({
 }
 
 // ============================================================
-// TAB 4: AI SATIŞ TEMSİLCİSİ
+// TAB 4: AI SATIS TEMSILCISI
 // ============================================================
 function AiTab({
   data,
@@ -742,9 +750,9 @@ function AiTab({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">AI Satış Temsilcisi</h2>
+          <h2 className="text-base font-semibold text-gray-900">AI Satis Temsilcisi</h2>
           <label className="relative inline-flex cursor-pointer items-center">
             <input
               type="checkbox"
@@ -760,41 +768,41 @@ function AiTab({
         </div>
 
         {!data.aiEnabled && (
-          <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
-            AI Satış Temsilcisi şu an devre dışı. Etkinleştirmek için toggle&apos;ı açın.
+          <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+            AI Satis Temsilcisi su an devre disi. Etkinlestirmek icin toggle&apos;i acin.
           </div>
         )}
 
         <div className="space-y-4">
-          <FormField label="AI Modeli" hint="Chatbot'un kullandığı Claude modeli">
+          <FormField label="AI Modeli" hint="Chatbot&apos;un kullandigi Claude modeli">
             <select
               value={data.aiModel || "claude-haiku-4-5"}
               onChange={(e) => update("aiModel", e.target.value)}
-              className="form-input"
+              className={inputClass}
             >
-              <option value="claude-haiku-4-5">Claude Haiku 4.5 (Hızlı, ekonomik)</option>
+              <option value="claude-haiku-4-5">Claude Haiku 4.5 (Hizli, ekonomik)</option>
               <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (Dengeli)</option>
-              <option value="claude-opus-4-6">Claude Opus 4.6 (En güçlü)</option>
+              <option value="claude-opus-4-6">Claude Opus 4.6 (En guclu)</option>
             </select>
           </FormField>
 
-          <FormField label="Sistem Prompt" hint="AI'ın nasıl davranacağını tanımlayın">
+          <FormField label="Sistem Prompt" hint="AI&apos;in nasil davranacagini tanimlayin">
             <textarea
               value={data.aiSystemPrompt || ""}
               onChange={(e) => update("aiSystemPrompt", e.target.value)}
-              className="form-input min-h-[200px] resize-y font-mono text-sm"
+              className={`${inputClass} min-h-[200px] resize-y font-mono text-sm`}
               rows={8}
-              placeholder={`Sen Vorte Tekstil'in AI satış temsilcisisin.\n\nGörevlerin:\n- Müşterilere ürünler hakkında bilgi ver\n- Beden ve renk seçiminde yardımcı ol\n- Toptan satış hakkında bilgi ver`}
+              placeholder={`Sen Vorte Tekstil'in AI satis temsilcisisin.\n\nGorevlerin:\n- Musterilere urunler hakkinda bilgi ver\n- Beden ve renk seciminde yardimci ol\n- Toptan satis hakkinda bilgi ver`}
             />
           </FormField>
 
-          <FormField label="AI Kuralları" hint="Her satır bir kural (AI bu kurallara uyar)">
+          <FormField label="AI Kurallari" hint="Her satir bir kural (AI bu kurallara uyar)">
             <textarea
               value={data.aiRules || ""}
               onChange={(e) => update("aiRules", e.target.value)}
-              className="form-input min-h-[150px] resize-y font-mono text-sm"
+              className={`${inputClass} min-h-[150px] resize-y font-mono text-sm`}
               rows={6}
-              placeholder={`Fiyat bilgisi sor, direkt söyleme\nRakip firmalardan bahsetme\nKargo ve iade politikasını açıkla\nTürkçe yanıt ver`}
+              placeholder={`Fiyat bilgisi sor, direkt soyleme\nRakip firmalardan bahsetme\nKargo ve iade politikasini acikla\nTurkce yanit ver`}
             />
           </FormField>
         </div>
@@ -814,27 +822,27 @@ function SosyalTab({
   update: (field: keyof SiteSettings, value: unknown) => void;
 }) {
   const socialFields = [
-    { field: "instagramUrl" as const, label: "Instagram", placeholder: "https://instagram.com/vortetekstil", icon: "📸" },
-    { field: "facebookUrl" as const, label: "Facebook", placeholder: "https://facebook.com/vortetekstil", icon: "📘" },
-    { field: "twitterUrl" as const, label: "Twitter / X", placeholder: "https://x.com/vortetekstil", icon: "🐦" },
-    { field: "tiktokUrl" as const, label: "TikTok", placeholder: "https://tiktok.com/@vortetekstil", icon: "🎵" },
-    { field: "youtubeUrl" as const, label: "YouTube", placeholder: "https://youtube.com/@vortetekstil", icon: "🎬" },
+    { field: "instagramUrl" as const, label: "Instagram", placeholder: "https://instagram.com/vortetekstil" },
+    { field: "facebookUrl" as const, label: "Facebook", placeholder: "https://facebook.com/vortetekstil" },
+    { field: "twitterUrl" as const, label: "Twitter / X", placeholder: "https://x.com/vortetekstil" },
+    { field: "tiktokUrl" as const, label: "TikTok", placeholder: "https://tiktok.com/@vortetekstil" },
+    { field: "youtubeUrl" as const, label: "YouTube", placeholder: "https://youtube.com/@vortetekstil" },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Sosyal Medya Hesapları</h2>
-        <p className="mb-4 text-sm text-gray-500">
-          Sosyal medya linkleriniz site footer&apos;ında ve iletişim sayfasında görüntülenir.
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Sosyal Medya Hesaplari</h2>
+        <p className="mb-4 text-[13px] text-gray-500">
+          Sosyal medya linkleriniz site footer&apos;inda ve iletisim sayfasinda goruntulenir.
         </p>
         <div className="space-y-4">
           {socialFields.map((item) => (
-            <FormField key={item.field} label={`${item.icon} ${item.label}`}>
+            <FormField key={item.field} label={item.label}>
               <input
                 value={data[item.field] || ""}
                 onChange={(e) => update(item.field, e.target.value)}
-                className="form-input"
+                className={inputClass}
                 placeholder={item.placeholder}
               />
             </FormField>
@@ -857,18 +865,18 @@ function EmailTab({
 }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">SMTP Ayarları</h2>
-        <p className="mb-4 text-sm text-gray-500">
-          E-posta gönderimi için SMTP sunucu bilgilerini girin. Boş bırakırsanız varsayılan Resend
-          servisi kullanılır.
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">SMTP Ayarlari</h2>
+        <p className="mb-4 text-[13px] text-gray-500">
+          E-posta gonderimi icin SMTP sunucu bilgilerini girin. Bos birakirsaniz varsayilan Resend
+          servisi kullanilir.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <FormField label="SMTP Sunucu">
             <input
               value={data.smtpHost || ""}
               onChange={(e) => update("smtpHost", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="smtp.gmail.com"
             />
           </FormField>
@@ -877,24 +885,24 @@ function EmailTab({
               type="number"
               value={data.smtpPort ?? ""}
               onChange={(e) => update("smtpPort", e.target.value ? Number(e.target.value) : null)}
-              className="form-input"
+              className={inputClass}
               placeholder="587"
             />
           </FormField>
-          <FormField label="Kullanıcı Adı">
+          <FormField label="Kullanici Adi">
             <input
               value={data.smtpUser || ""}
               onChange={(e) => update("smtpUser", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="noreply@vorte.com.tr"
             />
           </FormField>
-          <FormField label="Şifre">
+          <FormField label="Sifre">
             <input
               type="password"
               value={data.smtpPassword || ""}
               onChange={(e) => update("smtpPassword", e.target.value)}
-              className="form-input"
+              className={inputClass}
               placeholder="••••••••"
             />
           </FormField>
@@ -902,9 +910,9 @@ function EmailTab({
       </div>
 
       {/* Mevcut E-posta Servisi */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Aktif E-posta Servisi</h2>
-        <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Aktif E-posta Servisi</h2>
+        <div className="flex items-center justify-between rounded-xl border border-gray-200 px-5 py-3.5">
           <div>
             <p className="font-medium text-gray-900">Resend</p>
             <p className="text-xs text-gray-500">Transactional e-posta servisi</p>
@@ -952,7 +960,7 @@ function FormField({
 }
 
 // ============================================================
-// TAB 7: BAYİ SEVİYELERİ
+// TAB 7: BAYi SEVIYELERI
 // ============================================================
 interface TierData {
   id: string;
@@ -1015,7 +1023,7 @@ function BayiSeviyeTab() {
   };
 
   const handleDeleteTier = async (tier: string) => {
-    if (!confirm(`"${tier}" seviyesini silmek istediğinizden emin misiniz?`)) return;
+    if (!confirm(`"${tier}" seviyesini silmek istediginizden emin misiniz?`)) return;
     try {
       const res = await fetch(`/api/admin/dealers/tiers?tier=${tier}`, { method: "DELETE" });
       if (res.ok) {
@@ -1048,11 +1056,13 @@ function BayiSeviyeTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border bg-white p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">Bayi Seviyeleri</h3>
-            <p className="text-sm text-gray-500 mt-1">Her seviye için varsayılan iskonto, minimum tutar ve vade günü tanımlayın.</p>
+            <h3 className="text-base font-semibold text-gray-900">Bayi Seviyeleri</h3>
+            <p className="mt-1 text-[13px] text-gray-500">
+              Her seviye icin varsayilan iskonto, minimum tutar ve vade gunu tanimlayin.
+            </p>
           </div>
           <button
             onClick={() => {
@@ -1060,77 +1070,77 @@ function BayiSeviyeTab() {
               setEditingTier(null);
               setShowForm(!showForm);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
             <Plus className="h-4 w-4" /> Yeni Seviye
           </button>
         </div>
 
         {showForm && (
-          <div className="mb-6 rounded-lg border border-[#7AC143]/30 bg-[#7AC143]/5 p-4">
-            <h4 className="font-medium text-gray-900 mb-3">
-              {editingTier ? `"${TIER_LABELS[editingTier] || editingTier}" Düzenle` : "Yeni Seviye Ekle"}
+          <div className="mb-6 rounded-xl border border-[#7AC143]/30 bg-[#7AC143]/5 p-5">
+            <h4 className="mb-3 text-sm font-semibold text-gray-900">
+              {editingTier ? `"${TIER_LABELS[editingTier] || editingTier}" Duzenle` : "Yeni Seviye Ekle"}
             </h4>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm text-gray-600">Seviye Adı (key)</label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Seviye Adi (key)">
                 <input
                   type="text"
                   value={editForm.tier}
                   onChange={(e) => setEditForm({ ...editForm, tier: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
-                  placeholder="Örn: gold"
+                  className={inputClass}
+                  placeholder="Orn: gold"
                   disabled={!!editingTier}
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-gray-600">İskonto Oranı (%)</label>
+              </FormField>
+              <FormField label="Iskonto Orani (%)">
                 <input
                   type="number"
                   value={editForm.discountRate}
                   onChange={(e) => setEditForm({ ...editForm, discountRate: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
-                  placeholder="Örn: 15"
+                  className={inputClass}
+                  placeholder="Orn: 15"
                   step="0.5"
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-gray-600">Min Sipariş Tutarı (₺)</label>
+              </FormField>
+              <FormField label="Min Siparis Tutari (TL)">
                 <input
                   type="number"
                   value={editForm.minOrderAmount}
                   onChange={(e) => setEditForm({ ...editForm, minOrderAmount: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
-                  placeholder="Örn: 5000"
+                  className={inputClass}
+                  placeholder="Orn: 5000"
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-gray-600">Vade Günü</label>
+              </FormField>
+              <FormField label="Vade Gunu">
                 <input
                   type="number"
                   value={editForm.paymentTermDays}
                   onChange={(e) => setEditForm({ ...editForm, paymentTermDays: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
-                  placeholder="0 = Peşin"
+                  className={inputClass}
+                  placeholder="0 = Pesin"
                 />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm text-gray-600">Açıklama</label>
+              </FormField>
+              <FormField label="Aciklama" className="sm:col-span-2">
                 <input
                   type="text"
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7AC143] focus:outline-none"
-                  placeholder="Bu seviye hakkında kısa açıklama"
+                  className={inputClass}
+                  placeholder="Bu seviye hakkinda kisa aciklama"
                 />
-              </div>
+              </FormField>
             </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <button onClick={() => { setShowForm(false); setEditingTier(null); }} className="rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">İptal</button>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => { setShowForm(false); setEditingTier(null); }}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+              >
+                Iptal
+              </button>
               <button
                 onClick={handleSaveTier}
                 disabled={tierSaving || !editForm.tier}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#7AC143] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#6AAF35] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1A1A1A] px-5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#333] disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
                 {tierSaving ? "Kaydediliyor..." : "Kaydet"}
@@ -1145,42 +1155,48 @@ function BayiSeviyeTab() {
           </div>
         ) : tiers.length === 0 ? (
           <div className="py-8 text-center text-gray-400">
-            <p>Henüz seviye tanımlanmamış.</p>
-            <p className="mt-1 text-xs">Varsayılan seviyeler: standard, silver, gold, platinum</p>
+            <p>Henuz seviye tanimlamamis.</p>
+            <p className="mt-1 text-xs">Varsayilan seviyeler: standard, silver, gold, platinum</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
             <table className="w-full text-left text-sm">
-              <thead className="border-b bg-gray-50">
+              <thead className="bg-gray-50/80">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-700">Seviye</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">İskonto (%)</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Min Tutar (₺)</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Vade (Gün)</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Bayi Sayısı</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">İşlem</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Seviye</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Iskonto (%)</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Min Tutar (TL)</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Vade (Gun)</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Bayi Sayisi</th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">Islem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-gray-100">
                 {tiers.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900 capitalize">{TIER_LABELS[t.tier] || t.tier}</td>
-                    <td className="px-4 py-3">%{t.discountRate}</td>
-                    <td className="px-4 py-3">{new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(t.minOrderAmount)}</td>
-                    <td className="px-4 py-3">{t.paymentTermDays === 0 ? "Peşin" : `${t.paymentTermDays} gün`}</td>
-                    <td className="px-4 py-3">{t.dealerCount}</td>
+                  <tr key={t.id} className="transition-colors hover:bg-gray-50/60">
+                    <td className="px-4 py-3 font-medium capitalize text-gray-900">
+                      {TIER_LABELS[t.tier] || t.tier}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">%{t.discountRate}</td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(t.minOrderAmount)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {t.paymentTermDays === 0 ? "Pesin" : `${t.paymentTermDays} gun`}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{t.dealerCount}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => startEdit(t)}
-                          className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                          title="Düzenle"
+                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                          title="Duzenle"
                         >
                           <Settings className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteTier(t.tier)}
-                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           title="Sil"
                         >
                           <Trash2 className="h-4 w-4" />

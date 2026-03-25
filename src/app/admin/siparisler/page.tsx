@@ -263,21 +263,49 @@ export default function AdminOrdersPage() {
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Siparişler</h1>
-          <p className="mt-1 text-sm text-gray-500">{total} sipariş bulundu</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Siparişler</h1>
+          <p className="mt-1 text-[13px] text-gray-500">{total} sipariş bulundu</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-4 rounded-xl bg-gray-50 px-4 py-2.5 sm:flex">
+            <div className="text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Bekleyen</p>
+              <p className="text-lg font-bold text-amber-600">{statusCounts["PENDING"] || 0}</p>
+            </div>
+            <div className="h-8 w-px bg-gray-200" />
+            <div className="text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Hazırlanan</p>
+              <p className="text-lg font-bold text-blue-600">{statusCounts["PROCESSING"] || 0}</p>
+            </div>
+            <div className="h-8 w-px bg-gray-200" />
+            <div className="text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Kargoda</p>
+              <p className="text-lg font-bold text-[#7AC143]">{statusCounts["SHIPPED"] || 0}</p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Messages */}
-      {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
-      {success && <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</div>}
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <XCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
+          <CheckCircle className="h-4 w-4 shrink-0" />
+          {success}
+        </div>
+      )}
 
       {/* Status Tabs */}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUS_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const count = opt.value ? statusCounts[opt.value] || 0 : totalAll;
@@ -304,7 +332,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-col gap-3 lg:flex-row">
         <form onSubmit={handleSearch} className="flex flex-1 gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -376,7 +404,7 @@ export default function AdminOrdersPage() {
 
       {/* Custom Date Range */}
       {dateRange === "custom" && (
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-gray-400" />
           <input
             type="date"
@@ -399,7 +427,7 @@ export default function AdminOrdersPage() {
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
-        <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#7AC143]/30 bg-[#7AC143]/5 p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[#7AC143]/30 bg-[#7AC143]/5 p-3.5">
           <span className="text-sm font-medium text-gray-700">
             {selectedIds.size} sipariş seçildi
           </span>
@@ -444,16 +472,16 @@ export default function AdminOrdersPage() {
       )}
 
       {/* Orders Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#7AC143]" />
           </div>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b bg-gray-50">
+            <thead className="border-b bg-gray-50/80">
               <tr>
-                <th className="px-3 py-3">
+                <th className="px-3 py-3.5">
                   <input
                     type="checkbox"
                     checked={orders.length > 0 && selectedIds.size === orders.length}
@@ -608,8 +636,8 @@ export default function AdminOrdersPage() {
       {/* Pagination */}
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5">
             <h3 className="text-lg font-bold text-gray-900">Siparişi Sil</h3>
             <p className="mt-2 text-sm text-gray-600">
               <span className="font-medium text-gray-900">#{deleteConfirm.orderNumber}</span> numaralı siparişi silmek istediğinize emin misiniz?
@@ -641,7 +669,7 @@ export default function AdminOrdersPage() {
       )}
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">
             Sayfa {page} / {totalPages} · Toplam {total} sipariş
           </p>
