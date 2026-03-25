@@ -111,6 +111,8 @@ model User {
   activityLogs   ActivityLog[]
   reviews        ProductReview[]
   returnRequests ReturnRequest[]
+  loyaltyPoints  LoyaltyPoint[]
+  preferences    UserPreference?
 
   @@map("users")
 }
@@ -267,6 +269,7 @@ model Variant {
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
   cartItems  CartItem[]
+  stockAlerts StockAlert[]
 
   @@unique([productId, color, size])
   @@map("variants")
@@ -1191,4 +1194,104 @@ model NestingResult {
   createdAt      DateTime @default(now())
 
   @@map("nesting_results")
+}
+
+// ============ YENİ MODELLER (Eksik Özellikler) ============
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  title     String?         // "Bayi, Bursa" gibi
+  avatar    String?
+  rating    Int             // 1-5
+  comment   String   @db.Text
+  featured  Boolean  @default(false)
+  approved  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model StockAlert {
+  id        String   @id @default(cuid())
+  email     String
+  variantId String
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([email, variantId])
+  @@map("stock_alerts")
+}
+
+model LoyaltyPoint {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points      Int
+  type        String    // "EARN", "SPEND", "EXPIRE"
+  description String
+  orderId     String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("loyalty_points")
+}
+
+model GiftCard {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  initialAmount  Float
+  balance        Float
+  senderName     String?
+  senderEmail    String?
+  recipientName  String?
+  recipientEmail String?
+  message        String?
+  active         Boolean   @default(true)
+  expiresAt      DateTime?
+  usedBy         String?
+  createdAt      DateTime  @default(now())
+
+  @@map("gift_cards")
+}
+
+model AbandonedCart {
+  id           String    @id @default(cuid())
+  userId       String?
+  email        String?
+  cartData     Json      // Sepet snapshot
+  reminderSent Boolean   @default(false)
+  recoveredAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([email])
+  @@map("abandoned_carts")
+}
+
+model SearchLog {
+  id        String   @id @default(cuid())
+  query     String
+  results   Int      @default(0)
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([query])
+  @@map("search_logs")
+}
+
+model UserPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailOrders     Boolean  @default(true)
+  emailPromotions Boolean  @default(true)
+  emailStock      Boolean  @default(true)
+  smsOrders       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("user_preferences")
 }

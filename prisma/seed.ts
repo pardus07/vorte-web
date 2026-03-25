@@ -7,6 +7,13 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Clean existing data
+  await db.testimonial.deleteMany();
+  await db.giftCard.deleteMany();
+  await db.searchLog.deleteMany();
+  await db.abandonedCart.deleteMany();
+  await db.loyaltyPoint.deleteMany();
+  await db.stockAlert.deleteMany();
+  await db.userPreference.deleteMany();
   await db.notification.deleteMany();
   await db.cartItem.deleteMany();
   await db.favorite.deleteMany();
@@ -778,6 +785,99 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
   });
 
   console.log("  ✓ Email templates created");
+
+  // ===== TESTIMONIALS =====
+  const testimonials = [
+    {
+      name: "Mehmet K.",
+      title: "Bayi, Bursa",
+      rating: 5,
+      comment: "Shell istasyonumuzda Vorte ürünlerini satmaya başladık, müşteri memnuniyeti çok yüksek. Kaliteli kumaş ve şık ambalaj fark yaratıyor.",
+      featured: true,
+      approved: true,
+      sortOrder: 1,
+    },
+    {
+      name: "Ayşe T.",
+      title: "Müşteri, İstanbul",
+      rating: 5,
+      comment: "Penye pamuk kalitesi gerçekten fark edilir. 3 yıkamadan sonra bile yumuşaklığını koruyor, sarkmıyor. Artık başka marka almıyorum.",
+      featured: true,
+      approved: true,
+      sortOrder: 2,
+    },
+    {
+      name: "Ali R.",
+      title: "Müşteri, Ankara",
+      rating: 5,
+      comment: "Beden tablosu çok doğru, tam kalıyor. Kumaşı terlemeye karşı harika, özellikle yaz aylarında büyük rahatlık sağlıyor.",
+      featured: true,
+      approved: true,
+      sortOrder: 3,
+    },
+    {
+      name: "Fatma S.",
+      title: "Müşteri, İzmir",
+      rating: 4,
+      comment: "Ten rengi külot beyaz kıyafetlerin altında gerçekten görünmüyor. Pamuk iç katman da hijyen açısından güven veriyor.",
+      featured: true,
+      approved: true,
+      sortOrder: 4,
+    },
+    {
+      name: "Hasan D.",
+      title: "Bayi, Eskişehir",
+      rating: 5,
+      comment: "Toptan sipariş süreci çok kolay, bayi paneli kullanışlı. Kargo hızlı geliyor, ürün kalitesi tutarlı. Tavsiye ederim.",
+      featured: true,
+      approved: true,
+      sortOrder: 5,
+    },
+    {
+      name: "Zeynep A.",
+      title: "Müşteri, Bursa",
+      rating: 5,
+      comment: "Lastik iz bırakmıyor, dikiş yerleri kaşıntı yapmıyor. Günlük kullanım için mükemmel bir iç çamaşırı. Fiyat-performans oranı çok iyi.",
+      featured: true,
+      approved: true,
+      sortOrder: 6,
+    },
+  ];
+
+  for (const t of testimonials) {
+    await db.testimonial.create({ data: t });
+  }
+
+  console.log("  ✓ Testimonials created (6 adet)");
+
+  // ===== GIFT CARDS =====
+  await db.giftCard.create({
+    data: {
+      code: "HEDIYE100",
+      initialAmount: 100,
+      balance: 100,
+      senderName: "Vorte Tekstil",
+      recipientName: "Demo Kullanıcı",
+      message: "Hoş geldiniz hediyesi!",
+      active: true,
+      expiresAt: new Date("2026-12-31"),
+    },
+  });
+
+  await db.giftCard.create({
+    data: {
+      code: "DOGUMGUNU50",
+      initialAmount: 50,
+      balance: 50,
+      senderName: "Vorte Tekstil",
+      recipientEmail: "musteri@test.com",
+      message: "Doğum gününüz kutlu olsun!",
+      active: true,
+      expiresAt: new Date("2026-06-30"),
+    },
+  });
+
+  console.log("  ✓ Gift cards created (HEDIYE100, DOGUMGUNU50)");
 
   console.log("\n✅ Seed completed!");
   console.log("\n📋 Test Credentials:");
