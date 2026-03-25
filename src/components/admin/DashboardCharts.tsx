@@ -10,6 +10,7 @@ import {
   Bar,
   Area,
   AreaChart,
+  Cell,
 } from "recharts";
 
 interface DailyData {
@@ -179,6 +180,18 @@ const BAR_COLORS = [
   "#EC4899", "#14B8A6", "#F97316",
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CategoryTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  return (
+    <div style={tooltipStyle}>
+      <p className="mb-1 text-[12px] font-medium text-gray-800">{d.payload.name}</p>
+      <p className="text-[12px] text-gray-600">{formatPriceDetailed(d.value)}</p>
+    </div>
+  );
+}
+
 export function CategoryPieChart({ data }: { data: CategoryData[] }) {
   if (data.length === 0) {
     return (
@@ -193,41 +206,49 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
 
   const total = data.reduce((s, d) => s + d.value, 0);
   const sorted = [...data].sort((a, b) => b.value - a.value);
-  const maxVal = sorted[0]?.value || 1;
+  const chartWidth = Math.max(sorted.length * 52, 400);
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
       <div className="mb-5 flex items-start justify-between">
         <div>
           <h3 className="text-[15px] font-semibold text-gray-900">Ürün Satışları</h3>
-          <p className="mt-0.5 text-[12px] text-gray-400">Toplam {formatPrice(total)}</p>
+          <p className="mt-0.5 text-[12px] text-gray-400">
+            {sorted.length} ürün · Toplam {formatPrice(total)}
+          </p>
         </div>
       </div>
-      <div className="space-y-3">
-        {sorted.slice(0, 8).map((item, i) => {
-          const pct = total > 0 ? (item.value / total) * 100 : 0;
-          const barW = (item.value / maxVal) * 100;
-          return (
-            <div key={i}>
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[13px] font-medium text-gray-700">{item.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-gray-900">{formatPrice(item.value)}</span>
-                  <span className="min-w-[36px] text-right text-[11px] text-gray-400">{pct.toFixed(0)}%</span>
-                </div>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${barW}%`, background: BAR_COLORS[i % BAR_COLORS.length] }}
-                />
-              </div>
-            </div>
-          );
-        })}
-        {sorted.length > 8 && (
-          <p className="text-center text-[11px] text-gray-400">+ {sorted.length - 8} ürün daha</p>
-        )}
+      <div className="overflow-x-auto">
+        <div style={{ width: chartWidth, height: 340 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sorted} margin={{ top: 5, right: 10, bottom: 80, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 10, fill: "#6b7280" }}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                axisLine={false}
+                tickLine={false}
+                height={80}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                tickFormatter={formatK}
+                axisLine={false}
+                tickLine={false}
+                width={50}
+              />
+              <Tooltip content={<CategoryTooltip />} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={36}>
+                {sorted.map((_, i) => (
+                  <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
