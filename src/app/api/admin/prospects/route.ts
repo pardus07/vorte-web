@@ -99,6 +99,8 @@ const prospectSchema = z.object({
   website: z.string().optional(),
   contactName: z.string().optional(),
   contactTitle: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   notes: z.string().optional(),
   source: z.string().optional(),
 });
@@ -144,6 +146,8 @@ export async function POST(req: NextRequest) {
           website: p.website || null,
           contactName: p.contactName || null,
           contactTitle: p.contactTitle || null,
+          latitude: p.latitude || null,
+          longitude: p.longitude || null,
           notes: p.notes || null,
           source: p.source || "gemini-discover",
         })),

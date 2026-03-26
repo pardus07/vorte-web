@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import {
   Search,
   MapPin,
@@ -29,11 +30,37 @@ import {
   Sparkles,
   Users,
   MailCheck,
+  Pencil,
+  Save,
+  X,
+  Map as MapIcon,
+  Navigation,
 } from "lucide-react";
+
+// Leaflet CSS (SSR'da yüklenmemeli)
+import "leaflet/dist/leaflet.css";
+
+// Leaflet harita bileşenlerini dynamic import ile yükle (SSR uyumsuz)
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((m) => m.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((m) => m.TileLayer),
+  { ssr: false }
+);
+const LeafletMarker = dynamic(
+  () => import("react-leaflet").then((m) => m.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import("react-leaflet").then((m) => m.Popup),
+  { ssr: false }
+);
 
 // ─── Types ──────────────────────────────────────────────────
 
-type TabKey = "discover" | "customers" | "outreach";
+type TabKey = "discover" | "customers" | "outreach" | "map";
 type ProspectCategory = "GAS_STATION" | "MARKET_CHAIN" | "RETAIL_STORE" | "HOTEL" | "CORPORATE";
 type ProspectStatus = "NEW" | "CONTACTED" | "OPENED" | "CLICKED" | "INTERESTED" | "SAMPLE_SENT" | "CONVERTED" | "REJECTED";
 
@@ -50,14 +77,16 @@ interface Prospect {
   website: string | null;
   contactName: string | null;
   contactTitle: string | null;
+  latitude: number | null;
+  longitude: number | null;
   status: ProspectStatus;
   notes: string | null;
   source: string | null;
   createdAt: string;
-  emails?: OutreachEmail[];
+  emails?: OutreachEmailBrief[];
 }
 
-interface OutreachEmail {
+interface OutreachEmailBrief {
   id: string;
   status: string;
   openCount: number;
@@ -74,6 +103,8 @@ interface DiscoveredProspect {
   contactName: string;
   contactTitle: string;
   brand: string;
+  latitude: number | null;
+  longitude: number | null;
   selected?: boolean;
 }
 
@@ -151,12 +182,14 @@ const BRAND_OPTIONS: Record<ProspectCategory, string[]> = {
   CORPORATE: [],
 };
 
+const inputCls = "w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-[#7AC143]/40 focus:border-[#7AC143] outline-none";
+
 // ─── Component ──────────────────────────────────────────────
 
 export default function MusteriKesifPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("discover");
 
-  // Keşfet tab state
+  // Keşfet
   const [discoverCategory, setDiscoverCategory] = useState<ProspectCategory>("GAS_STATION");
   const [discoverCity, setDiscoverCity] = useState("Bursa");
   const [discoverBrand, setDiscoverBrand] = useState("");
@@ -165,7 +198,7 @@ export default function MusteriKesifPage() {
   const [discovered, setDiscovered] = useState<DiscoveredProspect[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Müşterilerim tab state
+  // Müşterilerim
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [prospectStats, setProspectStats] = useState<Record<string, number>>({});
   const [prospectPage, setProspectPage] = useState(1);
@@ -176,24 +209,31 @@ export default function MusteriKesifPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sendingOutreach, setSendingOutreach] = useState(false);
 
-  // Teklif Takip tab state
+  // Düzenleme modalı
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string | number | null>>({});
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Teklif Takip
   const [outreachEmails, setOutreachEmails] = useState<OutreachDetail[]>([]);
   const [outreachStats, setOutreachStats] = useState<OutreachStats | null>(null);
   const [outreachPage, setOutreachPage] = useState(1);
   const [outreachTotalPages, setOutreachTotalPages] = useState(1);
   const [loadingOutreach, setLoadingOutreach] = useState(false);
 
+  // Harita
+  const [mapProspects, setMapProspects] = useState<Prospect[]>([]);
+  const [loadingMap, setLoadingMap] = useState(false);
+
   // Şehir listesini yükle
   useEffect(() => {
     fetch("/api/admin/prospects/discover")
       .then((r) => r.json())
-      .then((d) => {
-        if (d.cities) setCities(d.cities);
-      })
+      .then((d) => { if (d.cities) setCities(d.cities); })
       .catch(() => {});
   }, []);
 
-  // ─── Keşfet Tab ─────────────────────────────────────────
+  // ─── Keşfet ───────────────────────────────────────────
 
   const handleDiscover = async () => {
     setDiscovering(true);
@@ -222,14 +262,20 @@ export default function MusteriKesifPage() {
   };
 
   const toggleSelect = (i: number) => {
-    setDiscovered((prev) =>
-      prev.map((p, idx) => (idx === i ? { ...p, selected: !p.selected } : p))
-    );
+    setDiscovered((prev) => prev.map((p, idx) => idx === i ? { ...p, selected: !p.selected } : p));
   };
 
   const selectAll = (val: boolean) => {
     setDiscovered((prev) => prev.map((p) => ({ ...p, selected: val })));
   };
+
+  const updateDiscoveredField = (i: number, field: string, value: string) => {
+    setDiscovered((prev) =>
+      prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p)
+    );
+  };
+
+  const cleanVal = (v: string) => (v && v !== "Belirtilmemiş" ? v : null);
 
   const handleSaveSelected = async () => {
     const selected = discovered.filter((p) => p.selected);
@@ -244,14 +290,16 @@ export default function MusteriKesifPage() {
           prospects: selected.map((p) => ({
             name: p.name,
             category: discoverCategory,
-            brand: p.brand !== "Belirtilmemiş" ? p.brand : discoverBrand || null,
+            brand: cleanVal(p.brand) || discoverBrand || null,
             city: discoverCity,
-            address: p.address !== "Belirtilmemiş" ? p.address : null,
-            phone: p.phone !== "Belirtilmemiş" ? p.phone : null,
-            email: p.email !== "Belirtilmemiş" ? p.email : null,
-            website: p.website !== "Belirtilmemiş" ? p.website : null,
-            contactName: p.contactName !== "Belirtilmemiş" ? p.contactName : null,
-            contactTitle: p.contactTitle !== "Belirtilmemiş" ? p.contactTitle : null,
+            address: cleanVal(p.address),
+            phone: cleanVal(p.phone),
+            email: cleanVal(p.email),
+            website: cleanVal(p.website),
+            contactName: cleanVal(p.contactName),
+            contactTitle: cleanVal(p.contactTitle),
+            latitude: p.latitude || undefined,
+            longitude: p.longitude || undefined,
             source: "gemini-discover",
           })),
         }),
@@ -270,7 +318,7 @@ export default function MusteriKesifPage() {
     }
   };
 
-  // ─── Müşterilerim Tab ───────────────────────────────────
+  // ─── Müşterilerim ─────────────────────────────────────
 
   const fetchProspects = useCallback(async () => {
     setLoadingProspects(true);
@@ -324,8 +372,7 @@ export default function MusteriKesifPage() {
   const toggleProspectSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -356,7 +403,65 @@ export default function MusteriKesifPage() {
     }
   };
 
-  // ─── Teklif Takip Tab ─────────────────────────────────
+  // ─── Düzenleme Modalı ─────────────────────────────────
+
+  const openEditModal = (p: Prospect) => {
+    setEditingProspect(p);
+    setEditForm({
+      name: p.name,
+      brand: p.brand || "",
+      city: p.city,
+      district: p.district || "",
+      address: p.address || "",
+      phone: p.phone || "",
+      email: p.email || "",
+      website: p.website || "",
+      contactName: p.contactName || "",
+      contactTitle: p.contactTitle || "",
+      latitude: p.latitude,
+      longitude: p.longitude,
+      notes: p.notes || "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editingProspect) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/prospects/${editingProspect.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name || editingProspect.name,
+          brand: editForm.brand || null,
+          city: editForm.city || editingProspect.city,
+          district: editForm.district || null,
+          address: editForm.address || null,
+          phone: editForm.phone || null,
+          email: editForm.email || null,
+          website: editForm.website || null,
+          contactName: editForm.contactName || null,
+          contactTitle: editForm.contactTitle || null,
+          latitude: editForm.latitude ? Number(editForm.latitude) : null,
+          longitude: editForm.longitude ? Number(editForm.longitude) : null,
+          notes: editForm.notes || null,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingProspect(null);
+        fetchProspects();
+      } else {
+        alert(data.error || "Güncelleme hatası.");
+      }
+    } catch {
+      alert("Bağlantı hatası.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // ─── Teklif Takip ─────────────────────────────────────
 
   const fetchOutreach = useCallback(async () => {
     setLoadingOutreach(true);
@@ -377,11 +482,53 @@ export default function MusteriKesifPage() {
     if (activeTab === "outreach") fetchOutreach();
   }, [activeTab, fetchOutreach]);
 
+  // ─── Harita ───────────────────────────────────────────
+
+  const fetchMapProspects = useCallback(async () => {
+    setLoadingMap(true);
+    try {
+      const res = await fetch("/api/admin/prospects?limit=500");
+      const data = await res.json();
+      setMapProspects((data.prospects || []).filter((p: Prospect) => p.latitude && p.longitude));
+    } catch {
+      console.error("Harita verileri yüklenemedi.");
+    } finally {
+      setLoadingMap(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "map") fetchMapProspects();
+  }, [activeTab, fetchMapProspects]);
+
+  // Harita merkezi hesapla
+  const mapCenter = useMemo(() => {
+    if (mapProspects.length === 0) return [40.19, 29.06] as [number, number]; // Bursa
+    const avgLat = mapProspects.reduce((s, p) => s + (p.latitude || 0), 0) / mapProspects.length;
+    const avgLng = mapProspects.reduce((s, p) => s + (p.longitude || 0), 0) / mapProspects.length;
+    return [avgLat, avgLng] as [number, number];
+  }, [mapProspects]);
+
+  const openGoogleMapsRoute = () => {
+    const withCoords = mapProspects.filter((p) => p.latitude && p.longitude);
+    if (withCoords.length === 0) return;
+
+    // Google Maps yön URL'i — max 25 waypoint
+    const waypoints = withCoords
+      .slice(0, 25)
+      .map((p) => `${p.latitude},${p.longitude}`)
+      .join("/");
+
+    const url = `https://www.google.com/maps/dir/${waypoints}`;
+    window.open(url, "_blank");
+  };
+
   // ─── Render ───────────────────────────────────────────
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "discover", label: "Keşfet", icon: <Sparkles className="w-4 h-4" /> },
     { key: "customers", label: "Müşterilerim", icon: <Users className="w-4 h-4" /> },
+    { key: "map", label: "Harita", icon: <MapIcon className="w-4 h-4" /> },
     { key: "outreach", label: "Teklif Takip", icon: <MailCheck className="w-4 h-4" /> },
   ];
 
@@ -391,7 +538,7 @@ export default function MusteriKesifPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Müşteri Keşfet & Teklif</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Potansiyel müşterileri keşfet, kaydet ve toplu teklif gönder
+          Potansiyel müşterileri keşfet, kaydet, haritada gör ve toplu teklif gönder
         </p>
       </div>
 
@@ -423,15 +570,11 @@ export default function MusteriKesifPage() {
               AI ile Müşteri Keşfet
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Kategori */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
                 <select
                   value={discoverCategory}
-                  onChange={(e) => {
-                    setDiscoverCategory(e.target.value as ProspectCategory);
-                    setDiscoverBrand("");
-                  }}
+                  onChange={(e) => { setDiscoverCategory(e.target.value as ProspectCategory); setDiscoverBrand(""); }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
                 >
                   {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
@@ -439,8 +582,6 @@ export default function MusteriKesifPage() {
                   ))}
                 </select>
               </div>
-
-              {/* Şehir */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
                 <select
@@ -448,13 +589,9 @@ export default function MusteriKesifPage() {
                   onChange={(e) => setDiscoverCity(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
                 >
-                  {cities.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {cities.map((c) => (<option key={c} value={c}>{c}</option>))}
                 </select>
               </div>
-
-              {/* Marka (opsiyonel) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Marka (opsiyonel)</label>
                 {BRAND_OPTIONS[discoverCategory]?.length > 0 ? (
@@ -464,74 +601,30 @@ export default function MusteriKesifPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
                   >
                     <option value="">Tümü</option>
-                    {BRAND_OPTIONS[discoverCategory].map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
+                    {BRAND_OPTIONS[discoverCategory].map((b) => (<option key={b} value={b}>{b}</option>))}
                   </select>
                 ) : (
-                  <input
-                    type="text"
-                    value={discoverBrand}
-                    onChange={(e) => setDiscoverBrand(e.target.value)}
-                    placeholder="Marka adı..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
-                  />
+                  <input type="text" value={discoverBrand} onChange={(e) => setDiscoverBrand(e.target.value)} placeholder="Marka adı..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none" />
                 )}
               </div>
-
-              {/* Ara Butonu */}
               <div className="flex items-end">
-                <button
-                  onClick={handleDiscover}
-                  disabled={discovering}
-                  className="w-full px-4 py-2 bg-[#7AC143] text-white rounded-lg text-sm font-medium hover:bg-[#6AAF35] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  {discovering ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Aranıyor...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4" />
-                      Keşfet
-                    </>
-                  )}
+                <button onClick={handleDiscover} disabled={discovering} className="w-full px-4 py-2 bg-[#7AC143] text-white rounded-lg text-sm font-medium hover:bg-[#6AAF35] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {discovering ? (<><Loader2 className="w-4 h-4 animate-spin" />Aranıyor...</>) : (<><Search className="w-4 h-4" />Keşfet</>)}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Sonuçlar */}
+          {/* Sonuçlar — Düzenlenebilir Kartlar */}
           {discovered.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {discovered.length} İşletme Bulundu
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">{discovered.length} İşletme Bulundu</h3>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => selectAll(true)}
-                    className="text-sm text-[#7AC143] hover:underline"
-                  >
-                    Tümünü Seç
-                  </button>
-                  <button
-                    onClick={() => selectAll(false)}
-                    className="text-sm text-gray-500 hover:underline"
-                  >
-                    Seçimi Kaldır
-                  </button>
-                  <button
-                    onClick={handleSaveSelected}
-                    disabled={saving || !discovered.some((p) => p.selected)}
-                    className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Plus className="w-4 h-4" />
-                    )}
+                  <button onClick={() => selectAll(true)} className="text-sm text-[#7AC143] hover:underline">Tümünü Seç</button>
+                  <button onClick={() => selectAll(false)} className="text-sm text-gray-500 hover:underline">Seçimi Kaldır</button>
+                  <button onClick={handleSaveSelected} disabled={saving || !discovered.some((p) => p.selected)} className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     Seçilenleri Kaydet ({discovered.filter((p) => p.selected).length})
                   </button>
                 </div>
@@ -541,61 +634,61 @@ export default function MusteriKesifPage() {
                 {discovered.map((p, i) => (
                   <div
                     key={i}
-                    onClick={() => toggleSelect(i)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      p.selected
-                        ? "border-[#7AC143] bg-green-50/50"
-                        : "border-gray-200 hover:border-gray-300"
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      p.selected ? "border-[#7AC143] bg-green-50/50" : "border-gray-200"
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={p.selected || false}
-                          onChange={() => toggleSelect(i)}
-                          className="accent-[#7AC143] w-4 h-4"
-                        />
-                        <h4 className="font-semibold text-gray-900 text-sm">{p.name}</h4>
-                      </div>
+                    {/* Checkbox + İsim */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <input type="checkbox" checked={p.selected || false} onChange={() => toggleSelect(i)} className="accent-[#7AC143] w-4 h-4" />
+                      <input
+                        type="text"
+                        value={p.name}
+                        onChange={(e) => updateDiscoveredField(i, "name", e.target.value)}
+                        className="flex-1 font-semibold text-gray-900 text-sm bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#7AC143] outline-none px-1 py-0.5"
+                      />
                       {p.brand && p.brand !== "Belirtilmemiş" && (
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                          {p.brand}
-                        </span>
+                        <input
+                          type="text"
+                          value={p.brand}
+                          onChange={(e) => updateDiscoveredField(i, "brand", e.target.value)}
+                          className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200 w-20 text-center outline-none focus:ring-1 focus:ring-blue-300"
+                        />
                       )}
                     </div>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      {p.address !== "Belirtilmemiş" && (
+
+                    {/* Düzenlenebilir Alanlar */}
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      <div className="col-span-2">
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3 h-3 text-gray-400" />
-                          {p.address}
+                          <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                          <input type="text" value={p.address === "Belirtilmemiş" ? "" : p.address} onChange={(e) => updateDiscoveredField(i, "address", e.target.value)} placeholder="Adres" className={inputCls} />
                         </div>
-                      )}
-                      {p.phone !== "Belirtilmemiş" && (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="w-3 h-3 text-gray-400" />
-                          {p.phone}
-                        </div>
-                      )}
-                      {p.email !== "Belirtilmemiş" && (
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3 h-3 text-gray-400" />
-                          {p.email}
-                        </div>
-                      )}
-                      {p.contactName !== "Belirtilmemiş" && (
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3 h-3 text-gray-400" />
-                          {p.contactName}
-                          {p.contactTitle !== "Belirtilmemiş" && ` — ${p.contactTitle}`}
-                        </div>
-                      )}
-                      {p.website !== "Belirtilmemiş" && (
-                        <div className="flex items-center gap-1.5">
-                          <Globe className="w-3 h-3 text-gray-400" />
-                          {p.website}
-                        </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                        <input type="tel" value={p.phone === "Belirtilmemiş" ? "" : p.phone} onChange={(e) => updateDiscoveredField(i, "phone", e.target.value)} placeholder="Telefon" className={inputCls} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 text-gray-400 shrink-0" />
+                        <input type="email" value={p.email === "Belirtilmemiş" ? "" : p.email} onChange={(e) => updateDiscoveredField(i, "email", e.target.value)} placeholder="E-posta" className={inputCls} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3 h-3 text-gray-400 shrink-0" />
+                        <input type="text" value={p.contactName === "Belirtilmemiş" ? "" : p.contactName} onChange={(e) => updateDiscoveredField(i, "contactName", e.target.value)} placeholder="Yetkili adı" className={inputCls} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-3 h-3 text-gray-400 shrink-0" />
+                        <input type="text" value={p.website === "Belirtilmemiş" ? "" : p.website} onChange={(e) => updateDiscoveredField(i, "website", e.target.value)} placeholder="Web sitesi" className={inputCls} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-blue-400 shrink-0" />
+                        <input type="number" step="any" value={p.latitude ?? ""} onChange={(e) => updateDiscoveredField(i, "latitude", e.target.value)} placeholder="Enlem" className={inputCls} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-blue-400 shrink-0" />
+                        <input type="number" step="any" value={p.longitude ?? ""} onChange={(e) => updateDiscoveredField(i, "longitude", e.target.value)} placeholder="Boylam" className={inputCls} />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -610,8 +703,7 @@ export default function MusteriKesifPage() {
               <h3 className="text-lg font-medium text-gray-700">Müşteri Keşfet</h3>
               <p className="text-sm text-gray-500 mt-1">
                 Yukarıdan kategori ve şehir seçip &quot;Keşfet&quot; butonuna tıklayın.
-                <br />
-                Gemini AI sizin için potansiyel müşterileri bulacak.
+                <br />Gemini AI sizin için potansiyel müşterileri bulacak.
               </p>
             </div>
           )}
@@ -625,21 +717,8 @@ export default function MusteriKesifPage() {
           {Object.keys(prospectStats).length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
               {(Object.keys(STATUS_LABELS) as ProspectStatus[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setProspectFilter((prev) => ({
-                      ...prev,
-                      status: prev.status === s ? "" : s,
-                    }));
-                    setProspectPage(1);
-                  }}
-                  className={`p-2 rounded-lg border text-center transition-all ${
-                    prospectFilter.status === s
-                      ? "border-[#7AC143] bg-green-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
+                <button key={s} onClick={() => { setProspectFilter((prev) => ({ ...prev, status: prev.status === s ? "" : s })); setProspectPage(1); }}
+                  className={`p-2 rounded-lg border text-center transition-all ${prospectFilter.status === s ? "border-[#7AC143] bg-green-50" : "border-gray-200 hover:border-gray-300"}`}>
                   <div className="text-lg font-bold text-gray-900">{prospectStats[s] || 0}</div>
                   <div className="text-xs text-gray-500">{STATUS_LABELS[s]}</div>
                 </button>
@@ -651,55 +730,27 @@ export default function MusteriKesifPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex flex-wrap items-center gap-3">
               <Filter className="w-4 h-4 text-gray-400" />
-              <select
-                value={prospectFilter.category}
-                onChange={(e) => {
-                  setProspectFilter((prev) => ({ ...prev, category: e.target.value }));
-                  setProspectPage(1);
-                }}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#7AC143]/30"
-              >
+              <select value={prospectFilter.category} onChange={(e) => { setProspectFilter((prev) => ({ ...prev, category: e.target.value })); setProspectPage(1); }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#7AC143]/30">
                 <option value="">Tüm Kategoriler</option>
-                {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+                {Object.entries(CATEGORY_LABELS).map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
               </select>
-              <input
-                type="text"
-                value={prospectFilter.search}
-                onChange={(e) => {
-                  setProspectFilter((prev) => ({ ...prev, search: e.target.value }));
-                  setProspectPage(1);
-                }}
-                placeholder="İsim, e-posta, telefon ara..."
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#7AC143]/30 flex-1 min-w-[200px]"
-              />
+              <input type="text" value={prospectFilter.search} onChange={(e) => { setProspectFilter((prev) => ({ ...prev, search: e.target.value })); setProspectPage(1); }}
+                placeholder="İsim, e-posta, telefon ara..." className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#7AC143]/30 flex-1 min-w-[200px]" />
               {selectedIds.size > 0 && (
-                <button
-                  onClick={handleBulkOutreach}
-                  disabled={sendingOutreach}
-                  className="px-4 py-1.5 bg-[#7AC143] text-white rounded-lg text-sm font-medium hover:bg-[#6AAF35] disabled:opacity-50 transition-colors flex items-center gap-2"
-                >
-                  {sendingOutreach ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                <button onClick={handleBulkOutreach} disabled={sendingOutreach} className="px-4 py-1.5 bg-[#7AC143] text-white rounded-lg text-sm font-medium hover:bg-[#6AAF35] disabled:opacity-50 transition-colors flex items-center gap-2">
+                  {sendingOutreach ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Seçilenlere Teklif Gönder ({selectedIds.size})
                 </button>
               )}
-              <span className="text-sm text-gray-500 ml-auto">
-                Toplam: {prospectTotal}
-              </span>
+              <span className="text-sm text-gray-500 ml-auto">Toplam: {prospectTotal}</span>
             </div>
           </div>
 
-          {/* Müşteri Tablosu */}
+          {/* Tablo */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {loadingProspects ? (
-              <div className="p-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-gray-300 mx-auto" />
-              </div>
+              <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300 mx-auto" /></div>
             ) : prospects.length === 0 ? (
               <div className="p-12 text-center">
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -712,17 +763,7 @@ export default function MusteriKesifPage() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left w-8">
-                        <input
-                          type="checkbox"
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedIds(new Set(prospects.filter((p) => p.email).map((p) => p.id)));
-                            } else {
-                              setSelectedIds(new Set());
-                            }
-                          }}
-                          className="accent-[#7AC143]"
-                        />
+                        <input type="checkbox" onChange={(e) => { if (e.target.checked) setSelectedIds(new Set(prospects.filter((p) => p.email).map((p) => p.id))); else setSelectedIds(new Set()); }} className="accent-[#7AC143]" />
                       </th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">İşletme</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">Kategori</th>
@@ -730,35 +771,21 @@ export default function MusteriKesifPage() {
                       <th className="px-4 py-3 text-left font-medium text-gray-700">İletişim</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">Durum</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">Son Mail</th>
-                      <th className="px-4 py-3 text-center font-medium text-gray-700 w-20">İşlem</th>
+                      <th className="px-4 py-3 text-center font-medium text-gray-700 w-24">İşlem</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {prospects.map((p) => (
                       <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
-                          {p.email ? (
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(p.id)}
-                              onChange={() => toggleProspectSelect(p.id)}
-                              className="accent-[#7AC143]"
-                            />
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
+                          {p.email ? <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleProspectSelect(p.id)} className="accent-[#7AC143]" /> : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-900">{p.name}</div>
-                          {p.brand && (
-                            <span className="text-xs text-gray-500">{p.brand}</span>
-                          )}
+                          {p.brand && <span className="text-xs text-gray-500">{p.brand}</span>}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1 text-xs">
-                            {CATEGORY_ICONS[p.category]}
-                            {CATEGORY_LABELS[p.category]}
-                          </span>
+                          <span className="inline-flex items-center gap-1 text-xs">{CATEGORY_ICONS[p.category]}{CATEGORY_LABELS[p.category]}</span>
                         </td>
                         <td className="px-4 py-3 text-gray-600">{p.city}</td>
                         <td className="px-4 py-3">
@@ -769,43 +796,30 @@ export default function MusteriKesifPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <select
-                            value={p.status}
-                            onChange={(e) => handleStatusChange(p.id, e.target.value as ProspectStatus)}
-                            className={`text-xs px-2 py-1 rounded-full border-0 font-medium ${STATUS_COLORS[p.status]}`}
-                          >
-                            {(Object.keys(STATUS_LABELS) as ProspectStatus[]).map((s) => (
-                              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                            ))}
+                          <select value={p.status} onChange={(e) => handleStatusChange(p.id, e.target.value as ProspectStatus)} className={`text-xs px-2 py-1 rounded-full border-0 font-medium ${STATUS_COLORS[p.status]}`}>
+                            {(Object.keys(STATUS_LABELS) as ProspectStatus[]).map((s) => (<option key={s} value={s}>{STATUS_LABELS[s]}</option>))}
                           </select>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {p.emails && p.emails[0] ? (
                             <div className="flex items-center gap-1">
-                              {p.emails[0].openCount > 0 ? (
-                                <Eye className="w-3 h-3 text-yellow-500" />
-                              ) : p.emails[0].status === "SENT" ? (
-                                <CheckCircle2 className="w-3 h-3 text-green-500" />
-                              ) : (
-                                <Clock className="w-3 h-3 text-gray-400" />
-                              )}
+                              {p.emails[0].openCount > 0 ? <Eye className="w-3 h-3 text-yellow-500" /> : p.emails[0].status === "SENT" ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Clock className="w-3 h-3 text-gray-400" />}
                               {p.emails[0].openCount > 0 && `${p.emails[0].openCount}x açıldı`}
                               {p.emails[0].clickCount > 0 && `, ${p.emails[0].clickCount}x tık`}
                               {p.emails[0].openCount === 0 && p.emails[0].status === "SENT" && "Gönderildi"}
                               {p.emails[0].status === "FAILED" && <span className="text-red-500">Başarısız</span>}
                             </div>
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
+                          ) : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => handleDeleteProspect(p.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            title="Sil"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button onClick={() => openEditModal(p)} className="p-1 text-gray-400 hover:text-[#7AC143] transition-colors" title="Düzenle">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteProspect(p.id)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" title="Sil">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -817,24 +831,10 @@ export default function MusteriKesifPage() {
             {/* Sayfalama */}
             {prospectTotalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                <p className="text-sm text-gray-500">
-                  Sayfa {prospectPage} / {prospectTotalPages}
-                </p>
+                <p className="text-sm text-gray-500">Sayfa {prospectPage} / {prospectTotalPages}</p>
                 <div className="flex gap-1">
-                  <button
-                    onClick={() => setProspectPage((p) => Math.max(1, p - 1))}
-                    disabled={prospectPage <= 1}
-                    className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setProspectPage((p) => Math.min(prospectTotalPages, p + 1))}
-                    disabled={prospectPage >= prospectTotalPages}
-                    className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => setProspectPage((p) => Math.max(1, p - 1))} disabled={prospectPage <= 1} className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={() => setProspectPage((p) => Math.min(prospectTotalPages, p + 1))} disabled={prospectPage >= prospectTotalPages} className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
             )}
@@ -842,70 +842,128 @@ export default function MusteriKesifPage() {
         </div>
       )}
 
-      {/* ─── TAB 3: TEKLİF TAKİP ────────────────────────── */}
+      {/* ─── TAB 3: HARİTA ───────────────────────────────── */}
+      {activeTab === "map" && (
+        <div className="space-y-4">
+          {/* Üst bar */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapIcon className="w-5 h-5 text-[#7AC143]" />
+              <span className="font-medium text-gray-900">
+                {mapProspects.length} müşteri haritada
+              </span>
+              <span className="text-sm text-gray-500">(koordinatı olan)</span>
+            </div>
+            {mapProspects.length > 0 && (
+              <button
+                onClick={openGoogleMapsRoute}
+                className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-sm font-medium hover:bg-black transition-colors flex items-center gap-2"
+              >
+                <Navigation className="w-4 h-4" />
+                Google Maps&apos;te Rota Planla
+              </button>
+            )}
+          </div>
+
+          {/* Harita */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ height: "600px" }}>
+            {loadingMap ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+              </div>
+            ) : mapProspects.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <MapIcon className="w-16 h-16 text-gray-200 mb-4" />
+                <p className="text-gray-500 font-medium">Haritada gösterilecek müşteri yok</p>
+                <p className="text-sm text-gray-400 mt-1">Koordinatı olan müşteriler burada görünür</p>
+              </div>
+            ) : (
+              <MapContainer
+                center={mapCenter}
+                zoom={10}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {mapProspects.map((p) => (
+                  <LeafletMarker
+                    key={p.id}
+                    position={[p.latitude!, p.longitude!]}
+                  >
+                    <Popup>
+                      <div className="text-sm min-w-[180px]">
+                        <div className="font-bold text-gray-900">{p.name}</div>
+                        {p.brand && <div className="text-xs text-blue-600">{p.brand}</div>}
+                        <div className="mt-1 space-y-0.5 text-xs text-gray-600">
+                          {p.address && <div>{p.address}</div>}
+                          {p.phone && <div>{p.phone}</div>}
+                          {p.email && <div>{p.email}</div>}
+                          {p.contactName && <div>Yetkili: {p.contactName}</div>}
+                        </div>
+                        <div className="mt-1.5">
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[p.status]}`}>
+                            {STATUS_LABELS[p.status]}
+                          </span>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-blue-600 hover:underline"
+                        >
+                          Google Maps&apos;te Aç
+                        </a>
+                      </div>
+                    </Popup>
+                  </LeafletMarker>
+                ))}
+              </MapContainer>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB 4: TEKLİF TAKİP ────────────────────────── */}
       {activeTab === "outreach" && (
         <div className="space-y-4">
-          {/* İstatistik Kartları */}
           {outreachStats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Send className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm text-gray-500">Gönderilen</span>
-                </div>
+                <div className="flex items-center gap-2 mb-1"><Send className="w-4 h-4 text-blue-500" /><span className="text-sm text-gray-500">Gönderilen</span></div>
                 <div className="text-2xl font-bold text-gray-900">{outreachStats.totalSent}</div>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Eye className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm text-gray-500">Açılan</span>
-                </div>
+                <div className="flex items-center gap-2 mb-1"><Eye className="w-4 h-4 text-yellow-500" /><span className="text-sm text-gray-500">Açılan</span></div>
                 <div className="text-2xl font-bold text-gray-900">
                   {outreachStats.totalOpened}
-                  {outreachStats.totalSent > 0 && (
-                    <span className="text-sm font-normal text-gray-500 ml-1">
-                      ({Math.round((outreachStats.totalOpened / outreachStats.totalSent) * 100)}%)
-                    </span>
-                  )}
+                  {outreachStats.totalSent > 0 && <span className="text-sm font-normal text-gray-500 ml-1">({Math.round((outreachStats.totalOpened / outreachStats.totalSent) * 100)}%)</span>}
                 </div>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <MousePointerClick className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm text-gray-500">Tıklanan</span>
-                </div>
+                <div className="flex items-center gap-2 mb-1"><MousePointerClick className="w-4 h-4 text-orange-500" /><span className="text-sm text-gray-500">Tıklanan</span></div>
                 <div className="text-2xl font-bold text-gray-900">
                   {outreachStats.totalClicked}
-                  {outreachStats.totalSent > 0 && (
-                    <span className="text-sm font-normal text-gray-500 ml-1">
-                      ({Math.round((outreachStats.totalClicked / outreachStats.totalSent) * 100)}%)
-                    </span>
-                  )}
+                  {outreachStats.totalSent > 0 && <span className="text-sm font-normal text-gray-500 ml-1">({Math.round((outreachStats.totalClicked / outreachStats.totalSent) * 100)}%)</span>}
                 </div>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-gray-500">Dönüşüm</span>
-                </div>
+                <div className="flex items-center gap-2 mb-1"><CheckCircle2 className="w-4 h-4 text-green-500" /><span className="text-sm text-gray-500">Dönüşüm</span></div>
                 <div className="text-2xl font-bold text-gray-900">{outreachStats.totalConverted}</div>
               </div>
             </div>
           )}
 
-          {/* Email Tablosu */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             {loadingOutreach ? (
-              <div className="p-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-gray-300 mx-auto" />
-              </div>
+              <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300 mx-auto" /></div>
             ) : outreachEmails.length === 0 ? (
               <div className="p-12 text-center">
                 <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">Henüz teklif maili gönderilmemiş.</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Müşterilerim sekmesinden seçim yapıp teklif gönderin.
-                </p>
+                <p className="text-sm text-gray-400 mt-1">Müşterilerim sekmesinden seçim yapıp teklif gönderin.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -925,58 +983,22 @@ export default function MusteriKesifPage() {
                       <tr key={e.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-900">{e.prospect.name}</div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1">
-                            {CATEGORY_ICONS[e.prospect.category]}
-                            {e.prospect.city}
-                            {e.prospect.brand && ` · ${e.prospect.brand}`}
-                          </div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">{CATEGORY_ICONS[e.prospect.category]}{e.prospect.city}{e.prospect.brand && ` · ${e.prospect.brand}`}</div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">
-                          {e.subject}
+                        <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{e.subject}</td>
+                        <td className="px-4 py-3 text-center">
+                          {e.status === "SENT" ? <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full"><CheckCircle2 className="w-3 h-3" />Gönderildi</span>
+                            : e.status === "FAILED" ? <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full"><XCircle className="w-3 h-3" />Başarısız</span>
+                            : <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full"><Clock className="w-3 h-3" />Bekliyor</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {e.status === "SENT" ? (
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                              <CheckCircle2 className="w-3 h-3" /> Gönderildi
-                            </span>
-                          ) : e.status === "FAILED" ? (
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full">
-                              <XCircle className="w-3 h-3" /> Başarısız
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
-                              <Clock className="w-3 h-3" /> Bekliyor
-                            </span>
-                          )}
+                          {e.openCount > 0 ? <span className="inline-flex items-center gap-1 text-sm font-medium text-yellow-600"><Eye className="w-3.5 h-3.5" />{e.openCount}</span> : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {e.openCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 text-sm font-medium text-yellow-600">
-                              <Eye className="w-3.5 h-3.5" /> {e.openCount}
-                            </span>
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {e.clickCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 text-sm font-medium text-orange-600">
-                              <MousePointerClick className="w-3.5 h-3.5" /> {e.clickCount}
-                            </span>
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
+                          {e.clickCount > 0 ? <span className="inline-flex items-center gap-1 text-sm font-medium text-orange-600"><MousePointerClick className="w-3.5 h-3.5" />{e.clickCount}</span> : <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500">
-                          {e.sentAt
-                            ? new Date(e.sentAt).toLocaleDateString("tr-TR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "—"}
+                          {e.sentAt ? new Date(e.sentAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                         </td>
                       </tr>
                     ))}
@@ -985,30 +1007,101 @@ export default function MusteriKesifPage() {
               </div>
             )}
 
-            {/* Sayfalama */}
             {outreachTotalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-                <p className="text-sm text-gray-500">
-                  Sayfa {outreachPage} / {outreachTotalPages}
-                </p>
+                <p className="text-sm text-gray-500">Sayfa {outreachPage} / {outreachTotalPages}</p>
                 <div className="flex gap-1">
-                  <button
-                    onClick={() => setOutreachPage((p) => Math.max(1, p - 1))}
-                    disabled={outreachPage <= 1}
-                    className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setOutreachPage((p) => Math.min(outreachTotalPages, p + 1))}
-                    disabled={outreachPage >= outreachTotalPages}
-                    className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => setOutreachPage((p) => Math.max(1, p - 1))} disabled={outreachPage <= 1} className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={() => setOutreachPage((p) => Math.min(outreachTotalPages, p + 1))} disabled={outreachPage >= outreachTotalPages} className="p-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── DÜZENLEME MODALI ────────────────────────────── */}
+      {editingProspect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditingProspect(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Müşteri Düzenle</h3>
+              <button onClick={() => setEditingProspect(null)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              {[
+                { key: "name", label: "İşletme Adı", icon: <Building2 className="w-4 h-4" />, type: "text" },
+                { key: "brand", label: "Marka", icon: <Fuel className="w-4 h-4" />, type: "text" },
+                { key: "city", label: "Şehir", icon: <MapPin className="w-4 h-4" />, type: "text" },
+                { key: "district", label: "İlçe", icon: <MapPin className="w-4 h-4" />, type: "text" },
+                { key: "address", label: "Adres", icon: <MapPin className="w-4 h-4" />, type: "text" },
+                { key: "phone", label: "Telefon", icon: <Phone className="w-4 h-4" />, type: "tel" },
+                { key: "email", label: "E-posta", icon: <Mail className="w-4 h-4" />, type: "email" },
+                { key: "website", label: "Web Sitesi", icon: <Globe className="w-4 h-4" />, type: "text" },
+                { key: "contactName", label: "Yetkili Adı", icon: <User className="w-4 h-4" />, type: "text" },
+                { key: "contactTitle", label: "Yetkili Unvanı", icon: <User className="w-4 h-4" />, type: "text" },
+              ].map((field) => (
+                <div key={field.key}>
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    {field.icon} {field.label}
+                  </label>
+                  <input
+                    type={field.type}
+                    value={String(editForm[field.key] || "")}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
+                  />
+                </div>
+              ))}
+
+              {/* Koordinatlar */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    <MapPin className="w-4 h-4 text-blue-500" /> Enlem (Latitude)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editForm.latitude ?? ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, latitude: e.target.value ? parseFloat(e.target.value) : null }))}
+                    placeholder="40.1885"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    <MapPin className="w-4 h-4 text-blue-500" /> Boylam (Longitude)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editForm.longitude ?? ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, longitude: e.target.value ? parseFloat(e.target.value) : null }))}
+                    placeholder="29.0610"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Notlar */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Notlar</label>
+                <textarea
+                  value={String(editForm.notes || "")}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
+              <button onClick={() => setEditingProspect(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">İptal</button>
+              <button onClick={handleEditSave} disabled={editSaving} className="px-4 py-2 bg-[#7AC143] text-white rounded-lg text-sm font-medium hover:bg-[#6AAF35] disabled:opacity-50 transition-colors flex items-center gap-2">
+                {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Kaydet
+              </button>
+            </div>
           </div>
         </div>
       )}

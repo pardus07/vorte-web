@@ -36,6 +36,8 @@ interface ProspectResult {
   contactName: string;
   contactTitle: string;
   brand: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 // ─── Kategori Arama Promptları ──────────────────────────────
@@ -92,8 +94,11 @@ Her işletme için şu bilgileri ver:
 - Yetkili kişi adı (müdür, sahip vb.)
 - Yetkili unvanı (İstasyon Müdürü, Mağaza Müdürü vb.)
 - Marka/zincir (Shell, BP, Opet vb. veya bağımsız)
+- Enlem (latitude) — Google Maps koordinatı (ondalık derece, örn: 40.1885)
+- Boylam (longitude) — Google Maps koordinatı (ondalık derece, örn: 29.0610)
 
 SADECE doğrulanmış, gerçek işletme bilgileri ver. Emin olmadığın bilgiyi "Belirtilmemiş" yaz.
+Koordinatlar için işletmenin gerçek adresine en yakın tahmini değeri ver.
 
 Yanıtını MUTLAKA aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
 {
@@ -106,7 +111,9 @@ Yanıtını MUTLAKA aşağıdaki JSON formatında ver, başka hiçbir metin ekle
       "website": "firma.com",
       "contactName": "Yetkili Ad Soyad",
       "contactTitle": "İstasyon Müdürü",
-      "brand": "Shell"
+      "brand": "Shell",
+      "latitude": 40.1885,
+      "longitude": 29.0610
     }
   ]
 }`;
@@ -229,6 +236,8 @@ export async function POST(req: NextRequest) {
       contactName: p.contactName || "Belirtilmemiş",
       contactTitle: p.contactTitle || "Belirtilmemiş",
       brand: p.brand || brand || "Belirtilmemiş",
+      latitude: typeof p.latitude === "number" ? p.latitude : null,
+      longitude: typeof p.longitude === "number" ? p.longitude : null,
     }));
 
     console.log("[prospect-discover] Found", prospects.length, "prospects");

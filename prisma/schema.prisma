@@ -1330,6 +1330,8 @@ model ProspectCustomer {
   website       String?
   contactName   String?
   contactTitle  String?
+  latitude      Float?
+  longitude     Float?
   status        ProspectStatus   @default(NEW)
   notes         String?
   source        String?          // "gemini-discover"

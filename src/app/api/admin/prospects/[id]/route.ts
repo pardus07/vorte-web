@@ -57,6 +57,8 @@ const updateSchema = z.object({
   website: z.string().nullable().optional(),
   contactName: z.string().nullable().optional(),
   contactTitle: z.string().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   status: z.enum([
     "NEW", "CONTACTED", "OPENED", "CLICKED", "INTERESTED",
     "SAMPLE_SENT", "CONVERTED", "REJECTED",
