@@ -87,28 +87,12 @@ export default function ContactPage() {
               {
                 "@type": "OfferCatalog",
                 name: "Erkek Boxer",
-                itemListElement: [
-                  {
-                    "@type": "Offer",
-                    itemOffered: {
-                      "@type": "Product",
-                      name: "Vorte Premium Penye Erkek Boxer",
-                    },
-                  },
-                ],
+                url: "https://www.vorte.com.tr/erkek-ic-giyim",
               },
               {
                 "@type": "OfferCatalog",
                 name: "Kadın Külot",
-                itemListElement: [
-                  {
-                    "@type": "Offer",
-                    itemOffered: {
-                      "@type": "Product",
-                      name: "Vorte Premium Penye Kadın Külot",
-                    },
-                  },
-                ],
+                url: "https://www.vorte.com.tr/kadin-ic-giyim",
               },
             ],
           },

@@ -106,8 +106,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const productBanners = await getBannersByPosition("product-sidebar");
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
-  const variantPrices = product.variants.filter(v => v.price).map(v => v.price!);
-  const allPrices = [product.basePrice, ...variantPrices];
+  const productUrl = `${baseUrl}/urun/${product.slug}`;
+
+  // Her varyant için ayrı Offer nesnesi oluştur (Google Product Snippets uyumluluğu)
+  const priceValidUntil = new Date(new Date().getFullYear(), 11, 31).toISOString().split("T")[0]; // Yıl sonu
+  const offers = product.variants.map(v => ({
+    "@type": "Offer" as const,
+    url: productUrl,
+    priceCurrency: "TRY",
+    price: v.price || product.basePrice,
+    availability: v.stock > 0
+      ? "https://schema.org/InStock"
+      : "https://schema.org/OutOfStock",
+    itemCondition: "https://schema.org/NewCondition",
+    priceValidUntil,
+    sku: v.sku,
+    ...(v.gtinBarcode && { gtin13: v.gtinBarcode }),
+    seller: { "@type": "Organization" as const, name: "Vorte Tekstil" },
+  }));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
@@ -122,16 +138,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
           category: product.category.name,
           sku: product.variants[0]?.sku,
           ...(product.variants[0]?.gtinBarcode && { gtin13: product.variants[0].gtinBarcode }),
-          offers: {
-            "@type": "AggregateOffer",
+          offers: offers.length > 0 ? offers : {
+            "@type": "Offer",
+            url: productUrl,
             priceCurrency: "TRY",
-            lowPrice: Math.min(...allPrices),
-            highPrice: Math.max(...allPrices),
-            offerCount: product.variants.length,
-            availability: product.variants.some(v => v.stock > 0)
-              ? "https://schema.org/InStock"
-              : "https://schema.org/OutOfStock",
-            url: `${baseUrl}/urun/${product.slug}`,
+            price: product.basePrice,
+            availability: "https://schema.org/OutOfStock",
+            itemCondition: "https://schema.org/NewCondition",
+            priceValidUntil,
+            seller: { "@type": "Organization", name: "Vorte Tekstil" },
           },
           ...(reviewCount > 0 && {
             aggregateRating: {
