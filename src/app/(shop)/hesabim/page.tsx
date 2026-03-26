@@ -42,7 +42,7 @@ export default async function AccountPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/giris");
 
-  const [user, activeOrders, totalOrders, favCount, recentOrders] = await Promise.all([
+  const [user, activeOrders, totalOrders, favCount, recentOrders, loyaltyPoints] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: { name: true, email: true, phone: true, createdAt: true, lastLoginAt: true },
@@ -57,6 +57,10 @@ export default async function AccountPage() {
       orderBy: { createdAt: "desc" },
       take: 3,
       select: { id: true, orderNumber: true, totalAmount: true, status: true, createdAt: true },
+    }),
+    db.loyaltyPoint.aggregate({
+      where: { userId: session.user.id },
+      _sum: { points: true },
     }),
   ]);
 
@@ -103,10 +107,8 @@ export default async function AccountPage() {
           <p className="mt-1 text-2xl font-bold text-gray-900">{favCount}</p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Üyelik Tarihi</p>
-          <p className="mt-1 text-lg font-bold text-gray-900">
-            {new Date(user.createdAt).toLocaleDateString("tr-TR", { month: "long", year: "numeric" })}
-          </p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Sadakat Puanı</p>
+          <p className="mt-1 text-2xl font-bold text-[#7AC143]">{loyaltyPoints._sum.points || 0}</p>
         </div>
       </div>
 

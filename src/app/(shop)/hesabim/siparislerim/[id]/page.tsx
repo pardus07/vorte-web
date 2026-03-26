@@ -19,6 +19,7 @@ import {
   Star,
   RotateCcw,
   ExternalLink,
+  ShoppingCart,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string; step: number }> = {
@@ -318,6 +319,22 @@ export default async function CustomerOrderDetailPage({ params }: { params: Prom
                 <p className="text-gray-500">
                   Fatura No: <span className="font-medium text-gray-900">{order.invoice.invoiceNo || "—"}</span>
                 </p>
+                {order.invoice.issuedAt && (
+                  <p className="mt-1 text-gray-500">
+                    Tarih: <span className="text-gray-700">{new Date(order.invoice.issuedAt).toLocaleDateString("tr-TR")}</span>
+                  </p>
+                )}
+                {order.invoice.pdfUrl && (
+                  <a
+                    href={order.invoice.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-orange-600"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Faturayı İndir
+                  </a>
+                )}
               </div>
             </div>
           )}
@@ -331,6 +348,25 @@ export default async function CustomerOrderDetailPage({ params }: { params: Prom
           )}
         </div>
       </div>
+
+      {/* Sipariş Tekrarla */}
+      {(order.status === "DELIVERED" || order.status === "CANCELLED") && (
+        <div className="mt-6 rounded-lg border bg-white p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-gray-900">Aynı Siparişi Tekrarla</h3>
+              <p className="mt-1 text-sm text-gray-500">Bu siparişin ürünlerini sepetinize ekleyin.</p>
+            </div>
+            <Link
+              href={`/api/reorder?orderId=${order.id}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#7AC143] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6aad38]"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Sepete Ekle
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Status History */}
       {order.statusHistory.length > 0 && (

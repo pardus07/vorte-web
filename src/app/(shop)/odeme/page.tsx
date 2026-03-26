@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, CreditCard, ArrowLeft, Lock } from "lucide-react";
+import { MapPin, CreditCard, ArrowLeft, Lock, Truck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatPrice } from "@/lib/utils";
@@ -44,6 +44,11 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<"address" | "payment">("address");
   const [checkoutBanners, setCheckoutBanners] = useState<BannerItem[]>([]);
 
+  const [orderNotes, setOrderNotes] = useState("");
+  const [wantInvoice, setWantInvoice] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<"personal" | "corporate">("personal");
+  const [invoiceInfo, setInvoiceInfo] = useState({ tcKimlik: "", taxNumber: "", taxOffice: "", companyName: "" });
+
   const [address, setAddress] = useState({
     fullName: "",
     phone: "",
@@ -82,7 +87,11 @@ export default function CheckoutPage() {
       const res = await fetch("/api/payment/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({
+          address,
+          orderNotes: orderNotes || undefined,
+          invoice: wantInvoice ? { type: invoiceType, ...invoiceInfo } : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -132,6 +141,11 @@ export default function CheckoutPage() {
 
   const shippingCost = cart.total >= FREE_SHIPPING_THRESHOLD ? 0 : 90;
   const grandTotal = cart.total + shippingCost;
+
+  // Tahmini teslimat hesaplama
+  const bigCities = ["istanbul", "ankara", "izmir", "bursa", "antalya", "adana", "konya", "gaziantep", "kocaeli", "mersin"];
+  const isBigCity = bigCities.includes(address.city.toLowerCase().replace(/İ/g, "i").replace(/ı/g, "i"));
+  const deliveryDays = isBigCity ? "2-3" : "3-5";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -305,6 +319,127 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              {/* Sipariş Notu */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Sipariş Notu (opsiyonel)
+                </label>
+                <textarea
+                  rows={2}
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  placeholder="Teslimat hakkında özel bir notunuz varsa buraya yazabilirsiniz..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+                />
+              </div>
+
+              {/* Fatura Bilgisi */}
+              <div className="rounded-lg border border-gray-200 p-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wantInvoice}
+                    onChange={(e) => setWantInvoice(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-[#7AC143] focus:ring-[#7AC143]"
+                  />
+                  <FileText className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">Fatura İstiyorum</span>
+                </label>
+
+                {wantInvoice && (
+                  <div className="mt-4 space-y-4">
+                    {/* Fatura Tipi */}
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="invoiceType"
+                          checked={invoiceType === "personal"}
+                          onChange={() => setInvoiceType("personal")}
+                          className="h-4 w-4 border-gray-300 text-[#7AC143] focus:ring-[#7AC143]"
+                        />
+                        <span className="text-sm text-gray-700">Bireysel</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="invoiceType"
+                          checked={invoiceType === "corporate"}
+                          onChange={() => setInvoiceType("corporate")}
+                          className="h-4 w-4 border-gray-300 text-[#7AC143] focus:ring-[#7AC143]"
+                        />
+                        <span className="text-sm text-gray-700">Kurumsal</span>
+                      </label>
+                    </div>
+
+                    {invoiceType === "personal" ? (
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          TC Kimlik No *
+                        </label>
+                        <input
+                          type="text"
+                          required={wantInvoice && invoiceType === "personal"}
+                          maxLength={11}
+                          value={invoiceInfo.tcKimlik}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setInvoiceInfo((p) => ({ ...p, tcKimlik: val }));
+                          }}
+                          placeholder="XXXXXXXXXXX"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Firma Adı *
+                          </label>
+                          <input
+                            type="text"
+                            required={wantInvoice && invoiceType === "corporate"}
+                            value={invoiceInfo.companyName}
+                            onChange={(e) => setInvoiceInfo((p) => ({ ...p, companyName: e.target.value }))}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+                          />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              Vergi No *
+                            </label>
+                            <input
+                              type="text"
+                              required={wantInvoice && invoiceType === "corporate"}
+                              maxLength={11}
+                              value={invoiceInfo.taxNumber}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                setInvoiceInfo((p) => ({ ...p, taxNumber: val }));
+                              }}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                              Vergi Dairesi *
+                            </label>
+                            <input
+                              type="text"
+                              required={wantInvoice && invoiceType === "corporate"}
+                              value={invoiceInfo.taxOffice}
+                              onChange={(e) => setInvoiceInfo((p) => ({ ...p, taxOffice: e.target.value }))}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#7AC143] focus:outline-none focus:ring-1 focus:ring-[#7AC143]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <Button type="submit" size="lg" className="w-full sm:w-auto">
                 Ödeme Adımına Geç
               </Button>
@@ -331,6 +466,28 @@ export default function CheckoutPage() {
                 </p>
                 <p className="text-sm text-gray-600">{address.phone}</p>
               </div>
+
+              {/* Order notes & invoice summary */}
+              {(orderNotes || wantInvoice) && (
+                <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
+                  {orderNotes && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sipariş Notu</p>
+                      <p className="text-sm text-gray-700 mt-0.5">{orderNotes}</p>
+                    </div>
+                  )}
+                  {wantInvoice && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fatura Bilgisi</p>
+                      <p className="text-sm text-gray-700 mt-0.5">
+                        {invoiceType === "personal"
+                          ? `Bireysel — TC: ${invoiceInfo.tcKimlik}`
+                          : `Kurumsal — ${invoiceInfo.companyName}, VN: ${invoiceInfo.taxNumber}, VD: ${invoiceInfo.taxOffice}`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Payment info */}
               <div className="rounded-lg border p-6">
@@ -403,6 +560,14 @@ export default function CheckoutPage() {
                   {shippingCost === 0 ? "Ücretsiz" : formatPrice(shippingCost)}
                 </span>
               </div>
+              {address.city && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2">
+                  <Truck className="h-4 w-4 text-[#7AC143] shrink-0" />
+                  <span className="text-xs text-green-700">
+                    Tahmini teslimat: <strong>{deliveryDays} iş günü</strong>
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between border-t pt-2 text-lg font-bold">
                 <span>Toplam</span>
                 <span>{formatPrice(grandTotal)}</span>

@@ -48,6 +48,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }[] = [];
 
   if (query) {
+    // Arama sorgusunu logla (sonuç sayısı aşağıda güncellenir)
+    const logSearchResults = (count: number) => {
+      db.searchLog.create({ data: { query, results: count } }).catch(() => {});
+    };
+
     products = await db.product.findMany({
       where: {
         active: true,
@@ -72,6 +77,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       },
       orderBy: { createdAt: "desc" },
     });
+    logSearchResults(products.length);
   }
 
   return (

@@ -9,7 +9,7 @@ function formatPrice(value: number): string {
   return `₺${value.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`;
 }
 
-export function RecentlyViewed() {
+export function RecentlyViewed({ excludeId }: { excludeId?: string } = {}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<RecentlyViewedItem[]>([]);
 
@@ -25,7 +25,8 @@ export function RecentlyViewed() {
     }
   }, []);
 
-  if (items.length < 2) return null;
+  const filtered = excludeId ? items.filter((i) => i.id !== excludeId) : items;
+  if (filtered.length < 2) return null;
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -67,7 +68,7 @@ export function RecentlyViewed() {
             className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {items.map((item) => (
+            {filtered.map((item) => (
               <Link
                 key={item.id}
                 href={`/urun/${item.slug}`}

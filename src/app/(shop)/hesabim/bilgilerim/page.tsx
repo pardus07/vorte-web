@@ -28,6 +28,20 @@ export default function AccountSettingsPage() {
   const [showPasswords, setShowPasswords] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Bildirim tercihleri
+  const [prefs, setPrefs] = useState({
+    emailOrders: true,
+    emailPromotions: true,
+    emailStock: true,
+    smsOrders: false,
+  });
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
+  // Hesap silme
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch("/api/hesabim");
@@ -44,6 +58,14 @@ export default function AccountSettingsPage() {
     } finally {
       setLoading(false);
     }
+
+    // Bildirim tercihleri
+    fetch("/api/hesabim/tercihler")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) setPrefs(data.data);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -105,6 +127,51 @@ export default function AccountSettingsPage() {
       setMessage({ type: "error", text: "Bir hata oluştu." });
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handlePrefsSave = async () => {
+    setSavingPrefs(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/hesabim/tercihler", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(prefs),
+      });
+      if (res.ok) {
+        setMessage({ type: "success", text: "Bildirim tercihleriniz güncellendi." });
+      } else {
+        setMessage({ type: "error", text: "Tercihler kaydedilemedi." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Bir hata oluştu." });
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== "HESABIMI SIL") return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/hesabim/hesap-sil", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: deleteConfirm }),
+      });
+      if (res.ok) {
+        window.location.href = "/?deleted=1";
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Hesap silinemedi." });
+        setShowDeleteDialog(false);
+      }
+    } catch {
+      setMessage({ type: "error", text: "Bir hata oluştu." });
+      setShowDeleteDialog(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -250,23 +317,87 @@ export default function AccountSettingsPage() {
         </div>
       </form>
 
-      {/* Danger Zone */}
+      {/* Bildirim Tercihleri */}
+      <div className="mt-6 rounded-lg border bg-white p-6">
+        <h2 className="flex items-center gap-2 font-bold text-gray-900">
+          <Bell className="h-4 w-4 text-[#7AC143]" />
+          Bildirim Tercihleri
+        </h2>
+        <div className="mt-4 space-y-3">
+          {[
+            { key: "emailOrders" as const, label: "Sipariş güncellemeleri (e-posta)", desc: "Sipariş onayı, kargo ve teslimat bildirimleri" },
+            { key: "emailPromotions" as const, label: "Kampanya ve indirimler (e-posta)", desc: "Yeni kampanyalar, özel indirimler ve fırsatlar" },
+            { key: "emailStock" as const, label: "Stok bildirimleri (e-posta)", desc: "Tükenen ürünler tekrar stoğa girdiğinde" },
+            { key: "smsOrders" as const, label: "Sipariş bildirimleri (SMS)", desc: "Sipariş ve kargo SMS bildirimleri" },
+          ].map((item) => (
+            <label key={item.key} className="flex items-start gap-3 cursor-pointer rounded-lg p-2 hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={prefs[item.key]}
+                onChange={(e) => setPrefs((p) => ({ ...p, [item.key]: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#7AC143] focus:ring-[#7AC143]"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                <p className="text-xs text-gray-400">{item.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={handlePrefsSave} disabled={savingPrefs}>
+            <Save className="mr-1.5 h-4 w-4" />
+            {savingPrefs ? "Kaydediliyor..." : "Tercihleri Kaydet"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Hesap Silme */}
       <div className="mt-6 rounded-lg border border-red-200 bg-white p-6">
         <h2 className="flex items-center gap-2 font-bold text-red-600">
           <Trash2 className="h-4 w-4" />
-          Hesap İşlemleri
+          Hesap Silme
         </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Hesabınızı silmek isterseniz, KVKK kapsamında tüm kişisel verileriniz silinir.
-          Siparişleriniz anonim hale getirilir.
+          Hesabınızı sildiğinizde KVKK kapsamında tüm kişisel verileriniz kalıcı olarak silinir.
+          Siparişleriniz anonim hale getirilir. Bu işlem geri alınamaz.
         </p>
-        <p className="mt-2 text-xs text-gray-400">
-          Hesap silme talebi için{" "}
-          <a href="mailto:info@vorte.com.tr" className="text-[#7AC143] hover:underline">
-            info@vorte.com.tr
-          </a>{" "}
-          adresine e-posta gönderin.
-        </p>
+        {!showDeleteDialog ? (
+          <button
+            onClick={() => setShowDeleteDialog(true)}
+            className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+          >
+            Hesabımı Silmek İstiyorum
+          </button>
+        ) : (
+          <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-4">
+            <p className="text-sm font-medium text-red-700">
+              Onaylamak için aşağıya <strong>HESABIMI SIL</strong> yazın:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="HESABIMI SIL"
+              className="mt-2 w-full rounded-lg border border-red-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirm !== "HESABIMI SIL" || deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Siliniyor..." : "Hesabımı Kalıcı Olarak Sil"}
+              </button>
+              <button
+                onClick={() => { setShowDeleteDialog(false); setDeleteConfirm(""); }}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

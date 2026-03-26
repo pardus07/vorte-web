@@ -7,6 +7,7 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Tag, Lock, Truck, RotateC
 import { Button } from "@/components/ui/Button";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { formatPrice } from "@/lib/utils";
+import { ProductCarousel } from "@/components/product/ProductCarousel";
 
 interface CartItem {
   id: string;
@@ -51,6 +52,7 @@ export default function CartPage() {
   const [couponSuccess, setCouponSuccess] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [suggestions, setSuggestions] = useState<{ id: string; name: string; slug: string; basePrice: number; images: string[]; gender: string }[]>([]);
 
   const fetchCart = useCallback(async () => {
     try {
@@ -68,6 +70,10 @@ export default function CartPage() {
 
   useEffect(() => {
     fetchCart();
+    fetch("/api/products?limit=8&sort=popular")
+      .then((r) => r.json())
+      .then((data) => setSuggestions(data.products || []))
+      .catch(() => {});
   }, [fetchCart]);
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
@@ -356,6 +362,14 @@ export default function CartPage() {
             <p className="mt-3 text-center text-xs text-gray-400">
               KDV dahil fiyatlar
             </p>
+
+            {/* Tahmini teslimat */}
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-green-50 px-3 py-2">
+              <Truck className="h-4 w-4 text-[#7AC143] shrink-0" />
+              <span className="text-xs text-green-700">
+                Tahmini teslimat: <strong>2-5 iş günü</strong>
+              </span>
+            </div>
           </div>
 
           {/* Trust badges */}
@@ -366,6 +380,18 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* Ürün Önerileri */}
+      {suggestions.length > 0 && (
+        <div className="mt-12">
+          <ProductCarousel
+            title="Bunları da Beğenebilirsiniz"
+            products={suggestions
+              .filter((s) => !cart.items.some((i) => i.productId === s.id))
+              .map((s) => ({ id: s.id, slug: s.slug, name: s.name, image: s.images[0] || "", price: s.basePrice }))}
+          />
+        </div>
+      )}
     </div>
   );
 }

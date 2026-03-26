@@ -12,7 +12,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { cartCount } = useCart();
+  const { cartCount, cartBounce } = useCart();
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 50);
@@ -115,7 +115,7 @@ export function Header() {
             >
               <ShoppingBag className="h-[18px] w-[18px]" />
               {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#1A1A1A] text-[9px] font-medium text-white">
+                <span className={`absolute top-0.5 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-[#1A1A1A] text-[9px] font-medium text-white transition-transform duration-300 ${cartBounce ? "scale-150" : "scale-100"}`}>
                   {cartCount}
                 </span>
               )}

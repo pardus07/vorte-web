@@ -194,7 +194,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       )}
 
       {/* Son görüntülenenler */}
-      <RecentlyViewed />
+      <RecentlyViewed excludeId={product.id} />
 
       {/* Son görüntülenen ürün kaydı */}
       <RecentlyViewedTracker
