@@ -36,10 +36,15 @@ export async function GET(
       );
     }
 
-    // Resolve file path (relative paths from project root, absolute paths as-is)
-    const filePath = path.isAbsolute(callLog.audioUrl)
-      ? callLog.audioUrl
-      : path.join(process.cwd(), callLog.audioUrl);
+    // Resolve file path — /uploads/audio/xxx.ogg → public/uploads/audio/xxx.ogg
+    let filePath: string;
+    if (path.isAbsolute(callLog.audioUrl)) {
+      filePath = callLog.audioUrl;
+    } else if (callLog.audioUrl.startsWith("/uploads/")) {
+      filePath = path.join(process.cwd(), "public", callLog.audioUrl);
+    } else {
+      filePath = path.join(process.cwd(), callLog.audioUrl);
+    }
 
     // Check file exists
     try {

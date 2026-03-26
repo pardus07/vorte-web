@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
       sentiment,
       transcript,
       audioUrl,
+      audioBase64,
+      audioFilename,
       transferredTo,
     } = body;
 
@@ -131,6 +133,25 @@ export async function POST(request: NextRequest) {
         { error: "callId, callerNumber ve startedAt zorunludur" },
         { status: 400 }
       );
+    }
+
+    // Ses dosyasını kaydet (base64 geliyorsa)
+    let savedAudioUrl = audioUrl || null;
+    if (audioBase64 && audioFilename) {
+      try {
+        const { writeFile, mkdir } = await import("fs/promises");
+        const path = await import("path");
+        const audioDir = path.join(process.cwd(), "public", "uploads", "audio");
+        await mkdir(audioDir, { recursive: true });
+        const safeFilename = audioFilename.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = path.join(audioDir, safeFilename);
+        const buffer = Buffer.from(audioBase64, "base64");
+        await writeFile(filePath, buffer);
+        savedAudioUrl = `/uploads/audio/${safeFilename}`;
+        console.log(`[voice-calls] Audio saved: ${savedAudioUrl} (${Math.round(buffer.length / 1024)} KB)`);
+      } catch (audioErr) {
+        console.error("[voice-calls] Audio kaydetme hatası:", audioErr);
+      }
     }
 
     // Create call log
@@ -147,7 +168,7 @@ export async function POST(request: NextRequest) {
         summary: summary || null,
         sentiment: sentiment || null,
         transcript: transcript || null,
-        audioUrl: audioUrl || null,
+        audioUrl: savedAudioUrl,
         transferredTo: transferredTo || null,
       },
     });

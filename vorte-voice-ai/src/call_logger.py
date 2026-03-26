@@ -1,6 +1,8 @@
 """Call Logger — Arama kayitlarini Vorte API'ye gonderir"""
 import asyncio
+import base64
 import logging
+import os
 from datetime import datetime
 from typing import Optional
 import httpx
@@ -13,7 +15,8 @@ class CallLogger:
     def __init__(self, call_id: str, caller_number: str = "Bilinmiyor"):
         self.call_id = call_id
         self.caller_number = caller_number
-        self.start_time = datetime.now()
+        self.start_time: Optional[datetime] = None  # Participant bağlandığında başlar
+        self._created_at = datetime.now()  # Logger oluşturulma zamanı
         self.end_time: Optional[datetime] = None
         self.transcript: list[dict] = []
         self.topics: set[str] = set()
@@ -24,40 +27,64 @@ class CallLogger:
         self._client = httpx.AsyncClient(
             base_url=VORTE_API_URL,
             headers=headers,
-            timeout=15.0,
+            timeout=30.0,  # Ses dosyası upload için daha uzun timeout
         )
-        self._sent = False  # Prevent double-send
+        self._sent = False
+
+    def start_timer(self):
+        """Gerçek konuşma süresini başlat (participant bağlandığında çağrılır)"""
+        if self.start_time is None:
+            self.start_time = datetime.now()
+            logger.info("Call timer started")
 
     def add_message(self, role: str, text: str):
-        """Konusma mesaji ekle (role: 'assistant' veya 'caller')"""
-        elapsed = (datetime.now() - self.start_time).total_seconds()
+        """Konuşma mesajı ekle"""
+        ref_time = self.start_time or self._created_at
+        elapsed = (datetime.now() - ref_time).total_seconds()
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         self.transcript.append({
             "role": role,
             "text": text,
-            "time": f"{minutes:02d}:{seconds:02d}"
+            "time": "{:02d}:{:02d}".format(minutes, seconds)
         })
 
     def add_topic(self, topic: str):
-        """Konusulan konu ekle"""
+        """Konuşulan konu ekle"""
         self.topics.add(topic)
 
     async def end_call(self, status: str = "completed", summary: str = None, sentiment: str = None):
-        """Cagriyi bitir ve Vorte API'ye gonder"""
+        """Çağrıyı bitir ve Vorte API'ye gönder (ses dosyası dahil)"""
         if self._sent:
             logger.info("Call log already sent, skipping")
             return
         self._sent = True
         self.end_time = datetime.now()
-        duration = int((self.end_time - self.start_time).total_seconds())
+
+        # Süre hesabı: start_time yoksa created_at kullan
+        ref_time = self.start_time or self._created_at
+        duration = int((self.end_time - ref_time).total_seconds())
+
+        # Ses dosyasını oku ve base64 encode et
+        audio_base64 = None
+        audio_filename = None
+        if self.audio_path and os.path.exists(self.audio_path):
+            try:
+                with open(self.audio_path, "rb") as f:
+                    audio_data = f.read()
+                audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+                audio_filename = os.path.basename(self.audio_path)
+                size_kb = len(audio_data) / 1024
+                logger.info("Audio file read: %s (%.1f KB)", audio_filename, size_kb)
+            except Exception as e:
+                logger.warning("Failed to read audio file: %s", e)
 
         payload = {
             "callId": self.call_id,
             "callerNumber": self.caller_number,
             "callDirection": "inbound",
             "status": status,
-            "startedAt": self.start_time.isoformat(),
+            "startedAt": ref_time.isoformat(),
             "endedAt": self.end_time.isoformat(),
             "durationSeconds": duration,
             "topics": list(self.topics),
@@ -65,15 +92,17 @@ class CallLogger:
             "sentiment": sentiment or "neutral",
             "transcript": self.transcript,
             "audioUrl": self.audio_path,
+            "audioBase64": audio_base64,
+            "audioFilename": audio_filename,
         }
 
         try:
             resp = await self._client.post("/api/admin/voice-calls", json=payload)
             if resp.status_code in (200, 201):
-                logger.info(f"Call log sent: {self.call_id} ({duration}s)")
+                logger.info("Call log sent: %s (%ds)", self.call_id, duration)
             else:
-                logger.error(f"Call log failed: {resp.status_code} {resp.text}")
+                logger.error("Call log failed: %d %s", resp.status_code, resp.text)
         except Exception as e:
-            logger.error(f"Call log error: {e}")
+            logger.error("Call log error: %s", e)
         finally:
             await self._client.aclose()
