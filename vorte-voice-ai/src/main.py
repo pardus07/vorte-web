@@ -87,8 +87,8 @@ async def start_room_recording(room_name: str) -> str | None:
         return None
 
 
-async def stop_room_recording(egress_id: str) -> str | None:
-    """Ses kaydını durdurur. Dosya yolunu döner."""
+async def stop_room_recording(egress_id: str, room_name: str = "") -> str | None:
+    """Ses kaydını durdurur. Dosya yolunu döner. Dosyanın yazılmasını bekler."""
     if not egress_id:
         return None
     try:
@@ -102,11 +102,34 @@ async def stop_room_recording(egress_id: str) -> str | None:
         )
 
         result = await api.egress.stop_egress(StopEgressRequest(egress_id=egress_id))
-        logger.info("Recording stopped: egress_id=%s", egress_id)
+        logger.info("Recording stop requested: egress_id=%s", egress_id)
         await api.aclose()
 
+        # Egress'in dosyayı yazmasını bekle (encode + flush süresi)
+        expected_path = "/recordings/{}.ogg".format(room_name) if room_name else None
+
+        # file_results varsa onu kullan, yoksa beklenen path'i dene
+        file_path = None
         if result.file_results:
-            return result.file_results[0].filename
+            file_path = result.file_results[0].filename
+        elif expected_path:
+            file_path = expected_path
+
+        if file_path:
+            # Dosyanın diske yazılmasını bekle (max 10 saniye, 1'er saniye kontrol)
+            for attempt in range(10):
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    logger.info("Recording file ready: %s (%d KB, attempt %d)",
+                                file_path, os.path.getsize(file_path) // 1024, attempt + 1)
+                    return file_path
+                logger.info("Waiting for recording file... attempt %d/10", attempt + 1)
+                await asyncio.sleep(1)
+
+            # Son kontrol
+            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                return file_path
+            logger.warning("Recording file not found after 10 seconds: %s", file_path)
+
         return None
 
     except Exception as e:
@@ -287,6 +310,15 @@ async def entrypoint(ctx: agents.JobContext):
             call_logger.start_timer()  # Gerçek konuşma süresi burada başlar
             logger.info("Caller connected, timer started: %s", number)
 
+    # Katılımcı zaten odadaysa (SIP participant session başlamadan önce bağlanmış olabilir)
+    for p in ctx.room.remote_participants.values():
+        identity = p.identity or ""
+        if identity.startswith("sip_"):
+            call_logger.caller_number = identity.replace("sip_", "")
+            call_logger.start_timer()
+            logger.info("Existing SIP participant found, timer started: %s", call_logger.caller_number)
+            break
+
     # Shutdown callback — stop recording + send call log
     @ctx.add_shutdown_callback
     async def on_shutdown():
@@ -299,12 +331,15 @@ async def entrypoint(ctx: agents.JobContext):
                     call_logger.caller_number = identity.replace("sip_", "")
                     break
 
-            # Stop recording
+            # Stop recording — dosyanın yazılmasını bekler (max 10sn)
             if egress_id:
-                audio_file = await stop_room_recording(egress_id)
+                audio_file = await stop_room_recording(egress_id, room_name)
                 if audio_file:
                     call_logger.audio_path = audio_file
                     logger.info("Recording saved: %s", audio_file)
+                else:
+                    call_logger.audio_path = None  # Docker path gönderme
+                    logger.warning("Recording file not available, skipping audio upload")
 
             # Send call log
             await call_logger.end_call(status="completed")
@@ -330,11 +365,14 @@ async def _end_call(
 
     # Fire-and-forget: stop recording + send log
     if call_logger:
+        room_name = ctx.room.name or ""
         async def _cleanup():
             if egress_id:
-                audio_file = await stop_room_recording(egress_id)
+                audio_file = await stop_room_recording(egress_id, room_name)
                 if audio_file:
                     call_logger.audio_path = audio_file
+                else:
+                    call_logger.audio_path = None
             await call_logger.end_call(status=status)
         asyncio.create_task(_cleanup())
 

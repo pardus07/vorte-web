@@ -91,10 +91,17 @@ class CallLogger:
             "summary": summary,
             "sentiment": sentiment or "neutral",
             "transcript": self.transcript,
-            "audioUrl": self.audio_path,
+            # audioUrl sadece base64 upload başarılıysa gönderilir
+            # Docker volume path'i gönderme — web container erişemez
+            "audioUrl": None,
             "audioBase64": audio_base64,
             "audioFilename": audio_filename,
         }
+
+        if audio_base64:
+            logger.info("Audio will be uploaded as base64 (%d KB)", len(audio_base64) * 3 // 4 // 1024)
+        else:
+            logger.warning("No audio data to upload")
 
         try:
             resp = await self._client.post("/api/admin/voice-calls", json=payload)
