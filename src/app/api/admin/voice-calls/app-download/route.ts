@@ -5,19 +5,25 @@
  */
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { readFile, stat } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
 export async function GET() {
   // Admin session kontrolü
-  const session = await getServerSession(authOptions);
-  if (!session || session.user?.role !== "ADMIN") {
+  const session = await auth();
+  if (!session?.user) {
     return NextResponse.json(
       { error: "Bu işlem için yetkiniz bulunmuyor." },
       { status: 401 }
+    );
+  }
+  const role = (session.user as unknown as { role: string }).role;
+  if (role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Bu işlem için yetkiniz bulunmuyor." },
+      { status: 403 }
     );
   }
 
