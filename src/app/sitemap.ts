@@ -4,19 +4,30 @@ import { db } from "@/lib/db";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
 
-  // Static pages
+  const now = new Date();
+
+  // Statik sayfalar
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
-    { url: `${baseUrl}/erkek-ic-giyim`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/kadin-ic-giyim`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/toptan`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/hakkimizda`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/iletisim`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/gizlilik-politikasi`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/kvkk`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/mesafeli-satis`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/iade-politikasi`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/kullanim-kosullari`, changeFrequency: "yearly", priority: 0.3 },
+    // Ana sayfa + kategoriler
+    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/erkek-ic-giyim`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/kadin-ic-giyim`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+
+    // Ticari sayfalar
+    { url: `${baseUrl}/toptan`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/sss`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/kargo-teslimat`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+
+    // Kurumsal
+    { url: `${baseUrl}/hakkimizda`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/iletisim`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+
+    // Hukuki sayfalar
+    { url: `${baseUrl}/gizlilik-politikasi`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/kvkk`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/mesafeli-satis`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/iade-politikasi`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/kullanim-kosullari`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   // Dynamic product pages
@@ -47,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     blogPages = [
-      { url: `${baseUrl}/blog`, changeFrequency: "weekly" as const, priority: 0.6 },
+      { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "weekly" as const, priority: 0.6 },
       ...posts.map((post) => ({
         url: `${baseUrl}/blog/${post.slug}`,
         lastModified: post.updatedAt,
