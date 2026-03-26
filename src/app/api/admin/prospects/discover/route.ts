@@ -2,11 +2,12 @@
  * Vorte Admin — Müşteri Keşfet API
  * POST /api/admin/prospects/discover
  *
- * Gemini 2.5 Flash + Google Search ile potansiyel müşterileri (benzin istasyonu, market vb.) arar.
+ * Gemini 2.5 Flash + Google Search Grounding ile potansiyel müşterileri arar.
+ * Google Search sayesinde güncel işletme bilgileri + koordinatlar elde edilir.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { requirePermission } from "@/lib/admin-auth";
 
 export const maxDuration = 60;
@@ -83,29 +84,36 @@ const VALID_CITIES = [
 
 // ─── System Prompt ──────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Sen Türkiye'deki işletmeleri araştıran bir uzman asistansın.
+const SYSTEM_PROMPT = `Sen Türkiye'deki işletmeleri Google'dan araştıran bir uzman asistansın.
 Kullanıcının aradığı kategoride GERÇEK Türkiye'deki işletmeleri bul.
+
+ÖNEMLİ: Google Haritalar ve Google arama sonuçlarını kullanarak gerçek işletme bilgilerini bul.
+Her işletme için Google Maps'teki koordinatları (enlem/boylam) MUTLAKA ver.
+
 Her işletme için şu bilgileri ver:
 - İşletme adı (tam ticari unvanı veya tabela adı)
-- Adres (şehir, ilçe, mahalle/cadde)
+- Adres (şehir, ilçe, mahalle/cadde, numara)
 - Telefon numarası (0XXX XXX XX XX formatında)
-- E-posta adresi (varsa)
+- E-posta adresi (varsa — web sitesinden veya Google'dan bul)
 - Web sitesi (varsa)
-- Yetkili kişi adı (müdür, sahip vb.)
+- Yetkili kişi adı (müdür, sahip vb. — bulamazsan "Belirtilmemiş" yaz)
 - Yetkili unvanı (İstasyon Müdürü, Mağaza Müdürü vb.)
 - Marka/zincir (Shell, BP, Opet vb. veya bağımsız)
-- Enlem (latitude) — Google Maps koordinatı (ondalık derece, örn: 40.1885)
-- Boylam (longitude) — Google Maps koordinatı (ondalık derece, örn: 29.0610)
+- Enlem (latitude) — Google Maps koordinatı (ondalık derece, örn: 40.1885). ZORUNLU.
+- Boylam (longitude) — Google Maps koordinatı (ondalık derece, örn: 29.0610). ZORUNLU.
+
+KOORDİNATLAR ÖNEMLİ: Her işletmenin Google Maps'teki gerçek konumunu bul ve koordinatlarını ver.
+Koordinatsız sonuç KABUL EDİLMEZ. İşletmenin adresini Google Maps'te ara ve koordinatı al.
 
 SADECE doğrulanmış, gerçek işletme bilgileri ver. Emin olmadığın bilgiyi "Belirtilmemiş" yaz.
-Koordinatlar için işletmenin gerçek adresine en yakın tahmini değeri ver.
+Ama koordinatlar için her zaman en yakın doğru değeri ver.
 
 Yanıtını MUTLAKA aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
 {
   "prospects": [
     {
       "name": "İşletme Adı",
-      "address": "Şehir, İlçe, Mahalle/Cadde",
+      "address": "Şehir, İlçe, Mahalle/Cadde No:XX",
       "phone": "0XXX XXX XX XX",
       "email": "iletisim@firma.com",
       "website": "firma.com",
@@ -167,31 +175,25 @@ export async function POST(req: NextRequest) {
   }
 
   const categoryLabel = CATEGORY_LABELS[category];
-  const userPrompt = `${searchQuery}\n\nKategori: ${categoryLabel}\nŞehir: ${city}${brand ? `\nMarka: ${brand}` : ""}\n\nBu kriterlere uyan en az 5, en fazla 15 işletme bul.`;
+  const userPrompt = `${searchQuery}\n\nKategori: ${categoryLabel}\nŞehir: ${city}${brand ? `\nMarka: ${brand}` : ""}\n\nBu kriterlere uyan en az 5, en fazla 15 işletme bul. Google Haritalar'dan gerçek koordinatları da ekle.`;
 
   console.log("[prospect-discover] Category:", category, "City:", city, "Brand:", brand);
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
+      contents: userPrompt,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        tools: [{ googleSearch: {} }],
+      },
     });
 
-    const result = await model.generateContent(userPrompt);
-    const response = result.response;
+    const text = response.text?.trim();
 
-    let text = "";
-    try {
-      text = response.text();
-    } catch {
-      return NextResponse.json(
-        { error: "Gemini'den yanıt alınamadı." },
-        { status: 502 }
-      );
-    }
-
-    if (!text?.trim()) {
+    if (!text) {
       return NextResponse.json(
         { error: "Gemini boş yanıt döndü." },
         { status: 502 }
@@ -240,7 +242,7 @@ export async function POST(req: NextRequest) {
       longitude: typeof p.longitude === "number" ? p.longitude : null,
     }));
 
-    console.log("[prospect-discover] Found", prospects.length, "prospects");
+    console.log("[prospect-discover] Found", prospects.length, "prospects, with coords:", prospects.filter(p => p.latitude).length);
 
     return NextResponse.json({
       prospects,

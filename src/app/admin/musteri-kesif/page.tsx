@@ -35,6 +35,7 @@ import {
   X,
   Map as MapIcon,
   Navigation,
+  Crosshair,
 } from "lucide-react";
 
 // Leaflet CSS (SSR'da yüklenmemeli)
@@ -276,6 +277,63 @@ export default function MusteriKesifPage() {
   };
 
   const cleanVal = (v: string) => (v && v !== "Belirtilmemiş" ? v : null);
+
+  // Adres → Koordinat (Nominatim)
+  const [geocoding, setGeocoding] = useState<number | string | null>(null); // index veya prospect id
+
+  const geocodeAddress = async (address: string, city?: string): Promise<{ latitude: number; longitude: number } | null> => {
+    try {
+      const res = await fetch("/api/admin/prospects/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, city }),
+      });
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        return { latitude: data.latitude, longitude: data.longitude };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Keşfet kartı için koordinat bul
+  const handleGeocodeDiscover = async (i: number) => {
+    const p = discovered[i];
+    const address = p.address === "Belirtilmemiş" ? p.name : p.address;
+    if (!address) return;
+
+    setGeocoding(i);
+    const coords = await geocodeAddress(address, discoverCity);
+    if (coords) {
+      setDiscovered((prev) =>
+        prev.map((item, idx) =>
+          idx === i ? { ...item, latitude: coords.latitude, longitude: coords.longitude } : item
+        )
+      );
+    } else {
+      alert("Bu adres için koordinat bulunamadı.");
+    }
+    setGeocoding(null);
+  };
+
+  // Edit modal için koordinat bul
+  const handleGeocodeEdit = async () => {
+    if (!editingProspect) return;
+    const address = (editForm.address as string) || editingProspect.address || editingProspect.name;
+    const city = (editForm.city as string) || editingProspect.city;
+    if (!address) return;
+
+    setGeocoding(editingProspect.id);
+    const coords = await geocodeAddress(address, city);
+    if (coords) {
+      setEditForm((prev) => ({ ...prev, latitude: coords.latitude, longitude: coords.longitude }));
+    } else {
+      alert("Bu adres için koordinat bulunamadı.");
+    }
+    setGeocoding(null);
+  };
 
   const handleSaveSelected = async () => {
     const selected = discovered.filter((p) => p.selected);
@@ -681,13 +739,19 @@ export default function MusteriKesifPage() {
                         <Globe className="w-3 h-3 text-gray-400 shrink-0" />
                         <input type="text" value={p.website === "Belirtilmemiş" ? "" : p.website} onChange={(e) => updateDiscoveredField(i, "website", e.target.value)} placeholder="Web sitesi" className={inputCls} />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-blue-400 shrink-0" />
-                        <input type="number" step="any" value={p.latitude ?? ""} onChange={(e) => updateDiscoveredField(i, "latitude", e.target.value)} placeholder="Enlem" className={inputCls} />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-blue-400 shrink-0" />
-                        <input type="number" step="any" value={p.longitude ?? ""} onChange={(e) => updateDiscoveredField(i, "longitude", e.target.value)} placeholder="Boylam" className={inputCls} />
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <Crosshair className="w-3 h-3 text-blue-400 shrink-0" />
+                        <input type="number" step="any" value={p.latitude ?? ""} onChange={(e) => updateDiscoveredField(i, "latitude", e.target.value)} placeholder="Enlem" className={inputCls + " w-24"} />
+                        <input type="number" step="any" value={p.longitude ?? ""} onChange={(e) => updateDiscoveredField(i, "longitude", e.target.value)} placeholder="Boylam" className={inputCls + " w-24"} />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleGeocodeDiscover(i); }}
+                          disabled={geocoding === i}
+                          className="shrink-0 px-2 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {geocoding === i ? <Loader2 className="w-3 h-3 animate-spin" /> : <Crosshair className="w-3 h-3" />}
+                          Bul
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1055,30 +1119,36 @@ export default function MusteriKesifPage() {
               ))}
 
               {/* Koordinatlar */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
-                    <MapPin className="w-4 h-4 text-blue-500" /> Enlem (Latitude)
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                    <Crosshair className="w-4 h-4 text-blue-500" /> Koordinatlar
                   </label>
+                  <button
+                    type="button"
+                    onClick={handleGeocodeEdit}
+                    disabled={geocoding === editingProspect?.id}
+                    className="px-3 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {geocoding === editingProspect?.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Crosshair className="w-3 h-3" />}
+                    Adresten Koordinat Bul
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     type="number"
                     step="any"
                     value={editForm.latitude ?? ""}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, latitude: e.target.value ? parseFloat(e.target.value) : null }))}
-                    placeholder="40.1885"
+                    placeholder="Enlem (40.1885)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
                   />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
-                    <MapPin className="w-4 h-4 text-blue-500" /> Boylam (Longitude)
-                  </label>
                   <input
                     type="number"
                     step="any"
                     value={editForm.longitude ?? ""}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, longitude: e.target.value ? parseFloat(e.target.value) : null }))}
-                    placeholder="29.0610"
+                    placeholder="Boylam (29.0610)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#7AC143]/30 focus:border-[#7AC143] outline-none"
                   />
                 </div>
