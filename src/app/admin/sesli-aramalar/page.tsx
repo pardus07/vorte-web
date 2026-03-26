@@ -18,6 +18,8 @@ import {
   ChevronRight,
   FileText,
   Volume2,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -301,6 +303,14 @@ export default function AdminVoiceCallsPage() {
             {total} arama kaydı bulunuyor
           </p>
         </div>
+        <a
+          href="/api/admin/voice-calls/app-download"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#7AC143] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6AAF35] active:scale-[0.98]"
+        >
+          <Smartphone className="h-4 w-4" />
+          Vorte Asistan APK
+          <Download className="h-4 w-4" />
+        </a>
       </div>
 
       {/* Error */}
