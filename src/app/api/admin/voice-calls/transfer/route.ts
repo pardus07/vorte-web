@@ -102,9 +102,10 @@ export async function POST(req: NextRequest) {
       errors: fcmResult.errors.length > 0 ? fcmResult.errors : undefined,
     });
   } catch (error) {
-    console.error("[Transfer] Hata:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Transfer] Hata:", msg, error);
     return NextResponse.json(
-      { error: "Aktarma işlemi başarısız" },
+      { error: "Aktarma işlemi başarısız", detail: msg },
       { status: 500 }
     );
   }

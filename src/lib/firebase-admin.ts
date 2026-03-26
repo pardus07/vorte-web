@@ -19,7 +19,10 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
 function getFirebaseConfig(): FirebaseConfig {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  // Coolify/Docker bazen \n'leri çift escape eder (\\n → \\\\n)
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ?.replace(/\\\\n/g, "\n")
+    ?.replace(/\\n/g, "\n");
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
