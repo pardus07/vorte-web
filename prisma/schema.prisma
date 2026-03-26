@@ -1295,3 +1295,71 @@ model UserPreference {
 
   @@map("user_preferences")
 }
+
+// ============ MÜŞTERİ KEŞİF & TEKLİF SİSTEMİ ============
+
+enum ProspectCategory {
+  GAS_STATION    // Benzin istasyonu
+  MARKET_CHAIN   // Market zinciri
+  RETAIL_STORE   // Mağaza/Perakende
+  HOTEL          // Otel
+  CORPORATE      // Kurumsal
+}
+
+enum ProspectStatus {
+  NEW            // Yeni keşfedildi
+  CONTACTED      // Mail gönderildi
+  OPENED         // Mail açıldı
+  CLICKED        // Link tıklandı
+  INTERESTED     // İlgilendi
+  SAMPLE_SENT    // Numune gönderildi
+  CONVERTED      // Bayi oldu
+  REJECTED       // İlgilenmedi
+}
+
+model ProspectCustomer {
+  id            String           @id @default(cuid())
+  name          String
+  category      ProspectCategory
+  brand         String?          // Shell, BP, Opet vb.
+  city          String
+  district      String?
+  address       String?
+  phone         String?
+  email         String?
+  website       String?
+  contactName   String?
+  contactTitle  String?
+  status        ProspectStatus   @default(NEW)
+  notes         String?
+  source        String?          // "gemini-discover"
+
+  emails        OutreachEmail[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([city])
+  @@index([category])
+  @@index([status])
+  @@map("prospect_customers")
+}
+
+model OutreachEmail {
+  id            String           @id @default(cuid())
+  prospectId    String
+  prospect      ProspectCustomer @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  subject       String
+  body          String           @db.Text
+  trackingId    String           @unique @default(cuid())
+  sentAt        DateTime?
+  openedAt      DateTime?
+  openCount     Int              @default(0)
+  clickedAt     DateTime?
+  clickCount    Int              @default(0)
+  status        String           @default("PENDING") // PENDING, SENT, FAILED
+  createdAt     DateTime         @default(now())
+
+  @@index([trackingId])
+  @@map("outreach_emails")
+}

@@ -784,6 +784,65 @@ Ağ bölgesindeki saf pamuk astar, cildin yalnızca doğal pamukla temas etmesin
     },
   });
 
+  await db.emailTemplate.upsert({
+    where: { name: "prospect-stand-offer" },
+    update: {},
+    create: {
+      name: "prospect-stand-offer",
+      subject: "Vorte Tekstil — {{stationName}} İçin Hazır Satış Standı Teklifi",
+      body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:0 auto;padding:20px;">
+  <div style="text-align:center;padding:20px 0;">
+    <h1 style="margin:0;font-size:28px;color:#333;font-weight:bold;">VORTE</h1>
+    <p style="margin:4px 0 0;font-size:12px;color:#7AC143;letter-spacing:3px;">TEKSTİL</p>
+  </div>
+  <div style="background:white;border-radius:8px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    <h2 style="color:#333;margin:0 0 16px;font-size:20px;">Sayın {{contactName}},</h2>
+    <p style="color:#666;line-height:1.7;font-size:15px;">
+      {{stationName}} için özel hazırladığımız <strong>Hazır Satış Standı</strong> teklifimizi
+      dikkatinize sunmak istiyoruz.
+    </p>
+    <div style="background:#f0fce8;border-left:4px solid #7AC143;padding:16px;margin:20px 0;border-radius:0 6px 6px 0;">
+      <h3 style="margin:0 0 8px;color:#333;font-size:16px;">Stand Paket Seçenekleri</h3>
+      <table style="width:100%;font-size:14px;color:#555;">
+        <tr><td style="padding:4px 0;"><strong>Stand A (50 adet):</strong></td><td>Erkek Boxer + Kadın Külot, tek yönlü stand</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Stand B (100 adet):</strong></td><td>4 renk seçenek, çift yönlü stand</td></tr>
+        <tr><td style="padding:4px 0;"><strong>Stand C (150 adet):</strong></td><td>Tüm renkler, tam boy 145cm stand</td></tr>
+      </table>
+    </div>
+    <p style="color:#666;line-height:1.7;font-size:15px;">
+      %95 penye pamuk, %5 elastan kumaşımızla üretilen ürünlerimiz hijyenik tekli ambalajlarda,
+      karton teşhir standıyla birlikte teslim edilir. Barkod ve fiyat etiketleri hazırdır.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="https://www.vorte.com.tr/toptan" style="display:inline-block;padding:14px 36px;background:#7AC143;color:white;text-decoration:none;border-radius:6px;font-size:15px;font-weight:bold;">
+        Detaylı Bilgi ve Fiyatlar
+      </a>
+    </div>
+    <p style="color:#666;line-height:1.7;font-size:15px;">
+      Numune talebi veya detaylı bilgi için bize ulaşabilirsiniz:
+    </p>
+    <div style="background:#f9fafb;border-radius:6px;padding:16px;margin:16px 0;">
+      <p style="margin:0;font-size:14px;color:#666;">Telefon: <strong>0850 305 86 35</strong></p>
+      <p style="margin:4px 0 0;font-size:14px;color:#666;">E-posta: <strong>info@vorte.com.tr</strong></p>
+      <p style="margin:4px 0 0;font-size:14px;color:#666;">Web: <strong>www.vorte.com.tr</strong></p>
+    </div>
+  </div>
+  <div style="text-align:center;padding:20px;font-size:12px;color:#999;">
+    <p>Vorte Tekstil Ticaret Ltd. Şti. | Nilüfer, Bursa</p>
+    <p>Bu e-posta iş teklifi amacıyla gönderilmiştir.</p>
+  </div>
+</div>
+</body>
+</html>`,
+      fromAddress: "Vorte Tekstil <info@vorte.com.tr>",
+      active: true,
+    },
+  });
+
   console.log("  ✓ Email templates created");
 
   // ===== TESTIMONIALS =====

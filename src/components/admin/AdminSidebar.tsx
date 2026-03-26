@@ -38,6 +38,7 @@ import {
   Scissors,
   Ruler,
   ExternalLink,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -114,6 +115,7 @@ const menuSections: MenuSection[] = [
   {
     title: "Pazarlama",
     items: [
+      { label: "Müşteri Keşfet", href: "/admin/musteri-kesif", icon: Sparkles },
       { label: "Merchant", href: "/admin/google-merchant", icon: ShoppingBag },
       { label: "SEO", href: "/admin/seo", icon: Search },
       { label: "Raporlar", href: "/admin/raporlar", icon: BarChart3 },

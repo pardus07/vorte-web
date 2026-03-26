@@ -49,6 +49,7 @@ const FROM_MAP: Record<string, string> = {
   "contact-notification": "Vorte İletişim <info@vorte.com.tr>",
   "production-termin": "Vorte Bayi <bayi@vorte.com.tr>",
   "supplier-order": "Vorte Üretim <uretim@vorte.com.tr>",
+  "prospect-stand-offer": "Vorte Tekstil <info@vorte.com.tr>",
 };
 
 const REPLY_TO_MAP: Record<string, string> = {
