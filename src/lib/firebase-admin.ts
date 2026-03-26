@@ -7,6 +7,10 @@
 // Google OAuth2 token almak için jose kütüphanesi zaten projede var
 
 import { SignJWT, importPKCS8 } from "jose";
+import dns from "dns";
+
+// Docker container'da IPv6 çalışmayabilir — Google API timeout'u önle
+dns.setDefaultResultOrder("ipv4first");
 
 interface FirebaseConfig {
   projectId: string;
