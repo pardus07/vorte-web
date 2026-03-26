@@ -7,10 +7,7 @@
 // Google OAuth2 token almak için jose kütüphanesi zaten projede var
 
 import { SignJWT, importPKCS8 } from "jose";
-import dns from "dns";
-
-// Docker container'da IPv6 çalışmayabilir — Google API timeout'u önle
-dns.setDefaultResultOrder("ipv4first");
+import https from "https";
 
 interface FirebaseConfig {
   projectId: string;
@@ -19,6 +16,42 @@ interface FirebaseConfig {
 }
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+
+/**
+ * IPv4-only HTTPS POST — Docker container'da IPv6 çalışmadığı için
+ * Node.js built-in fetch (undici) yerine https modülü kullanıyoruz.
+ */
+function httpsPost(
+  url: string,
+  body: string,
+  headers: Record<string, string>
+): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        method: "POST",
+        headers: { ...headers, "Content-Length": Buffer.byteLength(body).toString() },
+        family: 4, // IPv4 only — Docker IPv6 sorunu
+        timeout: 15000,
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => resolve({ status: res.statusCode || 500, body: data }));
+      }
+    );
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("HTTPS request timeout (15s)"));
+    });
+    req.write(body);
+    req.end();
+  });
+}
 
 function getFirebaseConfig(): FirebaseConfig {
   const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -62,21 +95,20 @@ async function getAccessToken(): Promise<string> {
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .sign(key);
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  const response = await httpsPost(
+    "https://oauth2.googleapis.com/token",
+    new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion: jwt,
-    }),
-  });
+    }).toString(),
+    { "Content-Type": "application/x-www-form-urlencoded" }
+  );
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`[Firebase] OAuth token hatası: ${error}`);
+  if (response.status !== 200) {
+    throw new Error(`[Firebase] OAuth token hatası: ${response.body}`);
   }
 
-  const data = await response.json();
+  const data = JSON.parse(response.body);
   cachedToken = {
     token: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000,
@@ -125,24 +157,19 @@ export async function sendCallTransferNotification(params: {
         },
       };
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(message),
+      const response = await httpsPost(url, JSON.stringify(message), {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       });
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         sentCount++;
         console.log(
           `[Firebase] FCM gönderildi: ${deviceToken.substring(0, 20)}...`
         );
       } else {
-        const errorData = await response.text();
-        console.error(`[Firebase] FCM hatası: ${errorData}`);
-        errors.push(`Token ${deviceToken.substring(0, 10)}: ${errorData}`);
+        console.error(`[Firebase] FCM hatası: ${response.body}`);
+        errors.push(`Token ${deviceToken.substring(0, 10)}: ${response.body}`);
       }
     } catch (error) {
       const msg =
