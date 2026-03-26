@@ -113,6 +113,7 @@ model User {
   returnRequests ReturnRequest[]
   loyaltyPoints  LoyaltyPoint[]
   preferences    UserPreference?
+  deviceTokens   DeviceToken[]
 
   @@map("users")
 }
@@ -1364,4 +1365,17 @@ model OutreachEmail {
 
   @@index([trackingId])
   @@map("outreach_emails")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  platform  String   @default("android") // android, ios, web
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("device_tokens")
 }

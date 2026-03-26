@@ -10,6 +10,7 @@ import asyncio
 import logging
 import os
 
+import aiohttp
 from livekit import agents
 from livekit.agents import (
     AgentSession,
@@ -27,6 +28,8 @@ from src.config import (
     LIVEKIT_API_SECRET,
     AGENT_VOICE,
     TRANSFER_PHONE,
+    VORTE_API_URL,
+    VORTE_API_KEY,
 )
 from src.system_prompt import SYSTEM_PROMPT
 from src.session_manager import SessionManager
@@ -183,16 +186,68 @@ class VorteVoiceAgent(Agent):
 
     @function_tool()
     async def transfer_to_human(self, ctx: RunContext, reason: str) -> str:
-        """Müşteriyi web sitesine veya e-postaya yönlendirir."""
+        """Müşteriyi insan yetkiliye aktarır. Çözülemeyen konularda veya müşteri talep ettiğinde kullan."""
         logger.info("Tool: transfer_to_human(%s)", reason)
         if self._call_logger:
-            self._call_logger.add_topic("yönlendirme")
-        return (
-            "Bu konuda size en iyi şekilde yardımcı olabilmemiz için "
-            "vorte.com.tr/iletisim sayfamızı ziyaret edebilir veya "
-            "info@vorte.com.tr adresine mail atabilirsiniz. "
-            "Başka bir sorunuz var mı?"
-        )
+            self._call_logger.add_topic("çağrı aktarma")
+
+        # Konuşma özetini hazırla
+        summary = reason
+        if self._call_logger and self._call_logger.topics:
+            topics_str = ", ".join(self._call_logger.topics)
+            summary = f"{reason} (Konuşulan konular: {topics_str})"
+
+        # Vorte API'ye transfer talebi gönder → FCM push → Android app
+        try:
+            room_name = ""
+            caller_number = "Bilinmeyen"
+            call_id = ""
+            if self._call_logger:
+                room_name = self._call_logger.call_id
+                caller_number = self._call_logger.caller_number
+                call_id = self._call_logger.call_id
+
+            async with aiohttp.ClientSession() as http:
+                resp = await http.post(
+                    f"{VORTE_API_URL}/api/admin/voice-calls/transfer",
+                    json={
+                        "roomName": room_name,
+                        "callerNumber": caller_number,
+                        "summary": summary,
+                        "callId": call_id,
+                    },
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-server-api-key": VORTE_API_KEY,
+                    },
+                    timeout=aiohttp.ClientTimeout(total=10),
+                )
+                result = await resp.json()
+
+            if result.get("success"):
+                logger.info("Transfer FCM gönderildi: %d cihaz", result.get("sentCount", 0))
+                return (
+                    "Yetkilimize aktarma isteği gönderildi. "
+                    "Lütfen hatta kalın, yetkilimiz en kısa sürede bağlanacak. "
+                    "Beklediğiniz için teşekkür ederim."
+                )
+            else:
+                error = result.get("error", "Bilinmeyen hata")
+                logger.warning("Transfer başarısız: %s", error)
+                return (
+                    "Şu an yetkilimize ulaşamıyoruz. "
+                    "vorte.com.tr/iletisim sayfamızdan bize ulaşabilir "
+                    "veya info@vorte.com.tr adresine mail atabilirsiniz. "
+                    "Başka bir sorunuz var mı?"
+                )
+
+        except Exception as e:
+            logger.error("Transfer API hatası: %s", e)
+            return (
+                "Aktarma sırasında bir sorun oluştu. "
+                "vorte.com.tr/iletisim sayfamızdan bize ulaşabilirsiniz. "
+                "Başka bir sorunuz var mı?"
+            )
 
     @function_tool()
     async def get_order_status(self, ctx: RunContext, order_number: str) -> str:
