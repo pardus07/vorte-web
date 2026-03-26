@@ -182,20 +182,41 @@ export async function POST(req: NextRequest) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: userPrompt,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    // Retry mekanizması — 3 deneme, artan bekleme süresi
+    let text: string | undefined;
+    let lastError: Error | null = null;
 
-    const text = response.text?.trim();
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        // İlk 2 denemede Google Search grounding ile dene, 3. denemede grounding olmadan dene
+        const useGrounding = attempt <= 2;
+        console.log(`[prospect-discover] Deneme ${attempt}/3 (grounding: ${useGrounding})`);
+
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: userPrompt,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            ...(useGrounding ? { tools: [{ googleSearch: {} }] } : {}),
+          },
+        });
+
+        text = response.text?.trim();
+        if (text) break;
+      } catch (retryError) {
+        lastError = retryError instanceof Error ? retryError : new Error(String(retryError));
+        console.error(`[prospect-discover] Deneme ${attempt}/3 başarısız:`, lastError.message);
+        // Son deneme değilse bekle (1s, 2s)
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, attempt * 1000));
+        }
+      }
+    }
 
     if (!text) {
+      const errMsg = lastError?.message || "Gemini boş yanıt döndü.";
       return NextResponse.json(
-        { error: "Gemini boş yanıt döndü." },
+        { error: `Gemini API hatası: ${errMsg}. Lütfen tekrar deneyin.` },
         { status: 502 }
       );
     }
@@ -254,8 +275,17 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[prospect-discover] Gemini API error:", error);
     const msg = error instanceof Error ? error.message : String(error);
+
+    // Kullanıcı dostu hata mesajı
+    let userMsg = "Müşteri arama sırasında bir hata oluştu. Lütfen tekrar deneyin.";
+    if (msg.includes("fetch failed") || msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT")) {
+      userMsg = "Gemini API'sine bağlanılamadı. İnternet bağlantısını kontrol edin ve tekrar deneyin.";
+    } else if (msg.includes("API_KEY") || msg.includes("401") || msg.includes("403")) {
+      userMsg = "Gemini API anahtarı geçersiz veya eksik. Lütfen yöneticiyle iletişime geçin.";
+    }
+
     return NextResponse.json(
-      { error: `Müşteri arama hatası: ${msg}` },
+      { error: userMsg, detail: msg },
       { status: 500 }
     );
   }
