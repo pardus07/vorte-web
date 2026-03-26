@@ -38,10 +38,11 @@ export async function GET(
 
     // Resolve file path — /uploads/audio/xxx.ogg → public/uploads/audio/xxx.ogg
     let filePath: string;
-    if (path.isAbsolute(callLog.audioUrl)) {
-      filePath = callLog.audioUrl;
-    } else if (callLog.audioUrl.startsWith("/uploads/")) {
+    if (callLog.audioUrl.startsWith("/uploads/")) {
+      // /uploads/audio/xxx.ogg → process.cwd()/public/uploads/audio/xxx.ogg
       filePath = path.join(process.cwd(), "public", callLog.audioUrl);
+    } else if (path.isAbsolute(callLog.audioUrl)) {
+      filePath = callLog.audioUrl;
     } else {
       filePath = path.join(process.cwd(), callLog.audioUrl);
     }
