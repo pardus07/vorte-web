@@ -40,6 +40,17 @@ import {
 
 // Leaflet CSS (SSR'da yüklenmemeli)
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Leaflet varsayılan marker ikonları Next.js bundle'da kırılıyor — CDN'den yükle
+if (typeof window !== "undefined") {
+  delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  });
+}
 
 // Leaflet harita bileşenlerini dynamic import ile yükle (SSR uyumsuz)
 const MapContainer = dynamic(
@@ -281,12 +292,12 @@ export default function MusteriKesifPage() {
   // Adres → Koordinat (Nominatim)
   const [geocoding, setGeocoding] = useState<number | string | null>(null); // index veya prospect id
 
-  const geocodeAddress = async (address: string, city?: string): Promise<{ latitude: number; longitude: number } | null> => {
+  const geocodeAddress = async (address: string, city?: string, name?: string): Promise<{ latitude: number; longitude: number } | null> => {
     try {
       const res = await fetch("/api/admin/prospects/geocode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, city }),
+        body: JSON.stringify({ address, city, name }),
       });
       const data = await res.json();
       if (data.latitude && data.longitude) {
@@ -301,11 +312,11 @@ export default function MusteriKesifPage() {
   // Keşfet kartı için koordinat bul
   const handleGeocodeDiscover = async (i: number) => {
     const p = discovered[i];
-    const address = p.address === "Belirtilmemiş" ? p.name : p.address;
-    if (!address) return;
+    const address = p.address === "Belirtilmemiş" ? "" : p.address;
+    if (!address && !p.name) return;
 
     setGeocoding(i);
-    const coords = await geocodeAddress(address, discoverCity);
+    const coords = await geocodeAddress(address, discoverCity, p.name);
     if (coords) {
       setDiscovered((prev) =>
         prev.map((item, idx) =>
@@ -321,12 +332,13 @@ export default function MusteriKesifPage() {
   // Edit modal için koordinat bul
   const handleGeocodeEdit = async () => {
     if (!editingProspect) return;
-    const address = (editForm.address as string) || editingProspect.address || editingProspect.name;
+    const address = (editForm.address as string) || editingProspect.address || "";
     const city = (editForm.city as string) || editingProspect.city;
-    if (!address) return;
+    const name = (editForm.name as string) || editingProspect.name;
+    if (!address && !name) return;
 
     setGeocoding(editingProspect.id);
-    const coords = await geocodeAddress(address, city);
+    const coords = await geocodeAddress(address, city, name);
     if (coords) {
       setEditForm((prev) => ({ ...prev, latitude: coords.latitude, longitude: coords.longitude }));
     } else {
@@ -437,7 +449,17 @@ export default function MusteriKesifPage() {
 
   const handleBulkOutreach = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`${selectedIds.size} müşteriye teklif maili gönderilecek. Onaylıyor musunuz?`)) return;
+    // E-postası olmayan seçilenleri kontrol et
+    const withoutEmail = prospects.filter((p) => selectedIds.has(p.id) && !p.email);
+    const withEmail = prospects.filter((p) => selectedIds.has(p.id) && p.email);
+    if (withEmail.length === 0) {
+      alert("Seçilen müşterilerin hiçbirinde e-posta adresi yok. Önce e-posta ekleyin.");
+      return;
+    }
+    const msg = withoutEmail.length > 0
+      ? `${withEmail.length} müşteriye teklif maili gönderilecek. (${withoutEmail.length} müşterinin e-postası olmadığı için atlanacak.) Onaylıyor musunuz?`
+      : `${selectedIds.size} müşteriye teklif maili gönderilecek. Onaylıyor musunuz?`;
+    if (!confirm(msg)) return;
 
     setSendingOutreach(true);
     try {
@@ -827,7 +849,7 @@ export default function MusteriKesifPage() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left w-8">
-                        <input type="checkbox" onChange={(e) => { if (e.target.checked) setSelectedIds(new Set(prospects.filter((p) => p.email).map((p) => p.id))); else setSelectedIds(new Set()); }} className="accent-[#7AC143]" />
+                        <input type="checkbox" onChange={(e) => { if (e.target.checked) setSelectedIds(new Set(prospects.map((p) => p.id))); else setSelectedIds(new Set()); }} className="accent-[#7AC143]" />
                       </th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">İşletme</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-700">Kategori</th>
@@ -842,7 +864,7 @@ export default function MusteriKesifPage() {
                     {prospects.map((p) => (
                       <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
-                          {p.email ? <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleProspectSelect(p.id)} className="accent-[#7AC143]" /> : <span className="text-gray-300">—</span>}
+                          <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleProspectSelect(p.id)} className="accent-[#7AC143]" />
                         </td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-900">{p.name}</div>
