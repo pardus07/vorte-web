@@ -27,11 +27,13 @@ export async function GET() {
     );
   }
 
-  // APK dosyasını bul — uploads volume kalıcı, redeploy'da silinmez
+  // APK dosyasını bul — downloads volume kalıcı, redeploy'da silinmez
   const possiblePaths = [
+    path.join(process.cwd(), "public", "downloads", "VorteAIAsistan-debug.apk"),
+    "/app/public/downloads/VorteAIAsistan-debug.apk",
+    "/opt/vorte-apk/VorteAIAsistan-debug.apk",
     path.join(process.cwd(), "public", "uploads", "vorte-asistan.apk"),
     "/app/public/uploads/vorte-asistan.apk",
-    "/tmp/vorte-asistan.apk",
   ];
 
   let apkPath: string | null = null;
@@ -57,7 +59,7 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.android.package-archive",
-        "Content-Disposition": 'attachment; filename="vorte-asistan.apk"',
+        "Content-Disposition": 'attachment; filename="VorteAIAsistan.apk"',
         "Content-Length": String(fileStat.size),
         "Cache-Control": "no-cache",
       },
