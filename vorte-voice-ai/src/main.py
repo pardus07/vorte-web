@@ -355,6 +355,62 @@ async def entrypoint(ctx: agents.JobContext):
 
     logger.info("Agent session started, greeting sent")
 
+    # ─── Transfer Fallback: Kullanıcı konuşmasını izle ─────────
+    # Gemini Native Audio tool çağırmayabilir — konuşma bazlı fallback
+    transfer_triggered = False
+
+    TRANSFER_KEYWORDS = [
+        "yetkili", "yetkiliye", "müdür", "müdüre",
+        "insan", "gerçek kişi", "temsilci",
+        "aktarın", "aktarsana", "bağlayın", "bağlar mısın",
+        "birini bağla", "birine bağla", "yönlendir",
+    ]
+
+    async def _auto_transfer_fallback():
+        """AI tool çağırmadığında otomatik transfer tetikle."""
+        nonlocal transfer_triggered
+        if transfer_triggered:
+            return
+
+        # 8 saniye bekle — AI tool çağırabilir
+        await asyncio.sleep(8)
+
+        # Tool çağrıldı mı kontrol et
+        if "çağrı aktarma" in (call_logger.topics or []):
+            logger.info("Transfer tool zaten çağrıldı, fallback iptal")
+            return
+
+        transfer_triggered = True
+        logger.warning("FALLBACK: Kullanıcı transfer istedi ama AI tool çağırmadı — otomatik transfer!")
+
+        try:
+            result = await agent.transfer_to_human(
+                ctx=None,
+                reason="Müşteri yetkiliye aktarma istedi (otomatik fallback)"
+            )
+            logger.info("Fallback transfer sonucu: %s", result[:80] if result else "None")
+            # AI'a durumu bildir
+            await session.generate_reply(
+                user_input="Transfer talebi gönderildi. Müşteriye 'Yetkilimize aktarma isteği gönderdim, lütfen hatta kalın' de."
+            )
+        except Exception as e:
+            logger.error("Fallback transfer hatası: %s", e)
+
+    @session.on("user_input_transcribed")
+    def on_user_transcribed(ev):
+        if not ev.is_final:
+            return
+        text = (ev.transcript or "").lower().strip()
+        if not text:
+            return
+        logger.info("User transcript: %s", text[:100])
+
+        # Transfer anahtar kelimelerini kontrol et
+        if any(kw in text for kw in TRANSFER_KEYWORDS):
+            logger.info("Transfer keyword tespit edildi: '%s'", text[:60])
+            if not transfer_triggered and "çağrı aktarma" not in (call_logger.topics or []):
+                asyncio.create_task(_auto_transfer_fallback())
+
     # Operatör bağlandığında AI vedalaşıp çıkacak
     async def _handle_operator_joined():
         """Operatör room'a katıldı — AI vedalaşıp ayrılır."""
