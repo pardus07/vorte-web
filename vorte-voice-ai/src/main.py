@@ -355,6 +355,21 @@ async def entrypoint(ctx: agents.JobContext):
 
     logger.info("Agent session started, greeting sent")
 
+    # Operatör bağlandığında AI vedalaşıp çıkacak
+    async def _handle_operator_joined():
+        """Operatör room'a katıldı — AI vedalaşıp ayrılır."""
+        logger.info("Operatör bağlandı, AI ayrılıyor...")
+        try:
+            await session.generate_reply(
+                user_input="Yetkilimiz görüşmeye katıldı. Müşteriye kısaca 'Yetkilimiz bağlandı, sizi aktarıyorum. İyi günler dilerim.' de."
+            )
+            await asyncio.sleep(3)
+        except Exception as e:
+            logger.warning("AI veda mesajı hatası: %s", e)
+        # AI room'dan ayrılır, müşteri ve operatör kalır
+        logger.info("AI room'dan ayrılıyor")
+        await ctx.room.disconnect()
+
     # Update caller number and start timer when participant connects
     @ctx.room.on("participant_connected")
     def on_participant_connected(participant, *args):
@@ -364,6 +379,9 @@ async def entrypoint(ctx: agents.JobContext):
             call_logger.caller_number = number
             call_logger.start_timer()  # Gerçek konuşma süresi burada başlar
             logger.info("Caller connected, timer started: %s", number)
+        elif identity.startswith("operator"):
+            logger.info("Operator joined: %s", identity)
+            asyncio.create_task(_handle_operator_joined())
 
     # Katılımcı zaten odadaysa (SIP participant session başlamadan önce bağlanmış olabilir)
     for p in ctx.room.remote_participants.values():

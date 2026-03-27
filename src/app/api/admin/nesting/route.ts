@@ -20,7 +20,8 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    await requirePermission("products", "r")(req);
+    const admin = await requirePermission("products", "r");
+    if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const patternId = searchParams.get("patternId");
@@ -45,7 +46,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requirePermission("products", "w")(req);
+    const admin = await requirePermission("products", "w");
+    if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
 
     const body = await req.json();
     const parsed = createSchema.safeParse(body);

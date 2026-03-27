@@ -1,0 +1,21 @@
+ws_url: ws://localhost:7880
+api_key: APIz1tuX1zXETbhcfi5t
+api_secret: CRtD2QjZ7cDMW8oekZDznW9Vs3jO0eM5Xw2yjAj0IDY8tb7S
+
+redis:
+  address: localhost:6379
+
+logging:
+  level: info
+
+sip_port: 5060
+
+# Flood protection devre dışı - iş yeri santral, yüksek trafik
+flood_protection:
+  enabled: false
+  invites_per_second: 1000
+  burst: 1000
+
+rate_limits:
+  invites_per_minute: 6000
+  invites_burst: 100

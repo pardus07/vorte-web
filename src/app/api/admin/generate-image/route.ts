@@ -158,7 +158,8 @@ async function tryImagen4(
       prompt,
       config: {
         numberOfImages: 1,
-        personGeneration: "ALLOW_ADULT",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        personGeneration: "ALLOW_ADULT" as any,
       },
     });
 

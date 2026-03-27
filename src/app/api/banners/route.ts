@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
         imageMobile: true,
         link: true,
         altText: true,
+        endDate: true,
       },
     });
 

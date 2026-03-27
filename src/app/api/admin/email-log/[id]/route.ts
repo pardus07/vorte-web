@@ -3,11 +3,12 @@ import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requirePermission("products", "r")(req);
+    const admin = await requirePermission("products", "r");
+    if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
     const { id } = await params;
 
     const log = await db.emailLog.findUnique({

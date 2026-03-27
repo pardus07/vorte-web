@@ -3,11 +3,12 @@ import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requirePermission("products", "r")(req);
+    const admin = await requirePermission("products", "r");
+    if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
     const { id } = await params;
 
     const result = await db.nestingResult.findUnique({
@@ -27,11 +28,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requirePermission("products", "w")(req);
+    const admin = await requirePermission("products", "w");
+    if (!admin) return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
     const { id } = await params;
 
     await db.nestingResult.delete({ where: { id } });

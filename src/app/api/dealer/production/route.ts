@@ -35,7 +35,7 @@ export async function GET() {
       id: item.id,
       sku: item.sku,
       color: item.color,
-      sizeBreakdown: item.sizeBreakdown,
+      sizeBreakdown: { S: item.sizeS, M: item.sizeM, L: item.sizeL, XL: item.sizeXL, XXL: item.sizeXXL },
       totalQuantity: item.totalQuantity,
     })),
     tracking: order.tracking.map((t) => ({
@@ -46,8 +46,10 @@ export async function GET() {
     })),
     qualityChecks: order.qualityChecks.map((qc) => ({
       result: qc.result,
-      passRate: qc.passRate,
-      notes: qc.notes,
+      passRate: qc.inspectedQuantity > 0
+        ? Math.round(((qc.inspectedQuantity - qc.defectQuantity) / qc.inspectedQuantity) * 100)
+        : 100,
+      notes: qc.inspectorNotes,
       createdAt: qc.createdAt,
     })),
   }));

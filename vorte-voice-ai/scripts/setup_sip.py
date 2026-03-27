@@ -51,7 +51,7 @@ async def setup():
             CreateSIPInboundTrunkRequest,
             CreateSIPDispatchRuleRequest,
             SIPInboundTrunkInfo,
-            SIPDispatchRuleDirect,
+            SIPDispatchRuleIndividual,
             SIPDispatchRule,
         )
     except ImportError:
@@ -116,8 +116,8 @@ async def setup():
     try:
         dispatch_request = CreateSIPDispatchRuleRequest(
             rule=SIPDispatchRule(
-                dispatch_rule_direct=SIPDispatchRuleDirect(
-                    room_name="vorte-call",
+                dispatch_rule_individual=SIPDispatchRuleIndividual(
+                    room_prefix="vorte-call-",  # Her çağrı benzersiz room: vorte-call-xxxx
                     pin="",  # PIN yok — direkt bağlan
                 ),
             ),
@@ -126,7 +126,7 @@ async def setup():
         )
         dispatch_result = await api.sip.create_sip_dispatch_rule(dispatch_request)
         print(f"  ✅ Dispatch rule oluşturuldu: {dispatch_result.sip_dispatch_rule_id}")
-        print(f"  🏠 Room: vorte-call")
+        print(f"  🏠 Room prefix: vorte-call-* (her çağrı benzersiz room)")
         print(f"  📱 Trunk: {trunk_id}")
     except Exception as e:
         print(f"  ❌ Dispatch rule oluşturulamadı: {e}")

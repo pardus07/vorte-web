@@ -83,7 +83,7 @@ export async function GET() {
     await writeFile(OPTIMIZED_PATH, optimizedBuffer);
     lastSourceUrl = ogImageUrl;
 
-    return new Response(optimizedBuffer, {
+    return new Response(new Uint8Array(optimizedBuffer), {
       headers: {
         "Content-Type": "image/jpeg",
         "Content-Length": optimizedBuffer.length.toString(),

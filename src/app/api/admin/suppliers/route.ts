@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Handle materials — can be JSON string or array
-  let materialsData: unknown = parsed.data.materials || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let materialsData: any = parsed.data.materials || [];
   if (typeof materialsData === "string") {
     try { materialsData = JSON.parse(materialsData); } catch { materialsData = [materialsData]; }
   }
