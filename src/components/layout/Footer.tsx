@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Instagram, Facebook } from "lucide-react";
+
 import { NewsletterForm } from "./NewsletterForm";
 
 const footerLinks = {
@@ -51,7 +51,7 @@ export function Footer() {
 
       {/* Links */}
       <div className="mx-auto max-w-[1440px] px-4 py-12 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-3">
           {/* Kurumsal */}
           <div>
             <h4
@@ -118,48 +118,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact + Social */}
-          <div>
-            <h4
-              className="mb-5 text-[10px] font-semibold uppercase text-[#1A1A1A]"
-              style={{ letterSpacing: "0.15em" }}
-            >
-              İletişim
-            </h4>
-            <div className="space-y-3 text-xs text-gray-400">
-              <p>Nilüfer, Bursa / Türkiye</p>
-              <p>
-                <a href="tel:+908503058635" className="transition-colors hover:text-[#1A1A1A]">
-                  0850 305 86 35
-                </a>
-              </p>
-              <p>
-                <a href="mailto:info@vorte.com.tr" className="transition-colors hover:text-[#1A1A1A]">
-                  info@vorte.com.tr
-                </a>
-              </p>
-            </div>
-            <div className="mt-5 flex items-center gap-4">
-              <a
-                href="https://www.instagram.com/vortetekstil"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 transition-colors hover:text-[#1A1A1A]"
-                aria-label="Instagram"
-              >
-                <Instagram className="h-4 w-4" />
-              </a>
-              <a
-                href="https://www.facebook.com/vortetekstil"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 transition-colors hover:text-[#1A1A1A]"
-                aria-label="Facebook"
-              >
-                <Facebook className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -191,24 +150,7 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ETBIS */}
-      <div className="border-t border-gray-100">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 py-4 lg:px-8">
-          <a
-            href="https://etbis.ticaret.gov.tr/tr/SiteSorgulamaSonuc?siteId=cf878ba6-f7c6-4b18-a044-f683649d05be"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              style={{ width: 80, height: 96 }}
-              alt="ETBIS - E-Ticaret Bilgi Sistemi"
-              src="/etbis-badge.png"
-              className="opacity-50 transition-opacity hover:opacity-80"
-            />
-          </a>
-        </div>
-      </div>
+
     </footer>
   );
 }
