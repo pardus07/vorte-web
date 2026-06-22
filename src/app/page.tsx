@@ -1,490 +1,191 @@
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight } from "lucide-react";
-import { HeroSlider } from "@/components/home/HeroSlider";
-import type { SlideData } from "@/components/home/HeroSlider";
-import { PromoBanner } from "@/components/home/PromoBanner";
-import type { BannerData } from "@/components/home/PromoBanner";
-import { ProductGrid } from "@/components/product/ProductGrid";
-import { JsonLd } from "@/components/seo/JsonLd";
-import { HomepageClient } from "@/components/home/HomepageClient";
-import { TestimonialsSection } from "@/components/home/TestimonialsSection";
-import { TrustBadges } from "@/components/home/TrustBadges";
-import { RecentlyViewed } from "@/components/home/RecentlyViewed";
-import { CountdownBanner } from "@/components/home/CountdownBanner";
-import { db } from "@/lib/db";
 import type { Metadata } from "next";
 
-export const revalidate = 60;
-
 export const metadata: Metadata = {
-  title: "Vorte Tekstil | Kaliteli İç Giyim - Erkek Boxer & Kadın Külot",
+  title: "Yapım Aşamasında",
   description:
-    "Vorte Tekstil - Premium modal kumaştan erkek boxer ve kadın külot. Toptan ve perakende iç giyim. Hızlı kargo, güvenli ödeme, uygun fiyat. Bursa.",
+    "Vorte Dijital Teknoloji A.Ş. — dijital teknoloji çözümleri geliştiren şirketimizin yeni kurumsal sitesi çok yakında burada.",
   alternates: { canonical: "/" },
 };
 
-export default async function HomePage() {
-  // Fetch active sliders from DB
-  let sliderData: SlideData[] = [];
-  try {
-    const now = new Date();
-    const dbSliders = await db.slider.findMany({
-      where: {
-        active: true,
-        OR: [{ startDate: null }, { startDate: { lte: now } }],
-      },
-      orderBy: { sortOrder: "asc" },
-    });
-    sliderData = dbSliders
-      .filter((s) => !s.endDate || new Date(s.endDate) >= now)
-      .map((s) => ({
-        imageDesktop: s.imageDesktop,
-        imageMobile: s.imageMobile,
-        subtitle: s.subtitle,
-        title: s.title,
-        highlight: s.highlight,
-        description: s.description,
-        buttonText: s.buttonText,
-        buttonLink: s.buttonLink,
-        secondaryButtonText: s.secondaryButtonText,
-        secondaryButtonLink: s.secondaryButtonLink,
-        altText: s.altText,
-      }));
-  } catch {
-    // DB unavailable - fallback slides will be used
-  }
+// Deterministik parçacık konumları: runtime'da Math.random KULLANMIYORUZ
+// (SSR/prerender kararlılığı + hydration uyumu için sabit liste)
+const PARTICLES = [
+  { left: "6%", top: "18%", size: 2, dur: 22, delay: 0 },
+  { left: "14%", top: "62%", size: 3, dur: 26, delay: 3 },
+  { left: "22%", top: "34%", size: 2, dur: 19, delay: 1 },
+  { left: "31%", top: "78%", size: 2, dur: 24, delay: 5 },
+  { left: "39%", top: "12%", size: 3, dur: 28, delay: 2 },
+  { left: "47%", top: "52%", size: 2, dur: 21, delay: 4 },
+  { left: "55%", top: "26%", size: 2, dur: 25, delay: 0 },
+  { left: "63%", top: "70%", size: 3, dur: 30, delay: 6 },
+  { left: "71%", top: "16%", size: 2, dur: 20, delay: 2 },
+  { left: "78%", top: "58%", size: 2, dur: 27, delay: 3 },
+  { left: "85%", top: "38%", size: 3, dur: 23, delay: 1 },
+  { left: "92%", top: "74%", size: 2, dur: 29, delay: 5 },
+  { left: "12%", top: "88%", size: 2, dur: 24, delay: 4 },
+  { left: "44%", top: "84%", size: 2, dur: 26, delay: 2 },
+  { left: "68%", top: "44%", size: 2, dur: 22, delay: 0 },
+  { left: "88%", top: "10%", size: 2, dur: 28, delay: 3 },
+] as const;
 
-  const fetchProducts = () =>
-    db.product.findMany({
-      where: { active: true },
-      include: {
-        category: true,
-        variants: { where: { active: true }, orderBy: { size: "asc" } },
-      },
-      orderBy: [{ gender: "asc" }, { featured: "desc" }, { createdAt: "desc" }],
-    });
-
-  let products: Awaited<ReturnType<typeof fetchProducts>> = [];
-  try {
-    products = await fetchProducts();
-  } catch {
-    // DB unavailable during build
-  }
-
-  // Fetch latest blog posts
-  let blogPosts: {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string | null;
-    coverImage: string | null;
-    publishedAt: Date | null;
-    authorName: string;
-    tags: string | null;
-  }[] = [];
-  try {
-    blogPosts = await db.blogPost.findMany({
-      where: { published: true },
-      orderBy: { publishedAt: "asc" },
-      take: 3,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        publishedAt: true,
-        authorName: true,
-        tags: true,
-      },
-    });
-  } catch {
-    // DB unavailable during build
-  }
-
-  // Fetch testimonials
-  let testimonials: { id: string; name: string; title: string | null; rating: number; comment: string }[] = [];
-  try {
-    testimonials = await db.testimonial.findMany({
-      where: { featured: true, approved: true },
-      orderBy: { sortOrder: "asc" },
-      select: { id: true, name: true, title: true, rating: true, comment: true },
-    });
-  } catch {
-    // DB unavailable during build
-  }
-
-  // Fetch active campaign end date for countdown
-  let campaignEndDate: string | null = null;
-  try {
-    const activeCoupon = await db.coupon.findFirst({
-      where: { active: true, expiresAt: { gt: new Date() } },
-      orderBy: { expiresAt: "asc" },
-      select: { expiresAt: true, code: true },
-    });
-    if (activeCoupon?.expiresAt) {
-      campaignEndDate = activeCoupon.expiresAt.toISOString();
-    }
-  } catch {
-    // DB unavailable during build
-  }
-
-  // Fetch active banners by position
-  const bannersByPosition: Record<string, BannerData[]> = {};
-  try {
-    const now = new Date();
-    const dbBanners = await db.banner.findMany({
-      where: {
-        active: true,
-        OR: [{ startDate: null }, { startDate: { lte: now } }],
-      },
-      orderBy: { sortOrder: "asc" },
-    });
-    const activeBanners = dbBanners.filter(
-      (b) => !b.endDate || new Date(b.endDate) >= now
-    );
-    for (const b of activeBanners) {
-      if (!bannersByPosition[b.position]) bannersByPosition[b.position] = [];
-      bannersByPosition[b.position].push({
-        id: b.id,
-        name: b.name,
-        position: b.position,
-        imageDesktop: b.imageDesktop,
-        imageMobile: b.imageMobile,
-        link: b.link,
-        altText: b.altText,
-      });
-    }
-  } catch {
-    // DB unavailable during build
-  }
-
+export default function ComingSoonPage() {
   return (
-    <>
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "Vorte Tekstil",
-          url: "https://www.vorte.com.tr",
-        }}
-      />
+    <main className="cs-root" aria-label="Vorte Dijital Teknoloji A.Ş. yapım aşamasında">
+      {/* Tüm animasyonlar saf CSS — framer-motion yok, JS bütçesi korunur */}
+      <style>{`
+        .cs-root {
+          position: relative;
+          min-height: 100svh;
+          width: 100%;
+          overflow: hidden;
+          background:
+            radial-gradient(120% 80% at 50% -10%, #11151f 0%, #0a0c12 45%, #05060a 100%);
+          color: #f4f6fb;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 1.25rem 6rem;
+          font-family: var(--font-sans, system-ui, sans-serif);
+        }
+        .cs-aurora, .cs-grid, .cs-particles { position: absolute; inset: 0; pointer-events: none; }
+        .cs-blob { position: absolute; border-radius: 9999px; filter: blur(90px); opacity: 0.45; }
+        .cs-blob-1 {
+          top: -22%; left: 14%; width: 640px; height: 640px;
+          background: radial-gradient(circle, rgba(122,193,67,0.40), transparent 70%);
+          animation: cs-aurora1 22s ease-in-out infinite;
+        }
+        .cs-blob-2 {
+          bottom: -28%; right: 12%; width: 560px; height: 560px;
+          background: radial-gradient(circle, rgba(56,189,168,0.34), transparent 70%);
+          animation: cs-aurora2 27s ease-in-out infinite;
+        }
+        .cs-grid {
+          opacity: 0.05;
+          background-image:
+            linear-gradient(rgba(244,246,251,0.6) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(244,246,251,0.6) 1px, transparent 1px);
+          background-size: 54px 54px;
+          mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+          -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+        }
+        .cs-dot {
+          position: absolute; border-radius: 9999px;
+          background: rgba(122,193,67,0.55);
+          animation: cs-float linear infinite;
+        }
+        .cs-content { position: relative; z-index: 10; width: 100%; max-width: 56rem; text-align: center; }
+        .cs-rise { opacity: 0; animation: cs-rise 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+        .cs-wordmark-wrap { position: relative; display: inline-block; }
+        .cs-wordmark {
+          margin: 0;
+          font-size: clamp(3.5rem, 12vw, 7.5rem);
+          font-weight: 800;
+          letter-spacing: -0.04em;
+          line-height: 1;
+          background: linear-gradient(120deg, #ffffff 0%, #d8efc4 40%, #7AC143 70%, #38bda8 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .cs-sheen {
+          position: absolute; inset: 0;
+          background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+          mix-blend-mode: overlay;
+          transform: translateX(-200%);
+          animation: cs-sheen 5s ease-in-out 1.2s infinite;
+        }
+        .cs-legal { margin: 1rem 0 0; font-size: clamp(0.85rem, 2.4vw, 1.05rem); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #9aa3b2; }
+        .cs-status { margin: 2.4rem 0 0; font-size: clamp(1.4rem, 5vw, 2.4rem); font-weight: 700; color: #f4f6fb; }
+        .cs-soon { margin: 0.4rem 0 0; font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 600; color: #7AC143; letter-spacing: 0.02em; }
+        .cs-desc { margin: 1.4rem auto 0; max-width: 34rem; font-size: clamp(0.95rem, 2.6vw, 1.1rem); line-height: 1.7; color: #aab2c0; }
+        .cs-bar-wrap { margin: 2.6rem auto 0; width: 100%; max-width: 22rem; height: 4px; border-radius: 9999px; background: rgba(244,246,251,0.08); overflow: hidden; }
+        .cs-bar {
+          height: 100%; width: 42%; border-radius: 9999px;
+          background: linear-gradient(90deg, transparent, #7AC143, #38bda8, transparent);
+          animation: cs-bar 2.2s ease-in-out infinite;
+        }
+        .cs-footer {
+          position: relative; z-index: 10; margin-top: 3rem;
+          display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+          gap: 0.5rem 1.25rem; font-size: 0.9rem; color: #8b93a3;
+        }
+        .cs-footer a { color: inherit; text-decoration: none; transition: color 0.2s; }
+        .cs-footer a:hover, .cs-footer a:focus-visible { color: #7AC143; outline: none; }
+        .cs-sep { opacity: 0.4; }
 
-      {/* ── HERO ── */}
-      <HeroSlider />
+        .cs-d1 { animation-delay: 0.05s; }
+        .cs-d2 { animation-delay: 0.25s; }
+        .cs-d3 { animation-delay: 0.45s; }
+        .cs-d4 { animation-delay: 0.65s; }
+        .cs-d5 { animation-delay: 0.85s; }
+        .cs-d6 { animation-delay: 1.05s; }
 
-      {/* ── MARQUEE STRIP ── */}
-      <div className="overflow-hidden border-b border-gray-100 bg-white py-3">
-        <div className="animate-marquee flex whitespace-nowrap">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex items-center gap-12 px-6">
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
-                Ücretsiz Kargo — 500₺ Üzeri Siparişlerde
-              </span>
-              <span className="text-[10px] text-gray-300">◆</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
-                3D Secure Güvenli Ödeme
-              </span>
-              <span className="text-[10px] text-gray-300">◆</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
-                14 Gün İçinde Kolay İade
-              </span>
-              <span className="text-[10px] text-gray-300">◆</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
-                %95 Taranmış Penye Pamuk
-              </span>
-              <span className="text-[10px] text-gray-300">◆</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A]">
-                9 Taksit İmkanı
-              </span>
-              <span className="text-[10px] text-gray-300">◆</span>
-            </div>
-          ))}
+        @keyframes cs-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+        @keyframes cs-aurora1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(80px,40px) scale(1.12); } }
+        @keyframes cs-aurora2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-70px,-50px) scale(1.18); } }
+        @keyframes cs-float { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(-120px); opacity: 0; } }
+        @keyframes cs-sheen { 0% { transform: translateX(-200%); } 55%,100% { transform: translateX(220%); } }
+        @keyframes cs-bar { 0% { transform: translateX(-160%); } 100% { transform: translateX(320%); } }
+
+        @media (prefers-reduced-motion: reduce) {
+          .cs-rise { opacity: 1; animation: none; }
+          .cs-blob-1, .cs-blob-2, .cs-dot, .cs-sheen, .cs-bar { animation: none; }
+          .cs-sheen { display: none; }
+          .cs-bar { width: 100%; }
+        }
+      `}</style>
+
+      <div className="cs-aurora" aria-hidden="true">
+        <span className="cs-blob cs-blob-1" />
+        <span className="cs-blob cs-blob-2" />
+      </div>
+      <div className="cs-grid" aria-hidden="true" />
+      <div className="cs-particles" aria-hidden="true">
+        {PARTICLES.map((p, i) => (
+          <span
+            key={i}
+            className="cs-dot"
+            style={{
+              left: p.left,
+              top: p.top,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              animationDuration: `${p.dur}s`,
+              animationDelay: `${p.delay}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="cs-content">
+        <div className="cs-wordmark-wrap cs-rise cs-d1">
+          <h1 className="cs-wordmark">Vorte</h1>
+          <span className="cs-sheen" aria-hidden="true" />
+        </div>
+        <p className="cs-legal cs-rise cs-d2">Vorte Dijital Teknoloji A.Ş.</p>
+
+        <h2 className="cs-status cs-rise cs-d3">Yapım Aşamasında</h2>
+        <p className="cs-soon cs-rise cs-d4">Çok Yakında</p>
+
+        <p className="cs-desc cs-rise cs-d5">
+          Dijital teknoloji çözümleri geliştiren şirketimizin yeni kurumsal
+          sitesi üzerinde çalışıyoruz. Projelerimiz, ekibimiz ve yol haritamız
+          çok yakında burada.
+        </p>
+
+        <div className="cs-bar-wrap cs-rise cs-d6" role="presentation">
+          <div className="cs-bar" />
         </div>
       </div>
 
-      {/* ── TRUST BADGES ── */}
-      <TrustBadges />
-
-      {/* ── COUNTDOWN BANNER ── */}
-      {campaignEndDate && (
-        <CountdownBanner
-          endDate={campaignEndDate}
-          title="Hoş Geldin Kampanyası"
-          subtitle="HOSGELDIN koduyla %10 indirim"
-        />
-      )}
-
-      {/* Homepage Top Banners */}
-      {bannersByPosition["homepage-top"] && (
-        <PromoBanner banners={bannersByPosition["homepage-top"]} />
-      )}
-
-      {/* ── BRAND STATEMENT ── */}
-      <section className="bg-white py-20 md:py-28">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <p
-            className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
-            style={{ letterSpacing: "0.35em" }}
-          >
-            Doğadan Teninize
-          </p>
-          <div className="divider-line mt-5 mb-6" />
-          <h2
-            className="text-2xl font-light text-[#1A1A1A] md:text-3xl lg:text-4xl"
-            style={{ letterSpacing: "0.08em", lineHeight: 1.4 }}
-          >
-            35 yıllık deneyim, %95 taranmış penye pamuk.
-            <br className="hidden md:block" />
-            {" "}Konfor ve kalitenin buluştuğu nokta.
-          </h2>
-        </div>
-      </section>
-
-      {/* ── CATEGORY: ERKEK — Full Bleed ── */}
-      <section className="relative">
-        <Link
-          href="/erkek-ic-giyim"
-          className="group relative block h-[70vh] min-h-[500px] overflow-hidden md:h-[85vh]"
-        >
-          <Image
-            src="/images/category-erkek.png"
-            alt="Erkek İç Giyim Koleksiyonu"
-            fill
-            className="object-cover img-cover-zoom"
-            sizes="100vw"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24">
-            <p
-              className="mb-3 text-[10px] font-light uppercase text-white/70 md:text-[11px]"
-              style={{ letterSpacing: "0.35em" }}
-            >
-              Koleksiyon
-            </p>
-            <h2
-              className="text-3xl font-light uppercase text-white md:text-5xl lg:text-6xl"
-              style={{ letterSpacing: "0.15em" }}
-            >
-              Erkek
-            </h2>
-            <span
-              className="mt-6 inline-flex items-center gap-2 border border-white/60 px-8 py-3 text-[10px] font-light uppercase text-white transition-all duration-500 group-hover:bg-white group-hover:text-[#1A1A1A] md:text-[11px]"
-              style={{ letterSpacing: "0.25em" }}
-            >
-              Keşfet <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-          </div>
-        </Link>
-      </section>
-
-      {/* ── CATEGORY: KADIN — Full Bleed ── */}
-      <section className="relative">
-        <Link
-          href="/kadin-ic-giyim"
-          className="group relative block h-[70vh] min-h-[500px] overflow-hidden md:h-[85vh]"
-        >
-          <Image
-            src="/images/category-kadin.png"
-            alt="Kadın İç Giyim Koleksiyonu"
-            fill
-            className="object-cover img-cover-zoom"
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-16 md:pb-24">
-            <p
-              className="mb-3 text-[10px] font-light uppercase text-white/70 md:text-[11px]"
-              style={{ letterSpacing: "0.35em" }}
-            >
-              Koleksiyon
-            </p>
-            <h2
-              className="text-3xl font-light uppercase text-white md:text-5xl lg:text-6xl"
-              style={{ letterSpacing: "0.15em" }}
-            >
-              Kadın
-            </h2>
-            <span
-              className="mt-6 inline-flex items-center gap-2 border border-white/60 px-8 py-3 text-[10px] font-light uppercase text-white transition-all duration-500 group-hover:bg-white group-hover:text-[#1A1A1A] md:text-[11px]"
-              style={{ letterSpacing: "0.25em" }}
-            >
-              Keşfet <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-          </div>
-        </Link>
-      </section>
-
-      {/* Homepage Mid Banners */}
-      {bannersByPosition["homepage-mid"] && (
-        <PromoBanner banners={bannersByPosition["homepage-mid"]} />
-      )}
-
-      {/* ── FEATURED PRODUCTS ── */}
-      {products.length > 0 && (
-        <section className="bg-white py-20 md:py-28">
-          <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
-            <div className="mb-12 text-center">
-              <p
-                className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
-                style={{ letterSpacing: "0.35em" }}
-              >
-                Seçtiklerimiz
-              </p>
-              <div className="divider-line mt-4 mb-5" />
-              <h2
-                className="text-xl font-light uppercase text-[#1A1A1A] md:text-2xl"
-                style={{ letterSpacing: "0.15em" }}
-              >
-                Öne Çıkan Ürünler
-              </h2>
-            </div>
-            <ProductGrid products={products} />
-            <div className="mt-12 flex justify-center gap-4">
-              <Link
-                href="/erkek-ic-giyim"
-                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
-              >
-                Erkek Koleksiyonu
-              </Link>
-              <Link
-                href="/kadin-ic-giyim"
-                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
-              >
-                Kadın Koleksiyonu
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── SON GÖRÜNTÜLENEN ÜRÜNLER ── */}
-      <RecentlyViewed />
-
-      {/* Homepage Bottom Banners */}
-      {bannersByPosition["homepage-bottom"] && (
-        <PromoBanner banners={bannersByPosition["homepage-bottom"]} />
-      )}
-
-      {/* ── TESTIMONIALS ── */}
-      {testimonials.length > 0 && (
-        <TestimonialsSection testimonials={testimonials} />
-      )}
-
-      {/* ── BLOG — Editorial Style ── */}
-      {blogPosts.length > 0 && (
-        <section className="border-t border-gray-100 bg-[#FAFAFA] py-20 md:py-28">
-          <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
-            <div className="mb-12 text-center">
-              <p
-                className="text-[10px] font-medium uppercase text-gray-400 md:text-[11px]"
-                style={{ letterSpacing: "0.35em" }}
-              >
-                Editöryal
-              </p>
-              <div className="divider-line mt-4 mb-5" />
-              <h2
-                className="text-xl font-light uppercase text-[#1A1A1A] md:text-2xl"
-                style={{ letterSpacing: "0.15em" }}
-              >
-                Blog
-              </h2>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {blogPosts.map((post) => (
-                <Link
-                  key={post.id}
-                  href={`/blog/${post.slug}`}
-                  className="group"
-                >
-                  <div className="aspect-[4/3] overflow-hidden bg-gray-100">
-                    {post.coverImage ? (
-                      <img
-                        src={post.coverImage}
-                        alt={post.title}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <span className="text-4xl font-light text-gray-200">V</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-5">
-                    {post.publishedAt && (
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
-                        {new Date(post.publishedAt).toLocaleDateString("tr-TR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </p>
-                    )}
-                    <h3 className="mt-2 text-sm font-medium text-[#1A1A1A] transition-colors group-hover:text-gray-500 line-clamp-2">
-                      {post.title}
-                    </h3>
-                    {post.excerpt && (
-                      <p className="mt-2 text-xs leading-relaxed text-gray-400 line-clamp-2">
-                        {post.excerpt}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-12 flex justify-center">
-              <Link
-                href="/blog"
-                className="border border-[#1A1A1A] px-8 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-[#1A1A1A] hover:text-white"
-              >
-                Tüm Yazılar
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── WHOLESALE CTA ── */}
-      <section className="relative overflow-hidden bg-[#1A1A1A] py-24 md:py-32">
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 text-center">
-          <p
-            className="text-[10px] font-light uppercase text-white/40 md:text-[11px]"
-            style={{ letterSpacing: "0.35em" }}
-          >
-            İş Ortaklığı
-          </p>
-          <div className="mx-auto mt-5 mb-6 h-px w-10 bg-white/20" />
-          <h2
-            className="text-2xl font-light uppercase text-white md:text-3xl lg:text-4xl"
-            style={{ letterSpacing: "0.1em" }}
-          >
-            Toptan Satış Bayisi Olun
-          </h2>
-          <p className="mt-5 text-sm font-light leading-relaxed text-white/50">
-            Vorte ürünlerini kendi satış noktanızda sunun.
-            Özel toptan fiyatlar ve bayilik avantajlarından yararlanın.
-          </p>
-          <div className="mt-10 flex gap-4">
-            <Link
-              href="/toptan"
-              className="border border-white/80 bg-white px-10 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-[#1A1A1A] transition-all duration-300 hover:bg-transparent hover:text-white"
-            >
-              Başvuru Yap
-            </Link>
-            <Link
-              href="/bayi-girisi"
-              className="border border-white/30 px-10 py-3 text-[10px] font-medium uppercase tracking-[0.2em] text-white/70 transition-all duration-300 hover:border-white/60 hover:text-white"
-            >
-              Bayi Girişi
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Scroll reveal activator (client component) */}
-      <HomepageClient />
-    </>
+      <footer className="cs-footer cs-rise cs-d6">
+        <a href="mailto:info@vorte.com.tr">info@vorte.com.tr</a>
+        <span className="cs-sep" aria-hidden="true">•</span>
+        <span>İzmir, Türkiye</span>
+        <span className="cs-sep" aria-hidden="true">•</span>
+        <span>© 2026 Vorte Dijital Teknoloji A.Ş.</span>
+      </footer>
+    </main>
   );
 }

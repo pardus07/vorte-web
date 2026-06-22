@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Bebas_Neue } from "next/font/google";
 import { Providers } from "@/components/Providers";
-import { ShopShell } from "@/components/layout/ShopShell";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { AnalyticsScripts } from "@/components/seo/AnalyticsScripts";
-import { getSiteSettings } from "@/lib/settings";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,206 +15,80 @@ const bebasNeue = Bebas_Neue({
   variable: "--font-baron",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vorte.com.tr";
+
 export const viewport: Viewport = {
-  themeColor: "#333333",
+  themeColor: "#05060a",
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSiteSettings();
+export const metadata: Metadata = {
+  title: {
+    default: "Vorte Dijital Teknoloji A.Ş.",
+    template: "%s | Vorte Dijital Teknoloji A.Ş.",
+  },
+  description:
+    "Vorte Dijital Teknoloji A.Ş. — İzmir merkezli, dijital teknoloji çözümleri geliştiren yazılım şirketi. Yeni kurumsal sitemiz çok yakında.",
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Vorte Dijital Teknoloji A.Ş.",
+  alternates: { canonical: "/" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    locale: "tr_TR",
+    siteName: "Vorte Dijital Teknoloji A.Ş.",
+    title: "Vorte Dijital Teknoloji A.Ş.",
+    description:
+      "İzmir merkezli dijital teknoloji şirketi. Yeni kurumsal sitemiz çok yakında.",
+  },
+};
 
-  const title = settings.metaTitle || "Vorte Tekstil | Kaliteli İç Giyim - Toptan ve Perakende";
-  const description =
-    settings.metaDescription ||
-    "Vorte Tekstil - Erkek boxer ve kadın iç giyim ürünleri. Toptan ve perakende satış. Premium kalite, uygun fiyat. Bursa, Türkiye.";
-  const keywords = settings.metaKeywords
-    ? settings.metaKeywords.split(",").map((k) => k.trim())
-    : [
-        "iç giyim",
-        "erkek boxer",
-        "kadın külot",
-        "toptan iç giyim",
-        "toptan erkek boxer",
-        "toptan kadın külot",
-        "erkek boxer üretici",
-        "bursa iç giyim toptancısı",
-        "toptan boxer imalatçısı",
-        "vorte tekstil",
-        "bursa tekstil",
-      ];
-
-  const siteUrl = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
-  // OG image: harici URL varsa doğrudan kullan (CDN — Vary header yok, WhatsApp uyumlu)
-  // Yerel dosya ise /og-image.jpg rewrite üzerinden serve et (Facebook uyumlu)
-  let ogImageUrl: string;
-  if (settings.ogImageUrl?.startsWith("http")) {
-    ogImageUrl = settings.ogImageUrl;
-  } else if (settings.ogImageUrl) {
-    ogImageUrl = `${siteUrl}/og-image.jpg`;
-  } else {
-    ogImageUrl = `${siteUrl}/logo.png`;
-  }
-
-  return {
-    title: {
-      default: title,
-      template: `%s | ${settings.siteName || "Vorte Tekstil"}`,
-    },
-    description,
-    keywords,
-    metadataBase: new URL(siteUrl),
-    icons: {
-      icon: [
-        { url: settings.faviconUrl || "/favicon.ico", sizes: "any" },
-        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      ],
-    },
-    openGraph: {
-      type: "website",
-      url: siteUrl,
-      locale: "tr_TR",
-      siteName: settings.siteName || "Vorte Tekstil",
-      images: [
-        {
-          url: ogImageUrl,
-          secureUrl: ogImageUrl,
-          type: "image/jpeg",
-          width: 1200,
-          height: 630,
-          alt: settings.siteName || "Vorte Tekstil",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: settings.siteName || "Vorte Tekstil" }],
-    },
-    alternates: {
-      canonical: "/",
-    },
-    verification: settings.googleVerificationCode
-      ? { google: settings.googleVerificationCode }
-      : undefined,
-  };
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getSiteSettings();
-
   return (
     <html lang="tr">
-      <head>
-        <meta name="theme-color" content="#333333" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <AnalyticsScripts />
-      </head>
       <body className={`${inter.variable} ${bebasNeue.variable} font-sans antialiased`}>
         <JsonLd
           data={{
             "@context": "https://schema.org",
-            "@type": ["Organization", "ClothingStore"],
-            name: settings.siteName || "Vorte Tekstil",
+            "@type": "Organization",
+            name: "Vorte Dijital Teknoloji A.Ş.",
+            legalName: "Vorte Dijital Teknoloji Anonim Şirketi",
             alternateName: "Vorte",
-            url: settings.siteUrl || "https://www.vorte.com.tr",
-            logo: {
-              "@type": "ImageObject",
-              url: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
-              width: 512,
-              height: 512,
-            },
-            image: `${settings.siteUrl || "https://www.vorte.com.tr"}/og-image.jpg`,
-            description:
-              "35 yıllık tekstil deneyimiyle yapay zeka destekli üretim süreçleri ve %95 taranmış penye pamuk kalitesiyle erkek boxer ve kadın külot üreten Türkiye merkezli iç giyim markası.",
-            slogan:
-              "Yapay Zeka Destekli Premium İç Giyim",
-            foundingDate: "1990",
+            url: SITE_URL,
+            email: "info@vorte.com.tr",
             foundingLocation: {
               "@type": "Place",
-              name: "İstanbul, Türkiye",
+              name: "İzmir, Türkiye",
             },
-            telephone: settings.contactPhone || "+90-850-305-8635",
-            email: settings.contactEmail || "info@vorte.com.tr",
             address: {
               "@type": "PostalAddress",
-              streetAddress: "Dumlupınar Mah., Kayabaşı Sok., 17BG",
-              addressLocality: "Nilüfer",
-              addressRegion: "Bursa",
-              postalCode: "16110",
+              addressLocality: "Konak",
+              addressRegion: "İzmir",
               addressCountry: "TR",
-            },
-            geo: {
-              "@type": "GeoCoordinates",
-              latitude: 40.2295192,
-              longitude: 28.8313634,
             },
             areaServed: {
               "@type": "Country",
               name: "Türkiye",
             },
-            brand: {
-              "@type": "Brand",
-              name: "Vorte",
-              logo: `${settings.siteUrl || "https://www.vorte.com.tr"}${settings.logoUrl || "/logo.png"}`,
-            },
-            numberOfEmployees: {
-              "@type": "QuantitativeValue",
-              value: "10-50",
-            },
             knowsAbout: [
-              "taranmış penye pamuk",
-              "erkek boxer",
-              "kadın külot",
-              "iç giyim üretimi",
-              "yapay zeka destekli tekstil",
+              "yazılım geliştirme",
+              "dijital teknoloji",
+              "yapay zeka",
+              "SaaS",
             ],
-            hasOfferCatalog: {
-              "@type": "OfferCatalog",
-              name: "Vorte İç Giyim Ürünleri",
-              itemListElement: [
-                {
-                  "@type": "OfferCatalog",
-                  name: "Erkek İç Giyim",
-                  url: "https://www.vorte.com.tr/erkek",
-                },
-                {
-                  "@type": "OfferCatalog",
-                  name: "Kadın İç Giyim",
-                  url: "https://www.vorte.com.tr/kadin",
-                },
-              ],
-            },
-            contactPoint: [
-              {
-                "@type": "ContactPoint",
-                telephone: settings.contactPhone || "+90-850-305-8635",
-                contactType: "customer service",
-                availableLanguage: "Turkish",
-              },
-              {
-                "@type": "ContactPoint",
-                telephone: settings.contactPhone || "+90-850-305-8635",
-                contactType: "sales",
-                availableLanguage: "Turkish",
-                description: "Toptan satış ve bayilik başvuruları",
-              },
-            ],
-            sameAs: [
-              settings.instagramUrl,
-              settings.facebookUrl,
-              settings.twitterUrl,
-              settings.youtubeUrl,
-              settings.tiktokUrl,
-            ].filter(Boolean),
           }}
         />
-        <Providers>
-          <ShopShell>{children}</ShopShell>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

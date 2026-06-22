@@ -2,34 +2,40 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center">
-      <h1 className="text-8xl font-bold text-[#1A1A1A]">404</h1>
-      <h2 className="mt-4 text-2xl font-semibold text-[#333333]">
-        Sayfa Bulunamadı
-      </h2>
-      <p className="mt-3 max-w-md text-gray-500">
-        Aradığınız sayfa kaldırılmış, adı değiştirilmiş veya geçici olarak kullanılamıyor olabilir.
+    <div
+      style={{
+        minHeight: "100svh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.75rem",
+        background: "#05060a",
+        color: "#f4f6fb",
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        textAlign: "center",
+        padding: "1.5rem",
+      }}
+    >
+      <h1 style={{ fontSize: "clamp(3rem,12vw,5rem)", fontWeight: 800, margin: 0 }}>404</h1>
+      <h2 style={{ fontSize: "1.25rem", fontWeight: 600, margin: 0 }}>Sayfa Bulunamadı</h2>
+      <p style={{ color: "#aab2c0", margin: 0, maxWidth: "28rem" }}>
+        Aradığınız sayfa bulunamadı.
       </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-        <Link
-          href="/"
-          className="bg-[#1A1A1A] px-8 py-3 text-sm font-semibold text-white hover:bg-[#333333] transition-colors"
-        >
-          Ana Sayfaya Dön
-        </Link>
-        <Link
-          href="/erkek-ic-giyim"
-          className="border border-[#1A1A1A] px-8 py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-gray-50 transition-colors"
-        >
-          Erkek Koleksiyonu
-        </Link>
-        <Link
-          href="/kadin-ic-giyim"
-          className="border border-[#1A1A1A] px-8 py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-gray-50 transition-colors"
-        >
-          Kadın Koleksiyonu
-        </Link>
-      </div>
+      <Link
+        href="/"
+        style={{
+          marginTop: "0.75rem",
+          border: "1px solid #7AC143",
+          color: "#7AC143",
+          padding: "0.6rem 1.4rem",
+          borderRadius: "0.5rem",
+          textDecoration: "none",
+          fontSize: "0.95rem",
+        }}
+      >
+        Ana Sayfaya Dön
+      </Link>
     </div>
   );
 }

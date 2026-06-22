@@ -15,24 +15,51 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16 text-center">
-      <h1 className="text-6xl font-bold text-[#1A1A1A]">Hata</h1>
-      <h2 className="mt-4 text-xl font-semibold text-[#333333]">
-        Bir şeyler yanlış gitti
-      </h2>
-      <p className="mt-3 max-w-md text-gray-500">
-        Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin veya ana sayfaya dönün.
+    <div
+      style={{
+        minHeight: "100svh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.75rem",
+        background: "#05060a",
+        color: "#f4f6fb",
+        fontFamily: "var(--font-sans, system-ui, sans-serif)",
+        textAlign: "center",
+        padding: "1.5rem",
+      }}
+    >
+      <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>Bir şeyler ters gitti</h1>
+      <p style={{ color: "#aab2c0", margin: 0, maxWidth: "28rem" }}>
+        Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.
       </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+      <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
         <button
-          onClick={reset}
-          className="bg-[#1A1A1A] px-8 py-3 text-sm font-semibold text-white hover:bg-[#333333] transition-colors"
+          type="button"
+          onClick={() => reset()}
+          style={{
+            border: "1px solid #7AC143",
+            background: "transparent",
+            color: "#7AC143",
+            padding: "0.6rem 1.4rem",
+            borderRadius: "0.5rem",
+            cursor: "pointer",
+            fontSize: "0.95rem",
+          }}
         >
           Tekrar Dene
         </button>
         <Link
           href="/"
-          className="border border-[#1A1A1A] px-8 py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-gray-50 transition-colors"
+          style={{
+            border: "1px solid rgba(244,246,251,0.25)",
+            color: "#f4f6fb",
+            padding: "0.6rem 1.4rem",
+            borderRadius: "0.5rem",
+            textDecoration: "none",
+            fontSize: "0.95rem",
+          }}
         >
           Ana Sayfaya Dön
         </Link>
